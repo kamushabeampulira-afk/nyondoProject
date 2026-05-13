@@ -1,0 +1,156 @@
+extends layout
+
+block head
+  link(rel="stylesheet" href="/css/users.css")
+
+block title
+  | User Management – NYONDO Hardware
+
+block content
+  .page-heading-center.mb-4
+    h1
+      i.fa-solid.fa-users-gear
+      |  User Management
+    p.text-muted Manage system users, roles, and permissions
+
+  .row.g-4.mb-4
+    .col-md-3.col-sm-6
+      .section-card.metric-card.p-3.text-center
+        i.fa-solid.fa-users.fa-2x.mb-2(style="color: var(--gold);")
+        h6.text-muted Total Users
+        h3= totalUsers || 0
+    .col-md-3.col-sm-6
+      .section-card.metric-card.p-3.text-center
+        i.fa-solid.fa-circle-check.fa-2x.mb-2(style="color: var(--gold);")
+        h6.text-muted Active
+        h3.text-success= activeUsers || 0
+    .col-md-3.col-sm-6
+      .section-card.metric-card.p-3.text-center
+        i.fa-solid.fa-user-tie.fa-2x.mb-2(style="color: var(--gold);")
+        h6.text-muted Admins
+        h3= adminCount || 0
+    .col-md-3.col-sm-6
+      .section-card.metric-card.p-3.text-center
+        i.fa-solid.fa-chalkboard-user.fa-2x.mb-2(style="color: var(--gold);")
+        h6.text-muted Managers
+        h3= managerCount || 0
+
+  .user-form-container#userFormContainer
+    .form-card
+      .d-flex.justify-content-between.align-items-center.mb-3
+        h4.mb-0
+          i.fa-solid.fa-user-plus.me-2(style="color: var(--gold);")
+          | Create New User
+        button.btn-close(type='button' onclick='hideUserForm()')
+      form(method="POST" action="/users")
+        .row.g-3
+          .col-md-6
+            label.form-label Full Name *
+            input.form-control(type='text' name='fullName' required)
+          .col-md-6
+            label.form-label Email *
+            input.form-control(type='email' name='email' required)
+          .col-md-6
+            label.form-label Password *
+            input.form-control(type='password' name='password' minlength='8' required)
+          .col-md-6
+            label.form-label Role *
+            select.form-select(name='role' required)
+              option(value='') Select Role
+              option Administrator
+              option Manager
+              option Sales Attendant
+          .col-12
+            label.form-label Permissions
+            .permissions-group
+              label
+                input(type='checkbox' name='permissions.stockManagement')
+                | Stock Management
+              label
+                input(type='checkbox' name='permissions.salesEntry' checked)
+                | Sales Entry
+              label
+                input(type='checkbox' name='permissions.creditManagement')
+                | Credit Management
+              label
+                input(type='checkbox' name='permissions.reports')
+                | Reports
+              label
+                input(type='checkbox' name='permissions.userManagement')
+                | User Management
+              label
+                input(type='checkbox' name='permissions.settings')
+                | Settings
+          .col-md-6
+            label.form-label Status
+            select.form-select(name='status')
+              option Active
+              option Inactive
+          .col-md-6
+            label.form-label Department / Branch
+            input.form-control(type='text' name='department')
+        .d-flex.gap-3.mt-4
+          button.btn-primary(type='submit')
+            i.fa-solid.fa-save
+            | Create User
+          button.btn-outline(type='button' onclick='hideUserForm()') Cancel
+
+  .section-card
+    .section-head
+      h2
+        i.fa-solid.fa-list.me-2(style="color: var(--gold);")
+        | System Users
+      .d-flex.gap-2.flex-wrap
+        input#userSearch.form-control.form-control-sm(type='text' placeholder='Search...' style='width:200px;')
+        button#showUserFormBtn.btn-primary(onclick='showUserForm()')
+          i.fa-solid.fa-plus
+          | Add User
+    .table-responsive
+      table#usersTable.data-table
+        thead
+          tr
+            th Name
+            th Email
+            th Role
+            th Status
+            th Last Login
+            th Actions
+        tbody
+          if users && users.length
+            each u in users
+              tr
+                td
+                  i.fa-solid.fa-user-shield.me-2(style="color: var(--gold);")
+                  = u.fullName
+                td= u.email
+                td= u.role
+                td
+                  if u.status === 'Active'
+                    span.status-pill.sp-paid Active
+                  else
+                    span.status-pill.sp-pending Inactive
+                td= u.lastLogin ? u.lastLogin.toLocaleString() : '—'
+                td
+                  a(href=`/users/${u._id}/edit`)
+                    i.fa-regular.fa-pen-to-square.me-2
+                  form(method="POST" action=`/users/${u._id}/delete` style='display:inline;' onsubmit="return confirm('Delete this user?');")
+                    button(type='submit' style='background:none;border:none;padding:0;')
+                      i.fa-regular.fa-trash-can(style='color:#dc3545')
+          else
+            tr
+              td(colspan='6').text-center No users found.
+
+  script.
+    function showUserForm() { document.getElementById('userFormContainer').classList.add('show'); document.getElementById('showUserFormBtn').style.display = 'none'; }
+    function hideUserForm() { document.getElementById('userFormContainer').classList.remove('show'); document.getElementById('showUserFormBtn').style.display = 'inline-flex'; }
+    function searchUsers() {
+      const input = document.getElementById('userSearch');
+      const filter = input.value.toLowerCase();
+      const rows = document.querySelectorAll('#usersTable tbody tr');
+      rows.forEach(row => {
+        const name = row.cells[0]?.innerText.toLowerCase();
+        row.style.display = name && name.includes(filter) ? '' : 'none';
+      });
+    }
+    document.getElementById('userSearch')?.addEventListener('keyup', searchUsers);
+    window.showUserForm = showUserForm; window.hideUserForm = hideUserForm;

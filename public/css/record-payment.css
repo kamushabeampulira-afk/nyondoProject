@@ -1,0 +1,100 @@
+/* record-payment.css – Supplier payment page styles */
+
+/* Centered heading */
+.page-heading-center {
+  text-align: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+}
+
+.page-heading-center h1 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--dark-green), var(--gold));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  display: inline-block;
+}
+
+/* Form card limited width and centered */
+.payment-form-card {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 32px;
+}
+
+/* Invoice summary box */
+.invoice-summary {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 16px;
+  border-left: 4px solid var(--gold);
+  margin-bottom: 20px;
+}
+
+.summary-line {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px dashed #e2e8f0;
+}
+
+.summary-line:last-child {
+  border-bottom: none;
+}
+
+/* Payment method selector */
+.payment-method-group {
+  display: flex;
+  gap: 15px;
+  margin: 10px 0;
+  flex-wrap: wrap;
+}
+
+.payment-method-option {
+  flex: 1;
+  border: 2px solid var(--border-light);
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+}
+
+.payment-method-option.selected {
+  border-color: var(--gold);
+  background: rgba(255, 204, 0, 0.1);
+  color: var(--dark-green);
+  font-weight: 600;
+}
+
+.payment-method-option i {
+  font-size: 1.2rem;
+  margin-right: 5px;
+  color: var(--gold);
+}
+
+/* Form spacing */
+.form-card .form-label {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .page-heading-center h1 {
+    font-size: 1.4rem;
+  }
+  .payment-form-card {
+    padding: 20px;
+  }
+  .payment-method-group {
+    gap: 10px;
+  }
+  .payment-method-option {
+    padding: 8px;
+    font-size: 0.9rem;
+  }
+}

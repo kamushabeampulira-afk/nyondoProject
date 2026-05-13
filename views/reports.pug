@@ -1,0 +1,273 @@
+extends layout
+
+block head
+  link(rel="stylesheet" href="/css/reports.css")
+  script(src="https://cdn.jsdelivr.net/npm/chart.js")
+
+block title
+  | Reports – NYONDO Hardware
+
+block content
+  .page-heading-center.mb-4
+    h1
+      i.fa-solid.fa-chart-line
+      |  Reports &amp; Analytics
+    p.text-muted Comprehensive business insights and performance metrics
+
+  .section-card.mb-4
+    .section-head
+      h2
+        i.fa-solid.fa-calendar-range.me-2(style="color: var(--gold);")
+        | Report Period
+      .d-flex.gap-2
+        select#reportPeriod.form-select.form-select-sm(style='width:150px;')
+          option(value='week') This Week
+          option(value='month' selected) This Month
+          option(value='quarter') Last 3 Months
+          option(value='year') This Year
+        button.btn-outline.btn-sm(onclick="alert('Custom range coming soon')")
+          i.fa-solid.fa-calendar
+          | Custom
+
+  .row.g-4.mb-5
+    .col-md-3.col-sm-6
+      .section-card.metric-card.p-3.text-center
+        i.fa-solid.fa-chart-line.fa-2x.mb-2(style="color: var(--gold);")
+        h6.text-muted Total Revenue
+        h3= (totalRevenue || 0).toLocaleString() + ' UGX'
+        small.text-success +18.4%
+    .col-md-3.col-sm-6
+      .section-card.metric-card.p-3.text-center
+        i.fa-solid.fa-chart-simple.fa-2x.mb-2(style="color: var(--gold);")
+        h6.text-muted Gross Profit
+        h3= (grossProfit || 0).toLocaleString() + ' UGX'
+        small.text-success +12.3%
+    .col-md-3.col-sm-6
+      .section-card.metric-card.p-3.text-center
+        i.fa-solid.fa-receipt.fa-2x.mb-2(style="color: var(--gold);")
+        h6.text-muted Avg. Order Value
+        h3= (avgOrderValue || 0).toLocaleString() + ' UGX'
+        small.text-success +5.2%
+    .col-md-3.col-sm-6
+      .section-card.metric-card.p-3.text-center
+        i.fa-solid.fa-users.fa-2x.mb-2(style="color: var(--gold);")
+        h6.text-muted Active Customers
+        h3= (activeCustomers || 0).toLocaleString()
+        small.text-success +23
+
+  .section-card.mb-4
+    .section-head
+      h2
+        i.fa-solid.fa-chart-line.me-2(style="color: var(--gold);")
+        | Monthly Revenue &amp; Profit Trend
+      .d-flex.gap-2
+        button.btn-outline.btn-sm(onclick="exportChart()")
+          i.fa-solid.fa-download
+          | Export Chart
+    .p-3
+      canvas#revenueChart(height='300')
+
+  .row.g-4
+    .col-md-6
+      .section-card
+        .section-head
+          h2
+            i.fa-solid.fa-chart-simple.me-2(style="color: var(--gold);")
+            | Sales Summary
+          button.btn-outline.btn-sm(onclick="exportReport('sales')")
+            i.fa-solid.fa-download
+            | Export
+        .p-3
+          .row.text-center.mb-3
+            .col-4
+              small.text-muted Today
+              h4.fw-bold= (todaySales || 0).toLocaleString() + ' UGX'
+              small.text-success +8.2%
+            .col-4
+              small.text-muted This Week
+              h4.fw-bold= (weeklySales || 0).toLocaleString() + ' UGX'
+              small.text-success +12.4%
+            .col-4
+              small.text-muted This Month
+              h4.fw-bold= (monthlySales || 0).toLocaleString() + ' UGX'
+              small.text-success +18.4%
+          .table-responsive
+            table.data-table
+              thead
+                tr
+                  th Date
+                  th Sales (UGX)
+                  th Transactions
+                  th Avg. Order
+              tbody
+                each row in salesSummary || []
+                  tr
+                    td= row.date
+                    td= row.sales.toLocaleString()
+                    td= row.transactions
+                    td= row.avgOrder.toLocaleString()
+                else
+                  tr
+                    td(colspan='4').text-center No data
+
+    .col-md-6
+      .section-card
+        .section-head
+          h2
+            i.fa-solid.fa-boxes-stacked.me-2(style="color: var(--gold);")
+            | Stock Summary
+          button.btn-outline.btn-sm(onclick="exportReport('stock')")
+            i.fa-solid.fa-download
+            | Export
+        .p-3
+          .row.text-center.mb-3
+            .col-4
+              small.text-muted Total SKUs
+              h4.fw-bold= totalSkus || 0
+            .col-4
+              small.text-muted Low Stock
+              h4.fw-bold.text-warning= lowStockCount || 0
+            .col-4
+              small.text-muted Out of Stock
+              h4.fw-bold.text-danger= outOfStockCount || 0
+          .table-responsive
+            table.data-table
+              thead
+                tr
+                  th Category
+                  th Total Value
+                  th Items
+                  th Status
+              tbody
+                each cat in stockSummary || []
+                  tr
+                    td= cat.category
+                    td= cat.totalValue.toLocaleString()
+                    td= cat.itemsCount
+                    td
+                      if cat.status === 'Low Stock'
+                        span.status-pill.sp-pending Low Stock
+                      else
+                        span.status-pill.sp-paid Adequate
+                else
+                  tr
+                    td(colspan='4').text-center No data
+
+    .col-md-6
+      .section-card
+        .section-head
+          h2
+            i.fa-solid.fa-piggy-bank.me-2(style="color: var(--gold);")
+            | Deposit Scheme Report
+          button.btn-outline.btn-sm(onclick="exportReport('deposit')")
+            i.fa-solid.fa-download
+            | Export
+        .p-3
+          .row.text-center.mb-3
+            .col-4
+              small.text-muted Total Members
+              h4.fw-bold= depositMembers || 0
+            .col-4
+              small.text-muted Total Deposits
+              h4.fw-bold= (totalDeposits || 0).toLocaleString() + ' UGX'
+            .col-4
+              small.text-muted Active Balance
+              h4.fw-bold= (activeDepositBalance || 0).toLocaleString() + ' UGX'
+          .table-responsive
+            table.data-table
+              thead
+                tr
+                  th Top Member
+                  th Balance
+                  th Deposits
+                  th Pickups
+              tbody
+                each mem in topDepositMembers || []
+                  tr
+                    td= mem.fullName
+                    td= mem.balance.toLocaleString()
+                    td= mem.depositCount
+                    td= mem.pickupCount
+                else
+                  tr
+                    td(colspan='4').text-center No data
+
+    .col-md-6
+      .section-card
+        .section-head
+          h2
+            i.fa-solid.fa-credit-card.me-2(style="color: var(--gold);")
+            | Supplier Credit Report
+          button.btn-outline.btn-sm(onclick="exportReport('credit')")
+            i.fa-solid.fa-download
+            | Export
+        .p-3
+          .row.text-center.mb-3
+            .col-4
+              small.text-muted Total Credit
+              h4.fw-bold= (totalCredit || 0).toLocaleString() + ' UGX'
+            .col-4
+              small.text-muted Pending
+              h4.fw-bold.text-warning= (pendingCredit || 0).toLocaleString() + ' UGX'
+            .col-4
+              small.text-muted Overdue
+              h4.fw-bold.text-danger= (overdueCredit || 0).toLocaleString() + ' UGX'
+          .table-responsive
+            table.data-table
+              thead
+                tr
+                  th Supplier
+                  th Amount (UGX)
+                  th Due Date
+                  th Status
+              tbody
+                each inv in supplierCreditSummary || []
+                  tr
+                    td= inv.supplierName
+                    td= inv.amount.toLocaleString()
+                    td= inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : '—'
+                    td
+                      if inv.status === 'Overdue'
+                        span.status-pill.sp-credit Overdue
+                      else
+                        span.status-pill.sp-paid Pending
+                else
+                  tr
+                    td(colspan='4').text-center No data
+
+  .section-card.mt-4
+    .section-head
+      h2
+        i.fa-solid.fa-file-export.me-2(style="color: var(--gold);")
+        | Export Reports
+    .p-3.d-flex.gap-3.flex-wrap
+      button.btn-primary(onclick="exportFullReport('pdf')") PDF
+      button.btn-primary(style='background:#10b981;' onclick="exportFullReport('excel')") Excel
+      button.btn-primary(style='background:#6b7280;' onclick='window.print()') Print
+
+  script.
+    let revenueChart;
+    function initChart() {
+      const ctx = document.getElementById('revenueChart').getContext('2d');
+      revenueChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: !{JSON.stringify(chartLabels || ['Jan','Feb','Mar','Apr','May','Jun'])},
+          datasets: [
+            { label: 'Revenue (UGX)', data: !{JSON.stringify(chartRevenue || [])}, borderColor: '#006600', backgroundColor: 'rgba(0,102,0,0.05)', fill: true, tension: 0.4, pointBackgroundColor: '#006600', pointRadius: 5 },
+            { label: 'Profit (UGX)', data: !{JSON.stringify(chartProfit || [])}, borderColor: '#ffcc00', backgroundColor: 'rgba(255,204,0,0.05)', fill: true, tension: 0.4, pointBackgroundColor: '#ffcc00', pointRadius: 5 }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.raw.toLocaleString()} UGX` } } },
+          scales: { y: { ticks: { callback: (v) => v.toLocaleString() + ' UGX' } } }
+        }
+      });
+    }
+    function updateChartPeriod() { /* optional client demo */ }
+    function exportReport(t) { alert(`Export ${t} report (demo)`); }
+    function exportFullReport(f) { alert(`Export as ${f.toUpperCase()} (demo)`); }
+    function exportChart() { alert('Export chart image (demo)'); }
+    document.addEventListener('DOMContentLoaded', initChart);
+    window.updateChartPeriod = updateChartPeriod;

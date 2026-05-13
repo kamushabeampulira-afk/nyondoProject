@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Management – NYONDO Hardware</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/users.css">
+</head>
+<body>
+  <input type="checkbox" id="nav-toggle" style="display: none">
+  <label class="sidebar-overlay" for="nav-toggle"></label>
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-logo"><i class="fa-solid fa-tools"></i></div>
+      <span class="brand-name">NYONDO</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-sec-label">Admin</div>
+      <a href="users.html" class="nav-link-item active"><span class="nicon"><i class="fa-solid fa-user-shield"></i></span>Users</a>
+      <a href="settings.html" class="nav-link-item"><span class="nicon"><i class="fa-solid fa-gear"></i></span>Settings</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="user-av">AD</div>
+        <div><div class="user-name">Admin</div><div class="user-role">Administrator</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-wrap">
+    <header class="topbar">
+      <label for="nav-toggle" class="hamburger"><i class="fa-solid fa-bars"></i></label>
+      <div><div class="store-name-t">NYONDO <span>Hardware</span></div></div>
+      <div class="topbar-right">
+        <div class="profile-pill">
+          <div class="pill-av">AD</div>
+          <span>Admin</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <!-- Centered heading -->
+      <div class="page-heading-center mb-4">
+        <h1><i class="fa-solid fa-users-gear"></i> User Management</h1>
+        <p class="text-muted">Manage system users, roles, and permissions</p>
+      </div>
+
+      <!-- Stats Cards (4 side by side) -->
+      <div class="row g-4 mb-4">
+        <div class="col-md-3 col-sm-6">
+          <div class="section-card metric-card p-3 text-center">
+            <i class="fa-solid fa-users fa-2x mb-2" style="color: var(--gold);"></i>
+            <h6 class="text-muted">Total Users</h6>
+            <h3>8</h3>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+          <div class="section-card metric-card p-3 text-center">
+            <i class="fa-solid fa-circle-check fa-2x mb-2" style="color: var(--gold);"></i>
+            <h6 class="text-muted">Active</h6>
+            <h3 class="text-success">5</h3>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+          <div class="section-card metric-card p-3 text-center">
+            <i class="fa-solid fa-user-tie fa-2x mb-2" style="color: var(--gold);"></i>
+            <h6 class="text-muted">Admins</h6>
+            <h3>2</h3>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+          <div class="section-card metric-card p-3 text-center">
+            <i class="fa-solid fa-chalkboard-user fa-2x mb-2" style="color: var(--gold);"></i>
+            <h6 class="text-muted">Managers</h6>
+            <h3>2</h3>
+          </div>
+        </div>
+      </div>
+
+      <!-- Collapsible Add User Form -->
+      <div class="user-form-container" id="userFormContainer">
+        <div class="form-card">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="mb-0"><i class="fa-solid fa-user-plus me-2" style="color: var(--gold);"></i>Create New User</h4>
+            <button type="button" class="btn-close" onclick="hideUserForm()"></button>
+          </div>
+          <form id="addUserForm" onsubmit="handleUserSubmit(event)">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Full Name *</label>
+                <input type="text" class="form-control" placeholder="e.g., John Doe" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Email *</label>
+                <input type="email" class="form-control" placeholder="user@nyondo.com" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Password *</label>
+                <input type="password" class="form-control" minlength="8" placeholder="Minimum 8 characters" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Role *</label>
+                <select class="form-select" required>
+                  <option value="">Select Role</option>
+                  <option>Administrator</option>
+                  <option>Manager</option>
+                  <option>Sales Attendant</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label">Permissions</label>
+                <div class="permissions-group">
+                  <label><input type="checkbox"> Stock Management</label>
+                  <label><input type="checkbox" checked> Sales Entry</label>
+                  <label><input type="checkbox"> Credit Management</label>
+                  <label><input type="checkbox"> Reports</label>
+                  <label><input type="checkbox"> User Management</label>
+                  <label><input type="checkbox"> Settings</label>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Status</label>
+                <select class="form-select">
+                  <option>Active</option>
+                  <option>Inactive</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Department / Branch</label>
+                <input type="text" class="form-control" placeholder="e.g., Nansana Branch">
+              </div>
+            </div>
+            <div class="d-flex gap-3 mt-4">
+              <button type="submit" class="btn-primary"><i class="fa-solid fa-save"></i> Create User</button>
+              <button type="button" class="btn-outline" onclick="hideUserForm()">Cancel</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Users Table -->
+      <div class="section-card">
+        <div class="section-head">
+          <h2><i class="fa-solid fa-list me-2" style="color: var(--gold);"></i>System Users</h2>
+          <div class="d-flex gap-2 flex-wrap">
+            <input type="text" class="form-control form-control-sm" placeholder="Search users..." style="width: 200px;" id="userSearch" onkeyup="searchUsers()">
+            <button class="btn-primary" id="showUserFormBtn" onclick="showUserForm()">
+              <i class="fa-solid fa-plus"></i> Add User
+            </button>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table" id="usersTable">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Last Login</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><i class="fa-solid fa-user-shield me-2" style="color: var(--gold);"></i>Admin User</i></td>
+                <td>admin@nyondo.com</i></td>
+                <td>Administrator</i></td>
+                <td><span class="status-pill sp-paid">Active</span></i></td>
+                <td>Today, 09:15</i></td>
+                <td><i class="fa-regular fa-pen-to-square me-2" style="cursor:pointer;" onclick="editUser('Admin User')"></i><i class="fa-regular fa-trash-can" style="cursor:pointer;" onclick="deleteUser('Admin User')"></i></i></td>
+              </tr>
+              <tr>
+                <td><i class="fa-solid fa-user-tie me-2" style="color: var(--gold);"></i>Jane Manager</i></td>
+                <td>jane@nyondo.com</i></td>
+                <td>Manager</i></td>
+                <td><span class="status-pill sp-paid">Active</span></i></td>
+                <td>Yesterday, 16:30</i></td>
+                <td><i class="fa-regular fa-pen-to-square me-2" style="cursor:pointer;" onclick="editUser('Jane Manager')"></i><i class="fa-regular fa-trash-can" style="cursor:pointer;" onclick="deleteUser('Jane Manager')"></i></i></td>
+              </tr>
+              <tr>
+                <td><i class="fa-solid fa-user me-2" style="color: var(--gold);"></i>Bob Sales</i></td>
+                <td>bob@nyondo.com</i></td>
+                <td>Sales Attendant</i></td>
+                <td><span class="status-pill sp-pending">Inactive</span></i></td>
+                <td>05 Apr 2026</i></td>
+                <td><i class="fa-regular fa-pen-to-square me-2" style="cursor:pointer;" onclick="editUser('Bob Sales')"></i><i class="fa-regular fa-trash-can" style="cursor:pointer;" onclick="deleteUser('Bob Sales')"></i></i></td>
+              </tr>
+              <tr>
+                <td><i class="fa-solid fa-user me-2" style="color: var(--gold);"></i>Sarah Cashier</i></td>
+                <td>sarah@nyondo.com</i></td>
+                <td>Sales Attendant</i></td>
+                <td><span class="status-pill sp-paid">Active</span></i></td>
+                <td>Today, 08:45</i></td>
+                <td><i class="fa-regular fa-pen-to-square me-2" style="cursor:pointer;" onclick="editUser('Sarah Cashier')"></i><i class="fa-regular fa-trash-can" style="cursor:pointer;" onclick="deleteUser('Sarah Cashier')"></i></i></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // User form toggle
+    const formContainer = document.getElementById("userFormContainer");
+    const showBtn = document.getElementById("showUserFormBtn");
+
+    function showUserForm() {
+      formContainer.classList.add("show");
+      if (showBtn) showBtn.style.display = "none";
+      formContainer.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    function hideUserForm() {
+      formContainer.classList.remove("show");
+      if (showBtn) showBtn.style.display = "inline-flex";
+    }
+
+    function handleUserSubmit(event) {
+      event.preventDefault();
+      const form = event.target;
+      const pwd = form.querySelector('input[type="password"]').value;
+      if (pwd.length < 8) { alert("Password must be at least 8 characters"); return; }
+      alert("✅ User created successfully!");
+      hideUserForm();
+      form.reset();
+    }
+
+    function searchUsers() {
+      const input = document.getElementById('userSearch');
+      const filter = input.value.toLowerCase();
+      const table = document.getElementById('usersTable');
+      const rows = table.getElementsByTagName('tr');
+
+      for (let i = 1; i < rows.length; i++) {
+        const cells = rows[i].getElementsByTagName('td');
+        if (cells.length > 0) {
+          const name = cells[0].innerText.toLowerCase();
+          const email = cells[1].innerText.toLowerCase();
+          const role = cells[2].innerText.toLowerCase();
+          if (name.includes(filter) || email.includes(filter) || role.includes(filter)) {
+            rows[i].style.display = '';
+          } else {
+            rows[i].style.display = 'none';
+          }
+        }
+      }
+    }
+
+    function editUser(name) { alert(`✏️ Edit user: ${name} (demo)`); }
+    function deleteUser(name) { if (confirm(`Delete user "${name}"?`)) alert(`🗑️ User ${name} deleted (demo)`); }
+
+    window.showUserForm = showUserForm;
+    window.hideUserForm = hideUserForm;
+    window.handleUserSubmit = handleUserSubmit;
+    window.searchUsers = searchUsers;
+    window.editUser = editUser;
+    window.deleteUser = deleteUser;
+  </script>
+</body>
+</html>

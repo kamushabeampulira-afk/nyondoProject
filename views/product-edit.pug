@@ -1,0 +1,38 @@
+extends layout
+
+block title
+  | Edit Product - NYONDO Hardware
+
+block content
+  h1 Edit Product
+  form(method="POST" action=`/inventory/${product._id}`)
+    .mb-3
+      label Product Name
+      input.form-control(type="text" name="productName" value=product.productName required)
+    .mb-3
+      label Category
+      input.form-control(type="text" name="category" value=product.category)
+    .mb-3
+      label Unit Cost (UGX)
+      input.form-control(type="number" name="unitCost" value=product.unitCost step="100" required)
+    .mb-3
+      label Unit Price (UGX)
+      input.form-control(type="number" name="unitPrice" value=product.unitPrice step="100" required)
+    .mb-3
+      label Current Stock
+      input.form-control(type="number" name="currentStock" value=product.currentStock min="0")
+    .mb-3
+      label Reorder Level
+      input.form-control(type="number" name="reorderLevel" value=product.reorderLevel || 15)
+    .mb-3
+      label Supplier
+      input.form-control(type="text" name="supplier" value=product.supplier)
+    .mb-3
+      label SKU
+      input.form-control(type="text" name="sku" value=product.sku)
+    .mb-3
+      label Description
+      textarea.form-control(name="description" rows="3")= product.description
+    .d-flex.gap-2
+      button.btn-primary(type="submit") Save Changes
+      a.btn-outline(href="/inventory") Cancel

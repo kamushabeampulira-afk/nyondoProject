@@ -1,0 +1,208 @@
+extends layout
+
+block head
+  link(rel="stylesheet" href="/css/inventory.css")
+
+block title
+  | Inventory – NYONDO Hardware
+
+block content
+  .page-heading-center.mb-4
+    h1
+      i.fa-solid.fa-boxes-stacked
+      |  Inventory Management
+    p.text-muted Track stock levels, low stock alerts, and incoming shipments
+
+  // Stats Cards – dynamic from backend
+  .row.g-4.mb-4
+    .col-md-3.col-sm-6
+      .section-card.metric-card.p-3.text-center
+        i.fa-solid.fa-cubes.fa-2x.mb-2(style="color: var(--gold);")
+        h6.text-muted Total SKUs
+        h3= totalSkus || 0
+    .col-md-3.col-sm-6
+      .section-card.metric-card.p-3.text-center
+        i.fa-solid.fa-arrow-down-wide-short.fa-2x.mb-2(style="color: var(--gold);")
+        h6.text-muted Low Stock Items
+        h3.text-warning= lowStockCount || 0
+    .col-md-3.col-sm-6
+      .section-card.metric-card.p-3.text-center
+        i.fa-solid.fa-circle-exclamation.fa-2x.mb-2(style="color: var(--gold);")
+        h6.text-muted Out of Stock
+        h3.text-danger= outOfStockCount || 0
+    .col-md-3.col-sm-6
+      .section-card.metric-card.p-3.text-center
+        i.fa-solid.fa-truck-fast.fa-2x.mb-2(style="color: var(--gold);")
+        h6.text-muted In Transit
+        h3= inTransitCount || 0
+
+  // Add Product Form (Collapsible) – POST to backend
+  .product-form-container#productFormContainer
+    .form-card
+      .d-flex.justify-content-between.align-items-center.mb-3
+        h4.mb-0
+          i.fa-solid.fa-plus-circle.me-2(style="color: var(--gold);")
+          | Add New Product
+        button.btn-close(type='button' onclick='hideProductForm()')
+      form(method="POST" action="/inventory")
+        .row.g-3
+          .col-md-6
+            label.form-label Product Name *
+            input.form-control(type='text' name='productName' placeholder='e.g., Cement (CEM II N)' required)
+          //- Inside the add product form
+          .col-md-6
+            label.form-label Product Type *
+            select.form-select(name='productType' required)
+              option(value='') -- Select Product --
+              option(value='Cement (CEM II N)') Cement (CEM II N)
+              option(value='Cement (CEM III N)') Cement (CEM III N)
+              option(value='Iron Bar 10mm') Iron Bar 10mm
+              option(value='Iron Bar 12mm') Iron Bar 12mm
+              option(value='Iron Bar 16mm') Iron Bar 16mm
+              option(value='Nails 1 inch (5kg)') Nails 1 inch (5kg)
+              option(value='Nails 3 inch (5kg)') Nails 3 inch (5kg)
+              option(value='Nails 4 inch (5kg)') Nails 4 inch (5kg)
+              option(value='Nails 5 inch (5kg)') Nails 5 inch (5kg)
+              option(value='Roofing Nails (5kg)') Roofing Nails (5kg)
+              option(value='Wheelbarrow') Wheelbarrow
+              option(value='Wire Mesh') Wire Mesh
+              option(value='Barbed Wire (High Tensile)') Barbed Wire (High Tensile)
+              option(value='Barbed Wire (Low Tensile)') Barbed Wire (Low Tensile)
+              option(value='Iron Sheet (Blue)') Iron Sheet (Blue)
+              option(value='Iron Sheet (Red)') Iron Sheet (Red)
+              option(value='Iron Sheet (Green)') Iron Sheet (Green)
+              option(value='Iron Sheet (White)') Iron Sheet (White)
+              option(value='Iron Sheet (Brown)') Iron Sheet (Brown)
+          .col-md-3
+            label.form-label Unit Cost (UGX) *
+            input.form-control(type='number' name='unitCost' placeholder='0' min='0' step='500' required)
+          .col-md-3
+            label.form-label Unit Price (UGX) *
+            input.form-control(type='number' name='unitPrice' placeholder='0' min='0' step='500' required)
+            small.text-muted Must be greater than cost
+          .col-md-3
+            label.form-label Initial Stock *
+            input.form-control(type='number' name='currentStock' placeholder='0' min='0' required)
+          .col-md-3
+            label.form-label Reorder Level
+            input.form-control(type='number' name='reorderLevel' placeholder='Minimum stock alert' min='0')
+          .col-md-6
+            label.form-label Supplier
+            input.form-control(type='text' name='supplier' placeholder='e.g., Tororo Cement')
+          .col-md-6
+            label.form-label SKU (Optional)
+            input.form-control(type='text' name='sku' placeholder='Auto-generated if blank')
+          .col-12
+            label.form-label Description / Notes
+            textarea.form-control(rows='2' name='description' placeholder='Additional product details...')
+        .d-flex.gap-3.mt-4
+          button.btn-primary(type='submit')
+            i.fa-solid.fa-save
+            |  Save Product
+          button.btn-outline(type='button' onclick='hideProductForm()') Cancel
+
+  // Stock Table – dynamic rows from database
+  .section-card
+    .section-head
+      h2
+        i.fa-solid.fa-list.me-2(style="color: var(--gold);")
+        | Current Stock
+      button#showProductFormBtn.btn-primary(onclick='showProductForm()')
+        i.fa-solid.fa-plus
+        |  Add Product
+    .table-responsive
+      table.data-table
+        thead
+          tr
+            th Product
+            th Category
+            th Stock
+            th Unit Price (UGX)
+            th Status
+            th
+        tbody
+          if products && products.length
+            each prod in products
+              - const isLowStock = prod.currentStock <= (prod.reorderLevel || 15)
+              - const stockClass = isLowStock ? 'text-warning fw-bold' : ''
+              - const statusClass = isLowStock ? 'sp-pending' : 'sp-paid'
+              - const statusText = isLowStock ? '⚠️ Low Stock' : '✓ In Stock'
+              tr.stock-item(class=isLowStock ? 'low-stock-row' : '')
+                td
+                  i.fa-solid.fa-cube.me-2(style="color: var(--gold);")
+                  = prod.productName
+                td= prod.category || '—'
+                td(class=stockClass)
+                  = prod.currentStock
+                  |  #{prod.unit || 'units'}
+                td= prod.unitPrice.toLocaleString()
+                td
+                  span.status-pill(class=statusClass)= statusText
+                td
+                  a(href=`/inventory/${prod._id}/edit`)
+                    i.fa-regular.fa-pen-to-square
+          else
+            tr
+              td(colspan='6').text-center No products found.
+
+  // Notification bell JavaScript (original client‑side demo – kept as is)
+  script.
+    const lowStockItems = [
+      { name: "Cement (CEM III N)", quantity: 12, unit: "bags" },
+      { name: "Iron Bar 16mm", quantity: 8, unit: "pieces" },
+      { name: "Wheelbarrow", quantity: 6, unit: "units" }
+    ];
+    const transitItems = [
+      { name: "Cement (CEM II N)", quantity: 200, unit: "bags", eta: "12 Apr" },
+      { name: "Iron Bars 12mm", quantity: 500, unit: "pcs", eta: "14 Apr" },
+      { name: "Iron Sheets (Blue)", quantity: 300, unit: "sheets", eta: "15 Apr" }
+    ];
+
+    const formContainer = document.getElementById("productFormContainer");
+    const showBtn = document.getElementById("showProductFormBtn");
+
+    function showProductForm() {
+      formContainer.classList.add("show");
+      if (showBtn) showBtn.style.display = "none";
+      formContainer.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+    function hideProductForm() {
+      formContainer.classList.remove("show");
+      if (showBtn) showBtn.style.display = "inline-flex";
+    }
+
+    function renderNotifications() {
+      const lowDiv = document.getElementById("lowStockNotifications");
+      if (lowDiv) lowDiv.innerHTML = lowStockItems.map(item => `<div class="notification-item unread" onclick="location.href='/inventory'"><div class="notification-icon icon-low"><i class="fa-solid fa-cubes"></i></div><div class="notification-content"><div class="notification-title">${item.name}</div><div class="notification-desc">Only ${item.quantity} ${item.unit} left</div></div></div>`).join("");
+      const transDiv = document.getElementById("transitNotifications");
+      if (transDiv) transDiv.innerHTML = transitItems.map(item => `<div class="notification-item" onclick="location.href='/inventory'"><div class="notification-icon icon-transit"><i class="fa-solid fa-truck"></i></div><div class="notification-content"><div class="notification-title">${item.name}</div><div class="notification-desc">${item.quantity} ${item.unit} arriving ETA ${item.eta}</div></div></div>`).join("");
+      const bell = document.getElementById("notificationBell");
+      if (bell && lowStockItems.length) bell.classList.add("has-notifications");
+    }
+
+    function toggleNotifications(e) {
+      e.stopPropagation();
+      document.getElementById("notificationDropdown").classList.toggle("show");
+      renderNotifications();
+    }
+
+    function markAllRead() {
+      document.querySelectorAll(".notification-item").forEach(i => i.classList.remove("unread"));
+      document.getElementById("notificationBell")?.classList.remove("has-notifications");
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const bell = document.getElementById("notificationBell");
+      if (bell) bell.addEventListener("click", toggleNotifications);
+      renderNotifications();
+    });
+
+    document.addEventListener("click", (e) => {
+      const d = document.getElementById("notificationDropdown");
+      const b = document.getElementById("notificationBell");
+      if (d && b && !d.contains(e.target) && !b.contains(e.target)) d.classList.remove("show");
+    });
+
+    window.showProductForm = showProductForm;
+    window.hideProductForm = hideProductForm;
+    window.markAllRead = markAllRead;

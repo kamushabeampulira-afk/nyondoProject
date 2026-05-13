@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Supplier Credit – NYONDO Hardware</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="../public/css/main.css">
+  <link rel="stylesheet" href="../public/css/supplier-credit.css">
+</head>
+<body>
+  <input type="checkbox" id="nav-toggle" style="display: none">
+  <label class="sidebar-overlay" for="nav-toggle"></label>
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-logo"><i class="fa-solid fa-tools"></i></div>
+      <span class="brand-name">NYONDO</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-sec-label">Main Menu</div>
+      <a href="admin-dashboard.html" class="nav-link-item"><span class="nicon"><i class="fa-solid fa-grid-2"></i></span>Dashboard</a>
+      <a href="sales.html" class="nav-link-item"><span class="nicon"><i class="fa-solid fa-cash-register"></i></span>Sales</a>
+      <a href="inventory.html" class="nav-link-item"><span class="nicon"><i class="fa-solid fa-boxes-stacked"></i></span>Inventory</a>
+      <a href="transport.html" class="nav-link-item"><span class="nicon"><i class="fa-solid fa-truck"></i></span>Transport</a>
+      <div class="nav-sec-label">Finance</div>
+      <a href="supplier-credit.html" class="nav-link-item active"><span class="nicon"><i class="fa-solid fa-credit-card"></i></span>Supplier Credit</a>
+      <a href="deposit-scheme.html" class="nav-link-item"><span class="nicon"><i class="fa-solid fa-piggy-bank"></i></span>Deposit Scheme</a>
+      <a href="reports.html" class="nav-link-item"><span class="nicon"><i class="fa-solid fa-chart-bar"></i></span>Reports</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="user-av">AD</div>
+        <div><div class="user-name">Admin</div><div class="user-role">Administrator</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-wrap">
+    <header class="topbar">
+      <label for="nav-toggle" class="hamburger"><i class="fa-solid fa-bars"></i></label>
+      <div><div class="store-name-t">NYONDO <span>Hardware</span></div></div>
+      <div class="topbar-right">
+        <div class="profile-pill">
+          <div class="pill-av">AD</div>
+          <span>Admin</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <!-- Centered heading -->
+      <div class="page-heading-center mb-4">
+        <h1><i class="fa-solid fa-credit-card"></i> Supplier Credit Management</h1>
+        <p class="text-muted">Track invoices, payments, and outstanding balances</p>
+      </div>
+
+      <!-- Stats Cards (4 side by side) -->
+      <div class="row g-4 mb-4">
+        <div class="col-md-3 col-sm-6">
+          <div class="section-card metric-card p-3 text-center">
+            <i class="fa-solid fa-file-invoice fa-2x mb-2" style="color: var(--gold);"></i>
+            <h6 class="text-muted">Total Credit</h6>
+            <h3>12.5M UGX</h3>
+            <small class="text-muted">Across 8 invoices</small>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+          <div class="section-card metric-card p-3 text-center">
+            <i class="fa-solid fa-clock fa-2x mb-2" style="color: var(--gold);"></i>
+            <h6 class="text-muted">Pending</h6>
+            <h3 class="text-warning">8.2M UGX</h3>
+            <small class="text-muted">Due within 30 days</small>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+          <div class="section-card metric-card p-3 text-center">
+            <i class="fa-solid fa-triangle-exclamation fa-2x mb-2" style="color: var(--gold);"></i>
+            <h6 class="text-muted">Overdue</h6>
+            <h3 class="text-danger">2.0M UGX</h3>
+            <small class="text-muted">Past due date</small>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+          <div class="section-card metric-card p-3 text-center">
+            <i class="fa-solid fa-check-circle fa-2x mb-2" style="color: var(--gold);"></i>
+            <h6 class="text-muted">Paid This Month</h6>
+            <h3 class="text-success">4.3M UGX</h3>
+            <small class="text-muted">Total payments</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Collapsible Add Credit Purchase Form -->
+      <div class="credit-form-container" id="creditFormContainer">
+        <div class="form-card">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="mb-0"><i class="fa-solid fa-plus-circle me-2" style="color: var(--gold);"></i>New Credit Purchase</h4>
+            <button type="button" class="btn-close" onclick="hideCreditForm()"></button>
+          </div>
+          <form id="creditPurchaseForm" onsubmit="handleCreditSubmit(event)">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Supplier Name *</label>
+                <select id="supplierSelect" class="form-select" required>
+                  <option value="">Select Supplier</option>
+                  <option>Tororo Cement</option>
+                  <option>Hima Cement</option>
+                  <option>Steel & Tube Industries</option>
+                  <option>Roofing Masters Ltd</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Invoice Number *</label>
+                <input type="text" class="form-control" placeholder="e.g., INV-2026-XXX" required>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Purchase Date</label>
+                <input type="date" class="form-control" value="2026-04-20" required>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Due Date</label>
+                <input type="date" class="form-control" id="dueDate" required>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Total Amount (UGX) *</label>
+                <input type="number" id="creditAmount" class="form-control" placeholder="0" min="0" step="1000" required>
+              </div>
+              <div class="col-12">
+                <label class="form-label">Description / Items</label>
+                <textarea class="form-control" rows="2" placeholder="e.g., 100 bags Cement, 50 Iron Bars..."></textarea>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Payment Terms</label>
+                <select class="form-select">
+                  <option>Net 30</option>
+                  <option>Net 15</option>
+                  <option>Net 7</option>
+                  <option>Due on receipt</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Initial Payment (Optional)</label>
+                <input type="number" class="form-control" placeholder="0" min="0" step="1000">
+              </div>
+            </div>
+            <div class="d-flex gap-3 mt-4">
+              <button type="submit" class="btn-primary"><i class="fa-solid fa-save"></i> Save Credit Purchase</button>
+              <button type="button" class="btn-outline" onclick="hideCreditForm()">Cancel</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="section-card mb-4">
+        <div class="section-head">
+          <h2><i class="fa-solid fa-filter me-2" style="color: var(--gold);"></i>Filter Invoices</h2>
+          <div class="d-flex gap-2 flex-wrap">
+            <select id="supplierFilter" class="form-select form-select-sm" style="width: 180px;">
+              <option value="all">All Suppliers</option>
+              <option value="Tororo">Tororo Cement</option>
+              <option value="Hima">Hima Cement</option>
+              <option value="Steel">Steel & Tube</option>
+              <option value="Roofing">Roofing Masters</option>
+            </select>
+            <select id="statusFilter" class="form-select form-select-sm" style="width: 150px;">
+              <option value="all">All Status</option>
+              <option value="pending">Pending</option>
+              <option value="overdue">Overdue</option>
+              <option value="paid">Paid</option>
+            </select>
+            <button class="btn-primary btn-sm" onclick="filterInvoices()">
+              <i class="fa-solid fa-magnifying-glass"></i> Filter
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Outstanding Invoices Table -->
+      <div class="section-card">
+        <div class="section-head">
+          <h2><i class="fa-solid fa-clock-rotate-left me-2" style="color: var(--gold);"></i>Outstanding Invoices</h2>
+          <button class="btn-primary" id="showCreditFormBtn" onclick="showCreditForm()">
+            <i class="fa-solid fa-plus"></i> New Credit Purchase
+          </button>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table" id="invoicesTable">
+            <thead>
+              <tr>
+                <th>Invoice #</th>
+                <th>Supplier</th>
+                <th>Amount (UGX)</th>
+                <th>Due Date</th>
+                <th>Days Left</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr data-supplier="Tororo" data-status="pending">
+                <td>INV-2026-045</i></td>
+                <td>Tororo Cement</i></i></td>
+                <td class="amount">3,500,000</i></td>
+                <td>15 May 2026</i></td>
+                <td class="text-success">22 days</i></i></td>
+                <td><span class="status-pill sp-pending">Pending</span></i></td>
+                <td>
+                  <button class="btn-outline btn-sm" onclick="recordPayment('Tororo Cement', 'INV-2026-045', 3500000)"><i class="fa-solid fa-money-bill"></i> Pay</button>
+                  <a href="record-payment.html?supplier=Tororo%20Cement&invoice=INV-2026-045" class="btn-outline btn-sm ms-1"><i class="fa-solid fa-arrow-right"></i></a>
+                 </i></td>
+              </tr>
+              <tr data-supplier="Hima" data-status="overdue" class="overdue-row">
+                <td>INV-2026-042</i></i></td>
+                <td>Hima Cement</i></i></td>
+                <td class="amount">2,200,000</i></i></td>
+                <td>20 Apr 2026</i></i></td>
+                <td class="text-danger">Overdue by 13 days</i> </i></td>
+                <td><span class="status-pill sp-credit">Overdue</span></i></td>
+                <td>
+                  <button class="btn-outline btn-sm" onclick="recordPayment('Hima Cement', 'INV-2026-042', 2200000)"><i class="fa-solid fa-money-bill"></i> Pay</button>
+                  <a href="record-payment.html?supplier=Hima%20Cement&invoice=INV-2026-042" class="btn-outline btn-sm ms-1"><i class="fa-solid fa-arrow-right"></i></a>
+                 </i></td>
+              </tr>
+              <tr data-supplier="Steel" data-status="pending">
+                <td>INV-2026-039</i></i></td>
+                <td>Steel & Tube Ind.</i></i></td>
+                <td class="amount">1,800,000</i></i></td>
+                <td>05 May 2026</i></i></td>
+                <td class="text-success">12 days</i></td>
+                <td><span class="status-pill sp-scheme">Partially Paid</span></i></td>
+                <td>
+                  <button class="btn-outline btn-sm" onclick="recordPayment('Steel & Tube Ind.', 'INV-2026-039', 1800000)"><i class="fa-solid fa-money-bill"></i> Pay</button>
+                  <a href="record-payment.html?supplier=Steel%20%26%20Tube%20Ind.&invoice=INV-2026-039" class="btn-outline btn-sm ms-1"><i class="fa-solid fa-arrow-right"></i></a>
+                 </i></td>
+              </tr>
+              <tr data-supplier="Roofing" data-status="pending">
+                <td>INV-2026-038</i></i></td>
+                <td>Roofing Masters Ltd</i></i></td>
+                <td class="amount">4,750,000</i></td>
+                <td>30 Apr 2026</i></td>
+                <td class="text-warning">7 days</i></i></td>
+                <td><span class="status-pill sp-pending">Pending</span></i></td>
+                <td>
+                  <button class="btn-outline btn-sm" onclick="recordPayment('Roofing Masters Ltd', 'INV-2026-038', 4750000)"><i class="fa-solid fa-money-bill"></i> Pay</button>
+                  <a href="record-payment.html?supplier=Roofing%20Masters%20Ltd&invoice=INV-2026-038" class="btn-outline btn-sm ms-1"><i class="fa-solid fa-arrow-right"></i></a>
+                 </i></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="table-footer p-3 border-top d-flex justify-content-between flex-wrap gap-2">
+          <span class="text-muted">Total Outstanding: <strong class="text-dark" id="totalOutstanding">12,250,000 UGX</strong></span>
+          <button class="btn-outline btn-sm" onclick="exportInvoices()"><i class="fa-solid fa-download"></i> Export</button>
+        </div>
+      </div>
+
+      <!-- Recent Payments -->
+      <div class="section-card mt-4">
+        <div class="section-head">
+          <h2><i class="fa-solid fa-clock-rotate-left me-2" style="color: var(--gold);"></i>Recent Payments</h2>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr><th>Date</th><th>Supplier</th><th>Invoice #</th><th>Amount Paid</th><th>Method</th><th>Reference</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>18 Apr 2026</td><td>Tororo Cement</td><td>INV-2026-041</td><td class="amount">1,200,000</td><td>Bank Transfer</td><td>REF-TR-001</td></tr>
+              <tr><td>15 Apr 2026</td><td>Hima Cement</td><td>INV-2026-040</td><td class="amount">800,000</td><td>Cash</td><td>REC-042</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Credit form toggle
+    const formContainer = document.getElementById("creditFormContainer");
+    const showBtn = document.getElementById("showCreditFormBtn");
+
+    function showCreditForm() {
+      formContainer.classList.add("show");
+      if (showBtn) showBtn.style.display = "none";
+      formContainer.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+    function hideCreditForm() {
+      formContainer.classList.remove("show");
+      if (showBtn) showBtn.style.display = "inline-flex";
+    }
+    function handleCreditSubmit(e) {
+      e.preventDefault();
+      const amount = document.getElementById('creditAmount').value;
+      if (!amount || parseInt(amount) <= 0) { alert("Please enter a valid amount"); return; }
+      alert("✅ Credit purchase recorded successfully!\n\nYou can now record payments against this invoice.");
+      hideCreditForm();
+      e.target.reset();
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 15);
+      document.getElementById('dueDate').value = tomorrow.toISOString().split('T')[0];
+    }
+    function recordPayment(supplier, invoice, amount) {
+      window.location.href = `record-payment.html?supplier=${encodeURIComponent(supplier)}&invoice=${invoice}&amount=${amount}`;
+    }
+    function filterInvoices() {
+      const supplier = document.getElementById('supplierFilter').value;
+      const status = document.getElementById('statusFilter').value;
+      const rows = document.querySelectorAll('#invoicesTable tbody tr');
+      let total = 0;
+      rows.forEach(row => {
+        let show = true;
+        const rowSupplier = row.getAttribute('data-supplier');
+        const rowStatus = row.getAttribute('data-status');
+        if (supplier !== 'all' && rowSupplier !== supplier) show = false;
+        if (status !== 'all' && rowStatus !== status) show = false;
+        row.style.display = show ? '' : 'none';
+        if (show) {
+          const amount = parseFloat(row.querySelector('.amount')?.innerText.replace(/[^0-9]/g, '') || 0);
+          total += amount;
+        }
+      });
+      document.getElementById('totalOutstanding').innerText = total.toLocaleString() + ' UGX';
+      if (Array.from(rows).filter(r => r.style.display !== 'none').length === 0)
+        alert('No invoices match the selected filters.');
+    }
+    function exportInvoices() { alert("📁 Exporting supplier credit report as CSV (demo)"); }
+    document.addEventListener('DOMContentLoaded', () => {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 15);
+      const dueDateInput = document.getElementById('dueDate');
+      if (dueDateInput) dueDateInput.value = tomorrow.toISOString().split('T')[0];
+    });
+    window.showCreditForm = showCreditForm;
+    window.hideCreditForm = hideCreditForm;
+    window.handleCreditSubmit = handleCreditSubmit;
+    window.recordPayment = recordPayment;
+    window.filterInvoices = filterInvoices;
+    window.exportInvoices = exportInvoices;
+  </script>
+</body>
+</html>

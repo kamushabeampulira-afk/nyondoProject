@@ -1,0 +1,57 @@
+extends layout
+
+block head
+  link(rel="stylesheet" href="/css/add-stock.css")
+
+block title
+  | Add Stock – NYONDO Hardware
+
+block content
+  .page-heading-center.mb-4
+    h1
+      i.fa-solid.fa-cubes
+      |  Add Stock / Inbound Delivery
+    p.text-muted Record new stock arrivals, update inventory and supplier info.
+
+  if success_msg
+    .alert.alert-success.alert-dismissible.fade.show= success_msg
+  if error_msg
+    .alert.alert-danger.alert-dismissible.fade.show= error_msg
+
+  .form-card
+    form(method="POST" action="/stock/add")
+      .row.g-3
+        .col-md-6
+          label.form-label Product *
+          select.form-select(name='productId' required)
+            option(value='') -- Select Product --
+            each prod in products
+              option(value=prod._id) #{prod.productName} (Current stock: #{prod.currentStock})
+        .col-md-6
+          label.form-label Quantity Added *
+          input.form-control(type='number' name='quantityAdded' min='1' required)
+        .col-md-4
+          label.form-label Unit Cost (UGX) *
+          input.form-control(type='number' name='unitCost' step='100' required)
+        .col-md-4
+          label.form-label Selling Price (UGX) *
+          input.form-control(type='number' name='unitPrice' step='100' required)
+          small.text-muted Must be > cost
+        .col-md-4
+          label.form-label Payment Status *
+          select.form-select(name='paymentStatus')
+            option(value='cash') Cash at hand
+            option(value='credit') Credit
+        .col-md-6
+          label.form-label Supplier Name *
+          input.form-control(type='text' name='supplierName' required)
+        .col-md-6
+          label.form-label Supplier Phone
+          input.form-control(type='tel' name='supplierPhone')
+        .col-md-6
+          label.form-label Factory Name
+          input.form-control(type='text' name='factoryName')
+      .mt-4
+        button.btn-primary(type='submit')
+          i.fa-solid.fa-save.me-2
+          | Add Stock

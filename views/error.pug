@@ -1,0 +1,9 @@
+extends layout
+block title
+  | Error
+block content
+  .container.mt-5
+    .alert.alert-danger
+      h1 Error
+      p= message || 'Something went wrong'
+    a.btn-primary(href="/dashboard") Go to Dashboard

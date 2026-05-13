@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inventory – NYONDO Hardware</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/inventory.css">
+</head>
+<body>
+  <input type="checkbox" id="nav-toggle" style="display: none">
+  <label class="sidebar-overlay" for="nav-toggle"></label>
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-logo"><i class="fa-solid fa-tools"></i></div>
+      <span class="brand-name">NYONDO</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-sec-label">Main Menu</div>
+      <a href="admin-dashboard.html" class="nav-link-item"><span class="nicon"><i class="fa-solid fa-grid-2"></i></span>Dashboard</a>
+      <a href="sales.html" class="nav-link-item"><span class="nicon"><i class="fa-solid fa-cash-register"></i></span>Sales</a>
+      <a href="inventory.html" class="nav-link-item active"><span class="nicon"><i class="fa-solid fa-boxes-stacked"></i></span>Inventory</a>
+      <a href="transport.html" class="nav-link-item"><span class="nicon"><i class="fa-solid fa-truck"></i></span>Transport</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="user-av">AD</div>
+        <div><div class="user-name">Admin</div><div class="user-role">Administrator</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-wrap">
+    <header class="topbar">
+      <label for="nav-toggle" class="hamburger"><i class="fa-solid fa-bars"></i></label>
+      <div><div class="store-name-t">NYONDO <span>Hardware</span></div></div>
+      <div class="topbar-right">
+        <div class="notification-wrapper">
+          <button class="tb-btn notification-bell" id="notificationBell">
+            <i class="fa-solid fa-bell" style="color: var(--gold); font-size: 1.2rem;"></i>
+            <span class="badge-dot" id="notificationBadge"></span>
+          </button>
+          <div class="notification-dropdown" id="notificationDropdown">
+            <div class="notification-header">
+              <h3><i class="fa-regular fa-bell"></i> Notifications</h3>
+              <button class="mark-read" onclick="markAllRead()">Mark all read</button>
+            </div>
+            <div class="notification-section">
+              <div class="section-title"><i class="fa-solid fa-triangle-exclamation" style="color: #ef4444"></i>Low Stock Alerts</div>
+              <div id="lowStockNotifications" class="notification-list"></div>
+            </div>
+            <div class="notification-section">
+              <div class="section-title"><i class="fa-solid fa-truck-fast" style="color: var(--gold)"></i>Goods in Transit</div>
+              <div id="transitNotifications" class="notification-list"></div>
+            </div>
+            <div class="notification-footer"><a href="#">View all inventory →</a></div>
+          </div>
+        </div>
+        <div class="profile-pill">
+          <div class="pill-av">AD</div>
+          <span>Admin</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <!-- Centered page heading -->
+      <div class="page-heading-center mb-4">
+        <h1><i class="fa-solid fa-boxes-stacked"></i> Inventory Management</h1>
+        <p class="text-muted">Track stock levels, low stock alerts, and incoming shipments</p>
+      </div>
+
+      <!-- Stats Cards – 4 side by side -->
+      <div class="row g-4 mb-4">
+        <div class="col-md-3 col-sm-6">
+          <div class="section-card metric-card p-3 text-center">
+            <i class="fa-solid fa-cubes fa-2x mb-2" style="color: var(--gold);"></i>
+            <h6 class="text-muted">Total SKUs</h6>
+            <h3>47</h3>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+          <div class="section-card metric-card p-3 text-center">
+            <i class="fa-solid fa-arrow-down-wide-short fa-2x mb-2" style="color: var(--gold);"></i>
+            <h6 class="text-muted">Low Stock Items</h6>
+            <h3 class="text-warning">6</h3>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+          <div class="section-card metric-card p-3 text-center">
+            <i class="fa-solid fa-circle-exclamation fa-2x mb-2" style="color: var(--gold);"></i>
+            <h6 class="text-muted">Out of Stock</h6>
+            <h3 class="text-danger">2</h3>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+          <div class="section-card metric-card p-3 text-center">
+            <i class="fa-solid fa-truck-fast fa-2x mb-2" style="color: var(--gold);"></i>
+            <h6 class="text-muted">In Transit</h6>
+            <h3>13</h3>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add Product Form (Collapsible) -->
+      <div class="product-form-container" id="productFormContainer">
+        <div class="form-card">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="mb-0"><i class="fa-solid fa-plus-circle me-2" style="color: var(--gold);"></i>Add New Product</h4>
+            <button type="button" class="btn-close" onclick="hideProductForm()"></button>
+          </div>
+          <form id="addProductForm" onsubmit="handleProductSubmit(event)">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Product Name *</label>
+                <input type="text" class="form-control" placeholder="e.g., Cement (CEM II N)" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Category *</label>
+                <select class="form-select" required>
+                  <option value="">Select Category</option>
+                  <option>Cement</option>
+                  <option>Steel / Iron Bars</option>
+                  <option>Roofing Sheets</option>
+                  <option>Equipment</option>
+                  <option>Fencing / Wire Mesh</option>
+                  <option>Tools / Hardware</option>
+                </select>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Unit Cost (UGX) *</label>
+                <input type="number" class="form-control" placeholder="0" min="0" step="500" required>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Unit Price (UGX) *</label>
+                <input type="number" class="form-control" placeholder="0" min="0" step="500" required>
+                <small class="text-muted">Must be greater than cost</small>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Initial Stock *</label>
+                <input type="number" class="form-control" placeholder="0" min="0" required>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Reorder Level</label>
+                <input type="number" class="form-control" placeholder="Minimum stock alert" min="0">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Supplier</label>
+                <input type="text" class="form-control" placeholder="e.g., Tororo Cement">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">SKU (Optional)</label>
+                <input type="text" class="form-control" placeholder="Auto-generated if blank">
+              </div>
+              <div class="col-12">
+                <label class="form-label">Description / Notes</label>
+                <textarea class="form-control" rows="2" placeholder="Additional product details..."></textarea>
+              </div>
+            </div>
+            <div class="d-flex gap-3 mt-4">
+              <button type="submit" class="btn-primary"><i class="fa-solid fa-save"></i> Save Product</button>
+              <button type="button" class="btn-outline" onclick="hideProductForm()">Cancel</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Stock Table -->
+      <div class="section-card">
+        <div class="section-head">
+          <h2><i class="fa-solid fa-list me-2" style="color: var(--gold);"></i>Current Stock</h2>
+          <button class="btn-primary" id="showProductFormBtn" onclick="showProductForm()">
+            <i class="fa-solid fa-plus"></i> Add Product
+          </button>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Category</th>
+                <th>Stock</th>
+                <th>Unit Price (UGX)</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="stock-item"><td><i class="fa-solid fa-cube me-2" style="color: var(--gold);"></i>Cement (CEM II N)</td><td>Cement</td><td>45 bags</td><td>28,000</td><td><span class="status-pill sp-paid">✓ In Stock</span></td><td><i class="fa-regular fa-pen-to-square" style="cursor:pointer;" onclick="alert('Edit product (demo)')"></i></td></tr>
+              <tr class="stock-item low-stock-row"><td><i class="fa-solid fa-cube me-2" style="color: var(--gold);"></i>Cement (CEM III N)</td><td>Cement</td><td class="text-warning fw-bold">12 bags</td><td>30,000</td><td><span class="status-pill sp-pending">⚠️ Low Stock</span></td><td><i class="fa-regular fa-pen-to-square" style="cursor:pointer;" onclick="alert('Edit product (demo)')"></i></td></tr>
+              <tr class="stock-item"><td><i class="fa-solid fa-chart-line me-2" style="color: var(--gold);"></i>Iron Bar 12mm</td><td>Steel</td><td>80 pieces</td><td>18,500</td><td><span class="status-pill sp-paid">✓ In Stock</span></td><td><i class="fa-regular fa-pen-to-square" style="cursor:pointer;" onclick="alert('Edit product (demo)')"></i></td></tr>
+              <tr class="stock-item low-stock-row"><td><i class="fa-solid fa-chart-line me-2" style="color: var(--gold);"></i>Iron Bar 16mm</td><td>Steel</td><td class="text-warning fw-bold">8 pieces</td><td>25,000</td><td><span class="status-pill sp-pending">⚠️ Low Stock</span></td><td><i class="fa-regular fa-pen-to-square" style="cursor:pointer;" onclick="alert('Edit product (demo)')"></i></td></tr>
+              <tr class="stock-item"><td><i class="fa-solid fa-sheet-plastic me-2" style="color: var(--gold);"></i>Iron Sheet (Color)</td><td>Roofing</td><td>150 sheets</td><td>42,000</td><td><span class="status-pill sp-paid">✓ In Stock</span></td><td><i class="fa-regular fa-pen-to-square" style="cursor:pointer;" onclick="alert('Edit product (demo)')"></i></td></tr>
+              <tr class="stock-item low-stock-row"><td><i class="fa-solid fa-truck me-2" style="color: var(--gold);"></i>Wheelbarrow</td><td>Equipment</td><td class="text-warning fw-bold">6 units</td><td>80,000</td><td><span class="status-pill sp-pending">⚠️ Low Stock</span></td><td><i class="fa-regular fa-pen-to-square" style="cursor:pointer;" onclick="alert('Edit product (demo)')"></i></td></tr>
+              <tr class="stock-item"><td><i class="fa-solid fa-border-all me-2" style="color: var(--gold);"></i>Wire Mesh</td><td>Fencing</td><td>55 sheets</td><td>48,000</td><td><span class="status-pill sp-paid">✓ In Stock</span></td><td><i class="fa-regular fa-pen-to-square" style="cursor:pointer;" onclick="alert('Edit product (demo)')"></i></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const lowStockItems = [
+      { name: "Cement (CEM III N)", quantity: 12, unit: "bags" },
+      { name: "Iron Bar 16mm", quantity: 8, unit: "pieces" },
+      { name: "Wheelbarrow", quantity: 6, unit: "units" }
+    ];
+    const transitItems = [
+      { name: "Cement (CEM II N)", quantity: 200, unit: "bags", eta: "12 Apr" },
+      { name: "Iron Bars 12mm", quantity: 500, unit: "pcs", eta: "14 Apr" },
+      { name: "Iron Sheets (Blue)", quantity: 300, unit: "sheets", eta: "15 Apr" }
+    ];
+
+    const formContainer = document.getElementById("productFormContainer");
+    const showBtn = document.getElementById("showProductFormBtn");
+
+    function showProductForm() {
+      formContainer.classList.add("show");
+      if (showBtn) showBtn.style.display = "none";
+      formContainer.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+    function hideProductForm() {
+      formContainer.classList.remove("show");
+      if (showBtn) showBtn.style.display = "inline-flex";
+    }
+    function handleProductSubmit(e) {
+      e.preventDefault();
+      const form = e.target;
+      const price = parseFloat(form.querySelector('input[placeholder*="Unit Price"]').value);
+      const cost = parseFloat(form.querySelector('input[placeholder*="Unit Cost"]').value);
+      if (price <= cost) { alert("Selling price must be greater than unit cost!"); return; }
+      alert("✅ Product added successfully!");
+      hideProductForm();
+      form.reset();
+    }
+    function renderNotifications() {
+      const lowDiv = document.getElementById("lowStockNotifications");
+      if (lowDiv) lowDiv.innerHTML = lowStockItems.map(item => `<div class="notification-item unread" onclick="location.href='inventory.html'"><div class="notification-icon icon-low"><i class="fa-solid fa-cubes"></i></div><div class="notification-content"><div class="notification-title">${item.name}</div><div class="notification-desc">Only ${item.quantity} ${item.unit} left</div></div></div>`).join("");
+      const transDiv = document.getElementById("transitNotifications");
+      if (transDiv) transDiv.innerHTML = transitItems.map(item => `<div class="notification-item" onclick="location.href='inventory.html'"><div class="notification-icon icon-transit"><i class="fa-solid fa-truck"></i></div><div class="notification-content"><div class="notification-title">${item.name}</div><div class="notification-desc">${item.quantity} ${item.unit} arriving ETA ${item.eta}</div></div></div>`).join("");
+      const bell = document.getElementById("notificationBell");
+      if (bell && lowStockItems.length) bell.classList.add("has-notifications");
+    }
+    function toggleNotifications(e) { e.stopPropagation(); document.getElementById("notificationDropdown").classList.toggle("show"); renderNotifications(); }
+    function markAllRead() { document.querySelectorAll(".notification-item").forEach(i => i.classList.remove("unread")); document.getElementById("notificationBell")?.classList.remove("has-notifications"); }
+    document.addEventListener("DOMContentLoaded", () => { document.getElementById("notificationBell")?.addEventListener("click", toggleNotifications); renderNotifications(); });
+    document.addEventListener("click", (e) => { const d = document.getElementById("notificationDropdown"); const b = document.getElementById("notificationBell"); if (d && b && !d.contains(e.target) && !b.contains(e.target)) d.classList.remove("show"); });
+    window.showProductForm = showProductForm; window.hideProductForm = hideProductForm; window.handleProductSubmit = handleProductSubmit; window.markAllRead = markAllRead;
+  </script>
+</body>
+</html>

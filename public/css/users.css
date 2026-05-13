@@ -1,0 +1,137 @@
+/* users.css – User management page specific styles */
+
+/* Collapsible user form */
+.user-form-container {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease-out, margin 0.3s ease;
+  margin-bottom: 0;
+}
+.user-form-container.show {
+  max-height: 800px;
+  margin-bottom: 24px;
+}
+
+/* Centered heading (matches other pages) */
+.page-heading-center {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--gold);
+}
+.page-heading-center h1 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--dark-green), var(--gold));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  display: inline-block;
+}
+
+/* Metric cards (consistent with dashboards) */
+.metric-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: default;
+  min-height: 170px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.metric-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+.metric-card h3 {
+  font-size: 1.6rem;
+  font-weight: 800;
+  margin-top: 8px;
+  color: var(--dark-green);
+}
+.metric-card h6 {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+/* Permissions group (form) */
+.permissions-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 0.5rem 0;
+}
+.permissions-group label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #f8fafc;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+/* Table enhancements */
+.data-table td {
+  vertical-align: middle;
+}
+.data-table tbody tr:hover {
+  background: rgba(255, 204, 0, 0.05);
+  cursor: pointer;
+}
+
+/* Action icons */
+.data-table .fa-pen-to-square,
+.data-table .fa-trash-can {
+  transition: transform 0.2s, color 0.2s;
+}
+.data-table .fa-pen-to-square:hover {
+  color: var(--gold);
+  transform: scale(1.1);
+}
+.data-table .fa-trash-can:hover {
+  color: #dc2626;
+  transform: scale(1.1);
+}
+
+/* Form spacing */
+.form-card .form-label {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.form-control, .form-select {
+  padding: 10px 12px;
+  border-radius: 8px;
+}
+.form-control:focus, .form-select:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 0.2rem rgba(255, 204, 0, 0.25);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .page-heading-center h1 {
+    font-size: 1.4rem;
+  }
+  .metric-card h3 {
+    font-size: 1.3rem;
+  }
+  .metric-card {
+    min-height: 140px;
+  }
+  .section-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .permissions-group {
+    gap: 0.5rem;
+  }
+  .permissions-group label {
+    font-size: 0.75rem;
+    padding: 0.3rem 0.6rem;
+  }
+}

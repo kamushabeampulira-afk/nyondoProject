@@ -1,0 +1,163 @@
+extends layout
+
+block head
+  link(rel="stylesheet" href="/css/customers.css")
+
+block title
+  | Customers – NYONDO Hardware
+
+block content
+  .page-heading-center.mb-4
+    h1
+      i.fa-solid.fa-users
+      |  Customer Management
+    p.text-muted Manage customer information, track purchases, and credit
+
+  // Stats Cards (dynamic – pass these from route)
+  .row.g-4.mb-4
+    .col-md-3.col-sm-6
+      .section-card.metric-card.p-3.text-center
+        i.fa-solid.fa-users.fa-2x.mb-2(style="color: var(--gold);")
+        h6.text-muted Total Customers
+        h3= totalCustomers || 0
+        small.text-success +12 this month
+    .col-md-3.col-sm-6
+      .section-card.metric-card.p-3.text-center
+        i.fa-solid.fa-calendar-week.fa-2x.mb-2(style="color: var(--gold);")
+        h6.text-muted Active This Month
+        h3= activeThisMonth || 0
+        small.text-info 32 transactions
+    .col-md-3.col-sm-6
+      .section-card.metric-card.p-3.text-center
+        i.fa-solid.fa-credit-card.fa-2x.mb-2(style="color: var(--gold);")
+        h6.text-muted Credit Customers
+        h3= creditCustomers || 0
+        small.text-warning Total credit: 8.2M UGX
+    .col-md-3.col-sm-6
+      .section-card.metric-card.p-3.text-center
+        i.fa-solid.fa-piggy-bank.fa-2x.mb-2(style="color: var(--gold);")
+        h6.text-muted Deposit Members
+        h3= depositMembers || 0
+        small.text-success Active balance: 4.25M
+
+  // Add Customer Form (Collapsible) – POST to backend
+  .customer-form-container#customerFormContainer
+    .form-card
+      .d-flex.justify-content-between.align-items-center.mb-3
+        h4.mb-0
+          i.fa-solid.fa-user-plus.me-2(style="color: var(--gold);")
+          | Register New Customer
+        button.btn-close(type='button' onclick='hideCustomerForm()')
+      form(method="POST" action="/customers")
+        .row.g-3
+          .col-md-6
+            label.form-label Full Name *
+            input.form-control(type='text' name='fullName' placeholder='e.g., David Ssentongo' required)
+          .col-md-6
+            label.form-label Phone Number *
+            input.form-control(type='tel' name='phone' placeholder='0772123456' pattern='^(07|\\+2567)\\d{8}$' required)
+            small.text-muted Ugandan format: 07XXXXXXXX or +2567XXXXXXXX
+          .col-md-6
+            label.form-label NIN (Optional)
+            input.form-control(type='text' name='nin' placeholder='CM123456789AB')
+          .col-md-6
+            label.form-label Email (Optional)
+            input.form-control(type='email' name='email' placeholder='customer@example.com')
+          .col-12
+            label.form-label Address
+            textarea.form-control(rows='2' name='address' placeholder='Physical address...')
+          .col-md-6
+            label.form-label Customer Type
+            select.form-select(name='customerType')
+              option Walk-in
+              option Contractor
+              option Wholesale
+              option Deposit Scheme
+          .col-md-6
+            label.form-label Credit Limit (UGX)
+            input.form-control(type='number' name='creditLimit' placeholder='0' min='0')
+        .d-flex.gap-3.mt-4
+          button.btn-primary(type='submit')
+            i.fa-solid.fa-save
+            |  Save Customer
+          button.btn-outline(type='button' onclick='hideCustomerForm()') Cancel
+
+  // Customers Table – dynamic rows from database
+  .section-card
+    .section-head
+      h2
+        i.fa-solid.fa-list.me-2(style="color: var(--gold);")
+        | Customer List
+      .d-flex.gap-2
+        input#customerSearch.form-control.form-control-sm(type='text' placeholder='Search customers...' style='width: 200px;')
+        button#showCustomerFormBtn.btn-primary(onclick='showCustomerForm()')
+          i.fa-solid.fa-plus
+          |  Add Customer
+    .table-responsive
+      table#customersTable.data-table
+        thead
+          tr
+            th Name
+            th Phone
+            th NIN
+            th Type
+            th Total Purchases (UGX)
+            th Actions
+        tbody
+          if customers && customers.length
+            each cust in customers
+              tr
+                td
+                  i.fa-solid.fa-user.me-2(style="color: var(--gold);")
+                  = cust.fullName
+                td= cust.phone
+                td= cust.nin || '—'
+                td= cust.customerType
+                td.amount= cust.totalPurchases ? cust.totalPurchases.toLocaleString() : '0'
+                td
+                  a(href=`/customers/${cust._id}`)
+                    i.fa-regular.fa-eye.me-2(style='cursor:pointer;')
+                  a(href=`/customers/${cust._id}/edit`)
+                    i.fa-regular.fa-pen-to-square(style='cursor:pointer;')
+          else
+            tr
+              td(colspan='6').text-center No customers found.
+    .p-3.bg-light.border-top.d-flex.justify-content-end
+      button.btn-outline.btn-sm(onclick='exportCustomers()')
+        i.fa-solid.fa-download
+        |  Export List
+
+  // JavaScript – only UI toggle and export placeholder (no data submission alerts)
+  script.
+    const formContainer = document.getElementById("customerFormContainer");
+    const showBtn = document.getElementById("showCustomerFormBtn");
+    function showCustomerForm() {
+      formContainer.classList.add("show");
+      if (showBtn) showBtn.style.display = "none";
+      formContainer.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+    function hideCustomerForm() {
+      formContainer.classList.remove("show");
+      if (showBtn) showBtn.style.display = "inline-flex";
+    }
+    function exportCustomers() {
+      alert("📁 Export customers list - feature coming soon.");
+    }
+    // Client-side search (optional)
+    const searchInput = document.getElementById('customerSearch');
+    if (searchInput) {
+      searchInput.addEventListener('keyup', function() {
+        const filter = this.value.toLowerCase();
+        const rows = document.querySelectorAll('#customersTable tbody tr');
+        rows.forEach(row => {
+          const nameCell = row.cells[0];
+          if (nameCell) {
+            const name = nameCell.innerText.toLowerCase();
+            row.style.display = name.includes(filter) ? '' : 'none';
+          }
+        });
+      });
+    }
+    window.showCustomerForm = showCustomerForm;
+    window.hideCustomerForm = hideCustomerForm;
+    window.exportCustomers = exportCustomers;

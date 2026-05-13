@@ -1,0 +1,102 @@
+extends layout
+
+block head
+  link(rel="stylesheet" href="/css/member-statement.css")
+
+block title
+  | Member Statement – NYONDO Hardware
+
+block content
+  if member
+    .page-heading-center.mb-4
+      h1
+        i.fa-solid.fa-receipt
+        |  Member Statement
+      p.text-muted View deposit and pickup history for #{member.fullName}
+
+    .section-card.mb-4
+      .section-head
+        h2
+          i.fa-solid.fa-user.me-2(style="color: var(--gold);")
+          | Select Member
+      .p-3
+        form(method="GET" action="/deposit-scheme/member-statement")
+          .row.g-3.align-items-end
+            .col-md-5
+              label.form-label Member
+              select.form-select(name='memberId' onchange='this.form.submit()')
+                each m in membersList
+                  option(value=m._id selected=(m._id.toString() === member._id.toString())) #{m.fullName} (Balance: #{m.balance.toLocaleString()} UGX)
+            .col-md-4
+              label.form-label Date Range
+              select.form-select(name='range' onchange='this.form.submit()')
+                option(value='all' selected=(rangeFilter === 'all')) All Transactions
+                option(value='30days' selected=(rangeFilter === '30days')) Last 30 Days
+                option(value='thisMonth' selected=(rangeFilter === 'thisMonth')) This Month
+                option(value='last3months' selected=(rangeFilter === 'last3months')) Last 3 Months
+            .col-md-3
+              button.btn-primary.w-100(type='button' onclick='window.print()')
+                i.fa-solid.fa-print
+                | Print Statement
+
+    .row.g-4.mb-4
+      .col-md-3.col-sm-6
+        .section-card.metric-card.p-3.text-center
+          i.fa-solid.fa-scale-balanced.fa-2x.mb-2(style="color: var(--gold);")
+          h6.text-muted Current Balance
+          h3= (balance || 0).toLocaleString() + ' UGX'
+      .col-md-3.col-sm-6
+        .section-card.metric-card.p-3.text-center
+          i.fa-solid.fa-arrow-up.fa-2x.mb-2(style="color: var(--gold);")
+          h6.text-muted Total Deposits
+          h3= (totalDeposits || 0).toLocaleString() + ' UGX'
+      .col-md-3.col-sm-6
+        .section-card.metric-card.p-3.text-center
+          i.fa-solid.fa-arrow-down.fa-2x.mb-2(style="color: var(--gold);")
+          h6.text-muted Total Pickups
+          h3= (totalPickups || 0).toLocaleString() + ' UGX'
+      .col-md-3.col-sm-6
+        .section-card.metric-card.p-3.text-center
+          i.fa-solid.fa-calendar-week.fa-2x.mb-2(style="color: var(--gold);")
+          h6.text-muted Last Transaction
+          h3= lastTransactionDate || '—'
+
+    .section-card
+      .section-head
+        h2
+          i.fa-solid.fa-clock-rotate-left.me-2(style="color: var(--gold);")
+          | Transaction History
+      .table-responsive
+        table.data-table
+          thead
+            tr
+              th Date
+              th Transaction Type
+              th Description
+              th Amount (UGX)
+              th Balance (UGX)
+          tbody
+            if transactions && transactions.length
+              each tx in transactions
+                tr
+                  td
+                    i.fa-regular.fa-calendar.me-1
+                    = tx.createdAt ? tx.createdAt.toLocaleDateString() : '—'
+                  td
+                    if tx.type === 'deposit'
+                      i.fa-solid.fa-arrow-up.text-success.me-1
+                      | Deposit
+                    else
+                      i.fa-solid.fa-arrow-down.text-warning.me-1
+                      | Pickup
+                  td= tx.description || '—'
+                  td(class=tx.type === 'deposit' ? 'text-success fw-bold' : 'text-warning fw-bold')
+                    = tx.type === 'deposit' ? '+' : '-'
+                    = Math.abs(tx.amount).toLocaleString()
+                  td.fw-bold= tx.balanceAfter ? tx.balanceAfter.toLocaleString() : '—'
+            else
+              tr
+                td(colspan='5').text-center No transactions found.
+  else
+    .alert.alert-warning Member not found.
+    a.btn-primary(href="/deposit-scheme") Back to Deposit Scheme

@@ -1,0 +1,70 @@
+extends layout
+
+block head
+  link(rel="stylesheet" href="/css/invoice.css")
+
+block title
+  | Invoice #{sale.invoiceNumber} – NYONDO Hardware
+
+block content
+  .invoice-container(style="max-width:800px; margin: 0 auto;")
+    .card
+      .card-header.bg-light.text-center
+        h2 NYONDO Hardware
+        p Nansana Branch, Kampala - Tel: +256 700 123456
+        h3 INVOICE
+        p
+          strong Invoice #: #{sale.invoiceNumber}
+          br
+          strong Date: #{sale.createdAt ? sale.createdAt.toLocaleDateString() : '—'}
+      .card-body
+        .row.mb-4
+          .col-md-6
+            h5 Bill To:
+            p
+              strong= sale.customerName || 'Walk-in Customer'
+              br
+              = sale.customerPhone || ''
+          .col-md-6.text-md-end
+            h5 Payment Details:
+            p
+              strong Payment Method: #{sale.paymentMethod || '—'}
+              br
+              strong Attendant: #{sale.attendant ? sale.attendant.fullName : 'System'}
+        table.table.table-bordered
+          thead
+            tr
+              th Item
+              th Qty
+              th Unit Price (UGX)
+              th Total (UGX)
+          tbody
+            if sale.items && sale.items.length
+              each item in sale.items
+                tr
+                  td= item.productName || item.name
+                  td= item.quantity || item.qty
+                  td= (item.unitPrice || item.price).toLocaleString()
+                  td= (item.total || (item.quantity * item.unitPrice)).toLocaleString()
+            else
+              tr
+                td(colspan='4').text-center No items
+        .row.mt-4
+          .col-md-6.offset-md-6
+            table.table.table-sm
+              tr
+                td Subtotal
+                td.text-end= (sale.subtotal || 0).toLocaleString()
+              if sale.deliveryFee && sale.deliveryFee > 0
+                tr
+                  td Delivery Fee
+                  td.text-end= sale.deliveryFee.toLocaleString()
+              tr
+                td
+                  strong Grand Total
+                td.text-end
+                  strong= (sale.grandTotal || 0).toLocaleString()
+        .text-muted.small.mt-4 Thank you for your business!
+      .card-footer.text-center.no-print
+        button.btn-primary(onclick='window.print()') Print Invoice
+        a.btn-outline.ms-2(href="/sales") Back to Sales

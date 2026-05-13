@@ -1,0 +1,226 @@
+extends layout
+
+block head
+  link(rel="stylesheet" href="/css/supplier-credit.css")
+
+block title
+  | Supplier Credit – NYONDO Hardware
+
+block content
+  .page-heading-center.mb-4
+    h1
+      i.fa-solid.fa-credit-card
+      |  Supplier Credit Management
+    p.text-muted Track invoices, payments, and outstanding balances
+
+  .row.g-4.mb-4
+    .col-md-3.col-sm-6
+      .section-card.metric-card.p-3.text-center
+        i.fa-solid.fa-file-invoice.fa-2x.mb-2(style="color: var(--gold);")
+        h6.text-muted Total Credit
+        h3= (totalCredit || 0).toLocaleString() + ' UGX'
+        small.text-muted Across #{totalInvoices || 0} invoices
+    .col-md-3.col-sm-6
+      .section-card.metric-card.p-3.text-center
+        i.fa-solid.fa-clock.fa-2x.mb-2(style="color: var(--gold);")
+        h6.text-muted Pending
+        h3.text-warning= (pendingCredit || 0).toLocaleString() + ' UGX'
+        small.text-muted Due within 30 days
+    .col-md-3.col-sm-6
+      .section-card.metric-card.p-3.text-center
+        i.fa-solid.fa-triangle-exclamation.fa-2x.mb-2(style="color: var(--gold);")
+        h6.text-muted Overdue
+        h3.text-danger= (overdueCredit || 0).toLocaleString() + ' UGX'
+        small.text-muted Past due date
+    .col-md-3.col-sm-6
+      .section-card.metric-card.p-3.text-center
+        i.fa-solid.fa-check-circle.fa-2x.mb-2(style="color: var(--gold);")
+        h6.text-muted Paid This Month
+        h3.text-success= (paidThisMonth || 0).toLocaleString() + ' UGX'
+        small.text-muted Total payments
+
+  .credit-form-container#creditFormContainer
+    .form-card
+      .d-flex.justify-content-between.align-items-center.mb-3
+        h4.mb-0
+          i.fa-solid.fa-plus-circle.me-2(style="color: var(--gold);")
+          | New Credit Purchase
+        button.btn-close(type='button' onclick='hideCreditForm()')
+      form(method="POST" action="/supplier-credit/invoices")
+        .row.g-3
+          .col-md-6
+            label.form-label Supplier Name *
+            select.form-select(name='supplierId' required)
+              option(value='') Select Supplier
+              each sup in suppliers
+                option(value=sup._id)= sup.companyName
+          .col-md-6
+            label.form-label Invoice Number *
+            input.form-control(type='text' name='invoiceNumber' placeholder='e.g., INV-2026-XXX' required)
+          .col-md-4
+            label.form-label Purchase Date
+            input.form-control(type='date' name='purchaseDate' value=purchaseDateDefault required)
+          .col-md-4
+            label.form-label Due Date
+            input.form-control(type='date' name='dueDate' value=dueDateDefault required)
+          .col-md-4
+            label.form-label Total Amount (UGX) *
+            input.form-control(type='number' name='totalAmount' placeholder='0' min='0' step='1000' required)
+          .col-12
+            label.form-label Description / Items
+            textarea.form-control(rows='2' name='description' placeholder='e.g., 100 bags Cement, 50 Iron Bars...')
+          .col-md-6
+            label.form-label Payment Terms
+            select.form-select(name='paymentTerms')
+              option Net 30
+              option Net 15
+              option Net 7
+              option Due on receipt
+          .col-md-6
+            label.form-label Initial Payment (Optional)
+            input.form-control(type='number' name='initialPayment' placeholder='0' min='0' step='1000')
+        .d-flex.gap-3.mt-4
+          button.btn-primary(type='submit')
+            i.fa-solid.fa-save
+            |  Save Credit Purchase
+          button.btn-outline(type='button' onclick='hideCreditForm()') Cancel
+
+  .section-card.mb-4
+    .section-head
+      h2
+        i.fa-solid.fa-filter.me-2(style="color: var(--gold);")
+        | Filter Invoices
+      .d-flex.gap-2.flex-wrap
+        select#supplierFilter.form-select.form-select-sm
+          option(value='all') All Suppliers
+          each sup in suppliers
+            option(value=sup.companyName)= sup.companyName
+        select#statusFilter.form-select.form-select-sm
+          option(value='all') All Status
+          option(value='pending') Pending
+          option(value='overdue') Overdue
+          option(value='paid') Paid
+        button.btn-primary.btn-sm(onclick='filterInvoices()')
+          i.fa-solid.fa-magnifying-glass
+          | Filter
+
+  .section-card
+    .section-head
+      h2
+        i.fa-solid.fa-clock-rotate-left.me-2(style="color: var(--gold);")
+        | Outstanding Invoices
+      button#showCreditFormBtn.btn-primary(onclick='showCreditForm()')
+        i.fa-solid.fa-plus
+        | New Credit Purchase
+    .table-responsive
+      table#invoicesTable.data-table
+        thead
+          tr
+            th Invoice #
+            th Supplier
+            th Amount (UGX)
+            th Due Date
+            th Days Left
+            th Status
+            th Actions
+        tbody
+          if invoices && invoices.length
+            each inv in invoices
+              - const isOverdue = inv.dueDate && new Date(inv.dueDate) < new Date() && inv.outstanding > 0
+              - const daysRemaining = inv.dueDate ? Math.ceil((new Date(inv.dueDate) - new Date()) / (1000*3600*24)) : null
+              tr(data-supplier=inv.supplierId.companyName data-status=(inv.status === 'Paid' ? 'paid' : (isOverdue ? 'overdue' : 'pending')))
+                td= inv.invoiceNumber
+                td= inv.supplierId.companyName
+                td.amount= inv.totalAmount.toLocaleString()
+                td= inv.dueDate ? inv.dueDate.toLocaleDateString() : '—'
+                td
+                  if inv.status === 'Paid'
+                    span.text-muted Paid
+                  else if isOverdue
+                    span.text-danger Overdue by #{Math.abs(daysRemaining)} days
+                  else
+                    span.text-success= daysRemaining + ' days'
+                td
+                  if inv.status === 'Pending'
+                    span.status-pill.sp-pending Pending
+                  else if inv.status === 'Partially Paid'
+                    span.status-pill.sp-scheme Partially Paid
+                  else if inv.status === 'Paid'
+                    span.status-pill.sp-paid Paid
+                  else if isOverdue
+                    span.status-pill.sp-credit Overdue
+                  else
+                    span.status-pill.sp-pending Pending
+                td
+                  if inv.outstanding > 0
+                    a.btn-outline.btn-sm(href=`/payments/record?supplierId=${inv.supplierId._id}`)
+                      i.fa-solid.fa-money-bill
+                      | Pay
+                    a.btn-outline.btn-sm.ms-1(href=`/payments/record?supplierId=${inv.supplierId._id}`)
+                      i.fa-solid.fa-arrow-right
+                  else
+                    span.text-muted No action
+          else
+            tr
+              td(colspan='7').text-center No invoices found.
+    .table-footer.p-3.border-top.d-flex.justify-content-between.flex-wrap.gap-2
+      span.text-muted
+        | Total Outstanding:
+        strong#totalOutstanding.text-dark= (totalOutstanding || 0).toLocaleString() + ' UGX'
+      button.btn-outline.btn-sm(onclick='exportInvoices()')
+        i.fa-solid.fa-download
+        | Export
+
+  .section-card.mt-4
+    .section-head
+      h2
+        i.fa-solid.fa-clock-rotate-left.me-2(style="color: var(--gold);")
+        | Recent Payments
+    .table-responsive
+      table.data-table
+        thead
+          tr
+            th Date
+            th Supplier
+            th Invoice #
+            th Amount Paid
+            th Method
+            th Reference
+        tbody
+          if recentPayments && recentPayments.length
+            each pmt in recentPayments
+              tr
+                td= pmt.paymentDate ? pmt.paymentDate.toLocaleDateString() : '—'
+                td= pmt.supplierId ? pmt.supplierId.companyName : '—'
+                td= pmt.invoiceId ? pmt.invoiceId.invoiceNumber : '—'
+                td.amount= pmt.amount.toLocaleString()
+                td= pmt.paymentMethod || '—'
+                td= pmt.reference || '—'
+          else
+            tr
+              td(colspan='6').text-center No recent payments.
+
+  script.
+    function showCreditForm() { document.getElementById('creditFormContainer').classList.add('show'); document.getElementById('showCreditFormBtn').style.display = 'none'; }
+    function hideCreditForm() { document.getElementById('creditFormContainer').classList.remove('show'); document.getElementById('showCreditFormBtn').style.display = 'inline-flex'; }
+    function filterInvoices() {
+      const supplier = document.getElementById('supplierFilter').value;
+      const status = document.getElementById('statusFilter').value;
+      const rows = document.querySelectorAll('#invoicesTable tbody tr');
+      let total = 0;
+      rows.forEach(row => {
+        let show = true;
+        const rowSupplier = row.getAttribute('data-supplier');
+        const rowStatus = row.getAttribute('data-status');
+        if (supplier !== 'all' && rowSupplier !== supplier) show = false;
+        if (status !== 'all' && rowStatus !== status) show = false;
+        row.style.display = show ? '' : 'none';
+        if (show) {
+          const amount = parseFloat(row.querySelector('.amount')?.innerText.replace(/[^0-9]/g, '')) || 0;
+          total += amount;
+        }
+      });
+      document.getElementById('totalOutstanding').innerText = total.toLocaleString() + ' UGX';
+    }
+    function exportInvoices() { alert('Export feature coming soon'); }
+    window.showCreditForm = showCreditForm; window.hideCreditForm = hideCreditForm; window.filterInvoices = filterInvoices; window.exportInvoices = exportInvoices;

@@ -1,0 +1,122 @@
+/* suppliers.css – Supplier management page styles */
+
+/* Collapsible form */
+.supplier-form-container {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease-out, margin 0.3s ease;
+  margin-bottom: 0;
+}
+.supplier-form-container.show {
+  max-height: 800px;
+  margin-bottom: 24px;
+}
+
+/* Metric cards (consistent with other dashboards) */
+.metric-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: default;
+  min-height: 170px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.metric-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+.metric-card h3 {
+  font-size: 1.6rem;
+  font-weight: 800;
+  margin-top: 8px;
+  color: var(--dark-green);
+}
+.metric-card h6 {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+/* Centered heading */
+.page-heading-center {
+  text-align: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+}
+.page-heading-center h1 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--dark-green), var(--gold));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  display: inline-block;
+}
+
+/* Table enhancements */
+.data-table td {
+  vertical-align: middle;
+}
+.data-table tbody tr:hover {
+  background: rgba(255, 204, 0, 0.05);
+  cursor: pointer;
+}
+.highlight-row {
+  background: rgba(255, 204, 0, 0.08);
+}
+
+/* Action icons */
+.data-table .fa-pen-to-square {
+  color: var(--gold);
+  transition: color 0.2s;
+}
+.data-table .fa-pen-to-square:hover {
+  color: var(--gold-dark);
+}
+.data-table .fa-credit-card {
+  transition: transform 0.2s;
+}
+.data-table .fa-credit-card:hover {
+  transform: scale(1.1);
+}
+
+/* Form styling */
+.form-card .form-label {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.form-control, .form-select {
+  padding: 10px 12px;
+  border-radius: 8px;
+}
+.form-control:focus, .form-select:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 0.2rem rgba(255, 204, 0, 0.25);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .page-heading-center h1 {
+    font-size: 1.4rem;
+  }
+  .metric-card h3 {
+    font-size: 1.3rem;
+  }
+  .metric-card {
+    min-height: 140px;
+  }
+  .section-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .d-flex.gap-2 {
+    flex-direction: column;
+  }
+  .btn-primary, .btn-outline {
+    width: 100%;
+    text-align: center;
+  }
+}

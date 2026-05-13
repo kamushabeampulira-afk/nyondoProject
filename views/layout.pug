@@ -1,0 +1,113 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1.0")
+    title Nyondo Hardware – 
+      block title
+        | Dashboard
+    link(href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet")
+    link(rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css")
+    link(rel="stylesheet" href="/css/main.css")
+    link(rel="stylesheet" href="/css/customers.css")
+    style.
+      /* Fixed sidebar scroll – whole page scrolls normally */
+      body {
+        overflow-y: auto !important;
+        height: 100%;
+      }
+      .sidebar {
+        overflow-y: visible !important;
+        height: 100vh;
+      }
+      .main-wrap {
+        overflow-y: visible !important;
+      }
+      #nav-toggle:checked ~ .sidebar-overlay { display: block; }
+    block head
+  body
+    input(type="checkbox" id="nav-toggle" style="display: none")
+    label.sidebar-overlay(for="nav-toggle" style="position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); z-index:1029; display: none;")
+    //- The rest of your sidebar and topbar exactly as before
+    aside.sidebar
+      .sidebar-brand
+        .brand-logo: i.fa-solid.fa-tools
+        span.brand-name NYONDO
+      nav.sidebar-nav
+        .nav-sec-label Main Menu
+        a.nav-link-item(href="/dashboard")
+          span.nicon: i.fa-solid.fa-grid-2
+          | Dashboard
+        if user
+          if user.role === 'Administrator' || user.role === 'Manager'
+            a.nav-link-item(href="/sales")
+              span.nicon: i.fa-solid.fa-cash-register
+              | Sales
+            a.nav-link-item(href="/inventory")
+              span.nicon: i.fa-solid.fa-boxes-stacked
+              | Inventory
+            a.nav-link-item(href="/transport")
+              span.nicon: i.fa-solid.fa-truck
+              | Transport
+          if user.role === 'Sales Attendant'
+            a.nav-link-item(href="/sales")
+              span.nicon: i.fa-solid.fa-cash-register
+              | Sales Counter
+            a.nav-link-item(href="/customers")
+              span.nicon: i.fa-solid.fa-users
+              | Customers
+          if user.role === 'Administrator'
+            .nav-sec-label Finance
+            a.nav-link-item(href="/supplier-credit")
+              span.nicon: i.fa-solid.fa-credit-card
+              | Supplier Credit
+            a.nav-link-item(href="/deposit-scheme")
+              span.nicon: i.fa-solid.fa-piggy-bank
+              | Deposit Scheme
+            a.nav-link-item(href="/reports")
+              span.nicon: i.fa-solid.fa-chart-bar
+              | Reports
+            .nav-sec-label Management
+            a.nav-link-item(href="/customers")
+              span.nicon: i.fa-solid.fa-users
+              | Customers
+            a.nav-link-item(href="/suppliers")
+              span.nicon: i.fa-solid.fa-truck-field
+              | Suppliers
+            .nav-sec-label Admin
+            a.nav-link-item(href="/users")
+              span.nicon: i.fa-solid.fa-user-shield
+              | Users
+            a.nav-link-item(href="/settings")
+              span.nicon: i.fa-solid.fa-gear
+              | Settings
+      .sidebar-footer
+        .user-chip
+          .user-av= user ? user.fullName[0].toUpperCase() : 'U'
+          div
+            .user-name= user ? user.fullName : 'Guest'
+            .user-role= user ? user.role : 'Not logged in'
+
+    .main-wrap
+      header.topbar
+        label.hamburger(for="nav-toggle")
+          i.fa-solid.fa-bars
+        .store-name-t NYONDO <span>Hardware</span>
+        .topbar-right
+          .profile-pill
+            .pill-av= user ? user.fullName[0].toUpperCase() : 'U'
+            span= user ? user.fullName : 'Guest'
+      main.page-content
+        if success_msg
+          .alert.alert-success.alert-dismissible.fade.show
+            i.fa-solid.fa-check-circle.me-2
+            = success_msg
+            button.btn-close(data-bs-dismiss="alert")
+        if error_msg
+          .alert.alert-danger.alert-dismissible.fade.show
+            i.fa-solid.fa-exclamation-triangle.me-2
+            = error_msg
+            button.btn-close(data-bs-dismiss="alert")
+        block content
+
+    script(src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js")

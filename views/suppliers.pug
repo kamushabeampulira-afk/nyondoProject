@@ -1,0 +1,154 @@
+extends layout
+
+block head
+  link(rel="stylesheet" href="/css/suppliers.css")
+
+block title
+  | Suppliers – NYONDO Hardware
+
+block content
+  .page-heading-center.mb-4
+    h1
+      i.fa-solid.fa-truck-field
+      |  Supplier Management
+    p.text-muted Manage your hardware suppliers, track credit, and record purchases
+
+  // Stats Cards – dynamic from backend
+  .row.g-4.mb-4
+    .col-md-3.col-sm-6
+      .section-card.metric-card.p-3.text-center
+        i.fa-solid.fa-building.fa-2x.mb-2(style="color: var(--gold);")
+        h6.text-muted Total Suppliers
+        h3= totalSuppliers || 0
+    .col-md-3.col-sm-6
+      .section-card.metric-card.p-3.text-center
+        i.fa-solid.fa-credit-card.fa-2x.mb-2(style="color: var(--gold);")
+        h6.text-muted Total Credit Outstanding
+        h3.text-warning= (totalOutstanding || 0).toLocaleString() + ' UGX'
+    .col-md-3.col-sm-6
+      .section-card.metric-card.p-3.text-center
+        i.fa-solid.fa-clock.fa-2x.mb-2(style="color: var(--gold);")
+        h6.text-muted Overdue Payments
+        h3.text-danger= (overduePayments || 0).toLocaleString() + ' UGX'
+    .col-md-3.col-sm-6
+      .section-card.metric-card.p-3.text-center
+        i.fa-solid.fa-truck-fast.fa-2x.mb-2(style="color: var(--gold);")
+        h6.text-muted Active Orders
+        h3= activeOrders || 0
+
+  // Collapsible Add Supplier Form – POST to backend
+  .supplier-form-container#supplierFormContainer
+    .form-card
+      .d-flex.justify-content-between.align-items-center.mb-3
+        h4.mb-0
+          i.fa-solid.fa-plus-circle.me-2(style="color: var(--gold);")
+          | Add New Supplier
+        button.btn-close(type='button' onclick='hideSupplierForm()')
+      form(method="POST" action="/suppliers")
+        .row.g-3
+          .col-md-6
+            label.form-label Company Name *
+            input.form-control(type='text' name='companyName' placeholder='e.g., Tororo Cement' required)
+          .col-md-6
+            label.form-label Contact Person *
+            input.form-control(type='text' name='contactPerson' placeholder='Full name' required)
+          .col-md-6
+            label.form-label Phone Number *
+            input.form-control(type='tel' name='phone' placeholder='0772123456' pattern='^(07|\\+2567)\\d{8}$' required)
+            small.text-muted Ugandan format: 07XXXXXXXX or +2567XXXXXXXX
+          .col-md-6
+            label.form-label Email
+            input.form-control(type='email' name='email' placeholder='supplier@example.com')
+          .col-12
+            label.form-label Address
+            textarea.form-control(rows='2' name='address' placeholder='Physical address')
+          .col-md-6
+            label.form-label Payment Terms
+            select.form-select(name='paymentTerms')
+              option Net 30
+              option Net 15
+              option Net 7
+              option Cash on Delivery
+          .col-md-6
+            label.form-label Credit Limit (UGX)
+            input.form-control(type='number' name='creditLimit' placeholder='0' min='0')
+          .col-12
+            label.form-label Products Supplied
+            input.form-control(type='text' name='productsSupplied' placeholder='e.g., Cement, Iron Bars')
+        .d-flex.gap-3.mt-4
+          button.btn-primary(type='submit')
+            i.fa-solid.fa-save
+            |  Save Supplier
+          button.btn-outline(type='button' onclick='hideSupplierForm()') Cancel
+
+  // Suppliers Table – dynamic rows from database
+  .section-card
+    .section-head
+      h2
+        i.fa-solid.fa-list.me-2(style="color: var(--gold);")
+        | Supplier List
+      .d-flex.gap-2.flex-wrap
+        button#showSupplierFormBtn.btn-primary(onclick='showSupplierForm()')
+          i.fa-solid.fa-plus
+          |  Add Supplier
+        a.btn-outline(href="/supplier-credit")
+          i.fa-solid.fa-credit-card
+          |  New Credit Purchase
+    .table-responsive
+      table.data-table
+        thead
+          tr
+            th Company
+            th Contact Person
+            th Phone
+            th Email
+            th Outstanding (UGX)
+            th Payment Terms
+            th Actions
+        tbody
+          if suppliers && suppliers.length
+            each sup in suppliers
+              - const outstanding = sup.outstandingBalance || 0
+              tr
+                td
+                  i.fa-solid.fa-building.me-2(style="color: var(--gold);")
+                  = sup.companyName
+                td= sup.contactPerson
+                td= sup.phone
+                td= sup.email || '—'
+                td(class=outstanding > 0 ? 'text-warning' : '').amount= outstanding.toLocaleString()
+                td= sup.paymentTerms || '—'
+                td
+                  a(href=`/suppliers/${sup._id}/edit`)
+                    i.fa-regular.fa-pen-to-square.me-2(style='cursor:pointer;')
+                  a(href=`/payments/record?supplierId=${sup._id}`)
+                    i.fa-regular.fa-credit-card(style='cursor:pointer; color: var(--gold);')
+          else
+            tr
+              td(colspan='7').text-center No suppliers found.
+    .table-footer.p-3.border-top.d-flex.justify-content-between.flex-wrap.gap-2
+      span.text-muted
+        | Total Outstanding: 
+        strong.text-dark= (totalOutstanding || 0).toLocaleString() + ' UGX'
+      button.btn-outline.btn-sm(onclick='exportSuppliers()')
+        i.fa-solid.fa-download
+        |  Export
+
+  script.
+    const formContainer = document.getElementById("supplierFormContainer");
+    const showBtn = document.getElementById("showSupplierFormBtn");
+    function showSupplierForm() {
+      formContainer.classList.add("show");
+      if (showBtn) showBtn.style.display = "none";
+      formContainer.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+    function hideSupplierForm() {
+      formContainer.classList.remove("show");
+      if (showBtn) showBtn.style.display = "inline-flex";
+    }
+    function exportSuppliers() {
+      alert("📁 Export suppliers list - feature coming soon.");
+    }
+    window.showSupplierForm = showSupplierForm;
+    window.hideSupplierForm = hideSupplierForm;
+    window.exportSuppliers = exportSuppliers;

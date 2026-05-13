@@ -1,0 +1,214 @@
+extends layout
+
+block title
+  | Deposit Scheme - NYONDO Hardware
+
+block content
+  .page-heading-center.mb-4
+    h1
+      i.fa-solid.fa-piggy-bank
+      |  Salary Earner Deposit Scheme
+    p.text-muted Register members, manage deposits, and track pickups (Cement, Iron Bars, Iron Sheets only)
+
+  // Stats Cards (replace with real aggregates from backend)
+  .row.g-4.mb-5
+    .col-md-3.col-sm-6
+      .section-card.metric-card.p-3.text-center
+        i.fa-solid.fa-users.fa-2x.mb-2(style='color: var(--gold);')
+        h6.text-muted Active Members
+        h3= activeMembers || 0
+        small.text-success +12 this month
+    .col-md-3.col-sm-6
+      .section-card.metric-card.p-3.text-center
+        i.fa-solid.fa-money-bill-wave.fa-2x.mb-2(style='color: var(--gold);')
+        h6.text-muted Total Deposits
+        h3= totalDeposits ? totalDeposits.toLocaleString() + ' UGX' : '0 UGX'
+    .col-md-3.col-sm-6
+      .section-card.metric-card.p-3.text-center
+        i.fa-solid.fa-cart-shopping.fa-2x.mb-2(style='color: var(--gold);')
+        h6.text-muted Total Pickups
+        h3= totalPickups ? totalPickups.toLocaleString() + ' UGX' : '0 UGX'
+    .col-md-3.col-sm-6
+      .section-card.metric-card.p-3.text-center
+        i.fa-solid.fa-scale-balanced.fa-2x.mb-2(style='color: var(--gold);')
+        h6.text-muted Current Balance
+        h3= currentBalance ? currentBalance.toLocaleString() + ' UGX' : '0 UGX'
+
+  .row.g-4
+    // Left column: forms
+    .col-lg-5
+      // Register Member Form
+      .form-card.mb-4
+        h4.mb-3
+          i.fa-solid.fa-user-plus.me-2(style='color: var(--gold);')
+          | Register New Member
+        form(method="POST" action="/deposit-scheme/members")
+          .mb-3
+            label.form-label Full Name (as per National ID) *
+            .input-group
+              span.input-group-text: i.fa-solid.fa-user
+              input.form-control(type='text' name='fullName' required)
+          .mb-3
+            label.form-label NIN Number *
+            .input-group
+              span.input-group-text: i.fa-solid.fa-id-card
+              input.form-control(type='text' name='nin' required)
+            small.text-muted National Identification Number
+          .mb-3
+            label.form-label Phone Number *
+            .input-group
+              span.input-group-text: i.fa-solid.fa-phone
+              input.form-control(type='tel' name='phone' pattern='^(07|\\+2567)\\d{8}$' required)
+            small.text-muted Ugandan format: 07XXXXXXXX or +2567XXXXXXXX
+          .mb-3
+            label.form-label Address / Location
+            .input-group
+              span.input-group-text: i.fa-solid.fa-location-dot
+              input.form-control(type='text' name='address')
+          .mb-3
+            label.form-label Employer / Workplace
+            .input-group
+              span.input-group-text: i.fa-solid.fa-briefcase
+              input.form-control(type='text' name='employer')
+          button.btn-primary.w-100(type='submit')
+            i.fa-solid.fa-check-circle
+            |  Register Member
+
+      // Make Deposit Form
+      .form-card
+        h4.mb-3
+          i.fa-solid.fa-money-bill-wave.me-2(style='color: var(--gold);')
+          | Make Deposit
+        form(method="POST" action="/deposit-scheme/deposit")
+          .mb-3
+            label.form-label Select Member
+            select.form-select(name='memberId' required)
+              option(value='') -- Select Member --
+              if members && members.length
+                each member in members
+                  option(value=member._id) #{member.fullName} (Balance: #{member.balance.toLocaleString()} UGX)
+          .mb-3
+            label.form-label Deposit Amount (UGX) *
+            .input-group
+              span.input-group-text: i.fa-solid.fa-coins
+              input.form-control(type='number' name='amount' min='1000' step='1000' required)
+            small.text-muted Minimum deposit: 1,000 UGX
+          .mb-3
+            label.form-label Payment Method
+            select.form-select(name='paymentMethod')
+              option Cash
+              option Mobile Money
+              option Bank Transfer
+          button.btn-primary.w-100(type='submit')
+            i.fa-solid.fa-receipt
+            |  Record Deposit & Print Receipt
+
+    // Right column: members table, pick goods, transactions
+    .col-lg-7
+      // Scheme Members Table
+      .section-card.mb-4
+        .section-head
+          h2
+            i.fa-solid.fa-users.me-2(style='color: var(--gold);')
+            | Scheme Members
+          a.btn-outline.btn-sm(href="/deposit-scheme/export")
+            i.fa-solid.fa-download
+            |  Export
+        .table-responsive
+          table.data-table
+            thead
+              tr
+                th Name
+                th NIN
+                th Phone
+                th Balance (UGX)
+                th Joined
+                th Actions
+            tbody
+              if members && members.length
+                each member in members
+                  tr
+                    td
+                      i.fa-solid.fa-user.me-2(style='color: var(--gold);')
+                      = member.fullName
+                    td= member.nin
+                    td= member.phone
+                    td.fw-bold.text-success= member.balance.toLocaleString()
+                    td= member.joinedAt ? member.joinedAt.toLocaleDateString() : '—'
+                    td
+                      a(href=`/deposit-scheme/member-statement?memberId=${member._id}`)
+                        i.fa-regular.fa-eye
+              else
+                tr
+                  td(colspan='6').text-center No members found.
+
+      // Pick Goods Section
+      .section-card.mb-4
+        .section-head
+          h2
+            i.fa-solid.fa-box-open.me-2(style='color: var(--gold);')
+            | Pick Goods (Cement / Iron Bars / Sheets)
+        .p-3
+          form(method="POST" action="/deposit-scheme/pickup")
+            .row.g-3
+              .col-md-6
+                label.form-label Select Member
+                select.form-select(name='memberId' required id='pickupMemberSelect' onchange='updatePickupBalance()')
+                  option(value='') -- Select Member --
+                  if members && members.length
+                    each member in members
+                      option(value=member._id, data-balance=member.balance) #{member.fullName} (Balance: #{member.balance.toLocaleString()} UGX)
+              .col-md-6
+                .balance-card.p-2.text-center
+                  small Current Balance
+                  h4.text-success(id='pickupBalanceDisplay') 0 UGX
+              .col-md-6
+                label.form-label Select Product
+                select.form-select(name='productId' required)
+                  option(value='') -- Select Product --
+                  if products && products.length
+                    each product in products
+                      if product.currentStock > 0
+                        option(value=product._id, data-price=product.unitPrice) #{product.productName} - #{product.unitPrice.toLocaleString()} UGX
+              .col-md-4
+                label.form-label Quantity
+                input.form-control(type='number' name='quantity' min='1' value='1' required)
+              .col-md-2.d-flex.align-items-end
+                button.btn-primary.w-100(type='submit') Pick
+
+      // Recent Transactions
+      .section-card
+        .section-head
+          h2
+            i.fa-solid.fa-clock-rotate-left.me-2(style='color: var(--gold);')
+            | Recent Transactions
+        .p-3
+          if transactions && transactions.length
+            each tx in transactions
+              .transaction-item.d-flex.justify-content-between.align-items-center.mb-2
+                div
+                  if tx.type === 'deposit'
+                    i.fa-solid.fa-arrow-up.text-success.me-2
+                    span Deposit
+                  else
+                    i.fa-solid.fa-arrow-down.text-warning.me-2
+                    span Pickup
+                div= tx.memberId ? tx.memberId.fullName : '—'
+                div(class=tx.type === 'deposit' ? 'text-success' : 'text-warning')
+                  = (tx.type === 'deposit' ? '+' : '-')
+                  = Math.abs(tx.amount).toLocaleString()
+                  |  UGX
+                div.text-muted.small= tx.createdAt ? tx.createdAt.toLocaleDateString() : ''
+          else
+            p.text-muted No recent transactions.
+
+  script.
+    function updatePickupBalance() {
+      const select = document.getElementById('pickupMemberSelect');
+      const selectedOption = select.options[select.selectedIndex];
+      const balance = selectedOption ? selectedOption.dataset.balance : 0;
+      const display = document.getElementById('pickupBalanceDisplay');
+      display.innerText = balance ? parseInt(balance).toLocaleString() + ' UGX' : '0 UGX';
+    }
+    // Attach global function
+    window.updatePickupBalance = updatePickupBalance;

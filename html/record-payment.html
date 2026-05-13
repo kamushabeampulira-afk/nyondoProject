@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Record Payment – NYONDO Hardware</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/record-payment.css">
+</head>
+<body>
+  <input type="checkbox" id="nav-toggle" style="display: none">
+  <label class="sidebar-overlay" for="nav-toggle"></label>
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-logo"><i class="fa-solid fa-tools"></i></div>
+      <span class="brand-name">NYONDO</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-sec-label">Main Menu</div>
+      <a href="admin-dashboard.html" class="nav-link-item"><span class="nicon"><i class="fa-solid fa-grid-2"></i></span>Dashboard</a>
+      <a href="sales.html" class="nav-link-item"><span class="nicon"><i class="fa-solid fa-cash-register"></i></span>Sales</a>
+      <a href="inventory.html" class="nav-link-item"><span class="nicon"><i class="fa-solid fa-boxes-stacked"></i></span>Inventory</a>
+      <a href="transport.html" class="nav-link-item"><span class="nicon"><i class="fa-solid fa-truck"></i></span>Transport</a>
+      <div class="nav-sec-label">Finance</div>
+      <a href="supplier-credit.html" class="nav-link-item"><span class="nicon"><i class="fa-solid fa-credit-card"></i></span>Supplier Credit</a>
+      <a href="record-payment.html" class="nav-link-item active"><span class="nicon"><i class="fa-solid fa-money-bill"></i></span>Record Payment</a>
+      <a href="deposit-scheme.html" class="nav-link-item"><span class="nicon"><i class="fa-solid fa-piggy-bank"></i></span>Deposit Scheme</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="user-av">AD</div>
+        <div><div class="user-name">Admin</div><div class="user-role">Administrator</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-wrap">
+    <header class="topbar">
+      <label for="nav-toggle" class="hamburger"><i class="fa-solid fa-bars"></i></label>
+      <div><div class="store-name-t">NYONDO <span>Hardware</span></div></div>
+      <div class="topbar-right">
+        <div class="profile-pill">
+          <div class="pill-av">AD</div>
+          <span>Admin</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <!-- Centered heading -->
+      <div class="page-heading-center mb-4">
+        <h1><i class="fa-solid fa-money-bill-wave"></i> Record Supplier Payment</h1>
+        <p class="text-muted">Record payments against outstanding invoices</p>
+      </div>
+
+      <!-- Payment Form Card (centered) -->
+      <div class="form-card payment-form-card">
+        <form id="paymentForm" onsubmit="handlePaymentSubmit(event)">
+          <!-- Supplier Selection -->
+          <div class="mb-3">
+            <label class="form-label">Select Supplier</label>
+            <select id="supplierSelect" class="form-select" required onchange="loadInvoices()">
+              <option value="">-- Choose Supplier --</option>
+              <option value="Tororo Cement">Tororo Cement</option>
+              <option value="Hima Cement">Hima Cement</option>
+              <option value="Steel & Tube Ind.">Steel & Tube Ind.</option>
+              <option value="Roofing Masters Ltd">Roofing Masters Ltd</option>
+            </select>
+          </div>
+
+          <!-- Invoice Selection -->
+          <div class="mb-3">
+            <label class="form-label">Select Invoice</label>
+            <select id="invoiceSelect" class="form-select" required onchange="updateInvoiceSummary()">
+              <option value="">-- Select Invoice --</option>
+            </select>
+          </div>
+
+          <!-- Invoice Summary (dynamic) -->
+          <div id="invoiceSummary" class="invoice-summary mb-3" style="display: none;">
+            <div class="summary-line"><span>Invoice Amount:</span><strong id="invoiceAmount">0 UGX</strong></div>
+            <div class="summary-line"><span>Outstanding Balance:</span><strong id="outstandingBalance">0 UGX</strong></div>
+            <div class="summary-line"><span>Due Date:</span><span id="dueDate">—</span></div>
+          </div>
+
+          <!-- Payment Amount -->
+          <div class="mb-3">
+            <label class="form-label">Payment Amount (UGX) *</label>
+            <input type="number" id="paymentAmount" class="form-control" placeholder="0" min="1" step="1000" required>
+            <small id="amountError" class="text-danger" style="display: none;">Amount cannot exceed outstanding balance.</small>
+          </div>
+
+          <!-- Payment Method -->
+          <div class="mb-3">
+            <label class="form-label">Payment Method</label>
+            <div class="payment-method-group">
+              <div class="payment-method-option" data-method="cash">
+                <i class="fa-solid fa-money-bill"></i> Cash
+              </div>
+              <div class="payment-method-option" data-method="bank">
+                <i class="fa-solid fa-building-columns"></i> Bank Transfer
+              </div>
+              <div class="payment-method-option" data-method="mobile">
+                <i class="fa-solid fa-mobile-screen"></i> Mobile Money
+              </div>
+            </div>
+            <input type="hidden" id="selectedMethod" value="cash">
+          </div>
+
+          <!-- Payment Date -->
+          <div class="mb-3">
+            <label class="form-label">Payment Date</label>
+            <input type="date" id="paymentDate" class="form-control" value="">
+          </div>
+
+          <!-- Reference / Notes -->
+          <div class="mb-3">
+            <label class="form-label">Reference / Notes</label>
+            <input type="text" id="reference" class="form-control" placeholder="Optional reference">
+          </div>
+
+          <button type="submit" class="btn-primary w-100"><i class="fa-solid fa-check-circle"></i> Record Payment</button>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Invoice data (simulated – replace with backend call later)
+    const invoicesData = {
+      "Tororo Cement": [
+        { number: "INV-2026-045", amount: 3500000, outstanding: 3500000, dueDate: "2026-05-15" }
+      ],
+      "Hima Cement": [
+        { number: "INV-2026-042", amount: 2200000, outstanding: 2200000, dueDate: "2026-04-20" }
+      ],
+      "Steel & Tube Ind.": [
+        { number: "INV-2026-039", amount: 1800000, outstanding: 1800000, dueDate: "2026-05-05" }
+      ],
+      "Roofing Masters Ltd": [
+        { number: "INV-2026-038", amount: 4750000, outstanding: 4750000, dueDate: "2026-04-30" }
+      ]
+    };
+
+    let currentOutstanding = 0;
+
+    function loadInvoices() {
+      const supplier = document.getElementById('supplierSelect').value;
+      const invoiceSelect = document.getElementById('invoiceSelect');
+      const summaryDiv = document.getElementById('invoiceSummary');
+      invoiceSelect.innerHTML = '<option value="">-- Select Invoice --</option>';
+      
+      if (!supplier || !invoicesData[supplier]) {
+        summaryDiv.style.display = 'none';
+        return;
+      }
+      
+      const invoices = invoicesData[supplier];
+      invoices.forEach(inv => {
+        const option = document.createElement('option');
+        option.value = inv.number;
+        option.textContent = `${inv.number} - ${inv.amount.toLocaleString()} UGX (Due ${new Date(inv.dueDate).toLocaleDateString()})`;
+        option.dataset.amount = inv.amount;
+        option.dataset.outstanding = inv.outstanding;
+        option.dataset.dueDate = inv.dueDate;
+        invoiceSelect.appendChild(option);
+      });
+      updateInvoiceSummary();
+    }
+
+    function updateInvoiceSummary() {
+      const invoiceSelect = document.getElementById('invoiceSelect');
+      const selectedOption = invoiceSelect.options[invoiceSelect.selectedIndex];
+      const summaryDiv = document.getElementById('invoiceSummary');
+      
+      if (!selectedOption || !selectedOption.value) {
+        summaryDiv.style.display = 'none';
+        currentOutstanding = 0;
+        return;
+      }
+      
+      const amount = parseFloat(selectedOption.dataset.amount);
+      const outstanding = parseFloat(selectedOption.dataset.outstanding);
+      const dueDate = selectedOption.dataset.dueDate;
+      
+      document.getElementById('invoiceAmount').innerHTML = amount.toLocaleString() + ' UGX';
+      document.getElementById('outstandingBalance').innerHTML = outstanding.toLocaleString() + ' UGX';
+      document.getElementById('dueDate').innerHTML = new Date(dueDate).toLocaleDateString();
+      summaryDiv.style.display = 'block';
+      currentOutstanding = outstanding;
+      
+      // Reset payment amount field
+      document.getElementById('paymentAmount').value = '';
+      document.getElementById('amountError').style.display = 'none';
+    }
+
+    function validatePaymentAmount() {
+      const amountInput = document.getElementById('paymentAmount');
+      const amount = parseFloat(amountInput.value);
+      const errorSpan = document.getElementById('amountError');
+      
+      if (isNaN(amount) || amount <= 0) {
+        errorSpan.style.display = 'block';
+        errorSpan.textContent = 'Please enter a valid amount.';
+        return false;
+      }
+      if (amount > currentOutstanding) {
+        errorSpan.style.display = 'block';
+        errorSpan.textContent = `Amount cannot exceed outstanding balance (${currentOutstanding.toLocaleString()} UGX).`;
+        return false;
+      }
+      errorSpan.style.display = 'none';
+      return true;
+    }
+
+    // Payment method selector
+    document.querySelectorAll('.payment-method-option').forEach(opt => {
+      opt.addEventListener('click', function() {
+        document.querySelectorAll('.payment-method-option').forEach(o => o.classList.remove('selected'));
+        this.classList.add('selected');
+        document.getElementById('selectedMethod').value = this.dataset.method;
+      });
+    });
+
+    // Set default payment date to today
+    document.getElementById('paymentDate').value = new Date().toISOString().split('T')[0];
+
+    // Real-time validation on amount input
+    document.getElementById('paymentAmount').addEventListener('input', validatePaymentAmount);
+
+    function handlePaymentSubmit(e) {
+      e.preventDefault();
+      
+      if (!validatePaymentAmount()) return;
+      
+      const supplier = document.getElementById('supplierSelect').value;
+      const invoice = document.getElementById('invoiceSelect').value;
+      if (!supplier || !invoice) {
+        alert('Please select both supplier and invoice.');
+        return;
+      }
+      
+      const amount = parseFloat(document.getElementById('paymentAmount').value);
+      const method = document.getElementById('selectedMethod').value;
+      const date = document.getElementById('paymentDate').value;
+      const reference = document.getElementById('reference').value;
+      
+      alert(`✅ Payment recorded successfully!\n\nSupplier: ${supplier}\nInvoice: ${invoice}\nAmount: ${amount.toLocaleString()} UGX\nMethod: ${method}\nDate: ${date}\nReference: ${reference || 'N/A'}`);
+      
+      // Optionally redirect or reset
+      document.getElementById('paymentForm').reset();
+      document.getElementById('invoiceSummary').style.display = 'none';
+      document.getElementById('supplierSelect').value = '';
+      document.getElementById('invoiceSelect').innerHTML = '<option value="">-- Select Invoice --</option>';
+      document.getElementById('paymentDate').value = new Date().toISOString().split('T')[0];
+      document.querySelector('.payment-method-option[data-method="cash"]').classList.add('selected');
+      document.getElementById('selectedMethod').value = 'cash';
+    }
+  </script>
+</body>
+</html>

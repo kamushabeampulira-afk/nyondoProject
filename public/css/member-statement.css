@@ -1,0 +1,105 @@
+/* member-statement.css – Member statement page styles */
+
+/* Centered heading */
+.page-heading-center {
+  text-align: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+}
+
+.page-heading-center h1 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--dark-green), var(--gold));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  display: inline-block;
+}
+
+/* Metric cards */
+.metric-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: default;
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.metric-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.metric-card h6 {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.metric-card h3 {
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin-top: 4px;
+  color: var(--dark-green);
+}
+
+.metric-card i {
+  color: var(--gold);
+}
+
+/* Table row hover */
+.data-table tbody tr:hover {
+  background: rgba(255, 204, 0, 0.05);
+  cursor: pointer;
+}
+
+/* Print styles */
+@media print {
+  .sidebar,
+  .topbar,
+  .no-print,
+  .btn-primary,
+  .btn-outline,
+  .hamburger,
+  .profile-pill,
+  .section-head button,
+  .section-head select,
+  .section-head label {
+    display: none !important;
+  }
+  .main-wrap {
+    margin-left: 0 !important;
+  }
+  .page-content {
+    padding: 0;
+  }
+  .section-card {
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
+  .metric-card {
+    border: 1px solid #ddd;
+  }
+  body {
+    background: white;
+    margin: 0;
+    padding: 20px;
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .page-heading-center h1 {
+    font-size: 1.4rem;
+  }
+  .metric-card h3 {
+    font-size: 1.2rem;
+  }
+  .metric-card {
+    min-height: 120px;
+  }
+}

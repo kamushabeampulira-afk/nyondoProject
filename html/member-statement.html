@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Member Statement – NYONDO Hardware</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="../css/member-statement.css">
+</head>
+<body>
+  <input type="checkbox" id="nav-toggle" style="display: none">
+  <label class="sidebar-overlay" for="nav-toggle"></label>
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-logo"><i class="fa-solid fa-tools"></i></div>
+      <span class="brand-name">NYONDO</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-sec-label">Finance</div>
+      <a href="deposit-scheme.html" class="nav-link-item"><span class="nicon"><i class="fa-solid fa-piggy-bank"></i></span>Deposit Scheme</a>
+      <a href="member-statement.html" class="nav-link-item active"><span class="nicon"><i class="fa-solid fa-receipt"></i></span>Member Statement</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="user-av">AD</div>
+        <div><div class="user-name">Admin</div><div class="user-role">Administrator</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-wrap">
+    <header class="topbar">
+      <label for="nav-toggle" class="hamburger"><i class="fa-solid fa-bars"></i></label>
+      <div><div class="store-name-t">NYONDO <span>Hardware</span></div></div>
+      <div class="topbar-right">
+        <div class="profile-pill">
+          <div class="pill-av">AD</div>
+          <span>Admin</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <!-- Centered heading -->
+      <div class="page-heading-center mb-4">
+        <h1><i class="fa-solid fa-receipt"></i> Member Statement</h1>
+        <p class="text-muted">View deposit and pickup history for scheme members</p>
+      </div>
+
+      <!-- Member Selector & Filter -->
+      <div class="section-card mb-4">
+        <div class="section-head">
+          <h2><i class="fa-solid fa-user me-2" style="color: var(--gold);"></i>Select Member</h2>
+        </div>
+        <div class="p-3">
+          <div class="row g-3 align-items-end">
+            <div class="col-md-5">
+              <label class="form-label">Member</label>
+              <select id="memberSelect" class="form-select" onchange="loadStatement()">
+                <option value="Mukasa John">Mukasa John (Balance: 450,000 UGX)</option>
+                <option value="Nakato Sarah">Nakato Sarah (Balance: 230,000 UGX)</option>
+                <option value="Okello Peter">Okello Peter (Balance: 675,000 UGX)</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Date Range</label>
+              <select id="dateRange" class="form-select" onchange="loadStatement()">
+                <option value="all">All Transactions</option>
+                <option value="30days">Last 30 Days</option>
+                <option value="thisMonth">This Month</option>
+                <option value="last3months">Last 3 Months</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <button class="btn-primary w-100" onclick="window.print()">
+                <i class="fa-solid fa-print"></i> Print Statement
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary Stats Cards -->
+      <div class="row g-4 mb-4">
+        <div class="col-md-3 col-sm-6">
+          <div class="section-card metric-card p-3 text-center">
+            <i class="fa-solid fa-scale-balanced fa-2x mb-2" style="color: var(--gold);"></i>
+            <h6 class="text-muted">Current Balance</h6>
+            <h3 id="currentBalance">450,000 UGX</h3>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+          <div class="section-card metric-card p-3 text-center">
+            <i class="fa-solid fa-arrow-up fa-2x mb-2" style="color: var(--gold);"></i>
+            <h6 class="text-muted">Total Deposits</h6>
+            <h3 id="totalDeposits">750,000 UGX</h3>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+          <div class="section-card metric-card p-3 text-center">
+            <i class="fa-solid fa-arrow-down fa-2x mb-2" style="color: var(--gold);"></i>
+            <h6 class="text-muted">Total Pickups</h6>
+            <h3 id="totalPickups">300,000 UGX</h3>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+          <div class="section-card metric-card p-3 text-center">
+            <i class="fa-solid fa-calendar-week fa-2x mb-2" style="color: var(--gold);"></i>
+            <h6 class="text-muted">Last Transaction</h6>
+            <h3 id="lastTransaction">10 Apr 2026</h3>
+          </div>
+        </div>
+      </div>
+
+      <!-- Transaction History Table -->
+      <div class="section-card">
+        <div class="section-head">
+          <h2><i class="fa-solid fa-clock-rotate-left me-2" style="color: var(--gold);"></i>Transaction History</h2>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table" id="transactionTable">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Transaction Type</th>
+                <th>Description</th>
+                <th>Amount (UGX)</th>
+                <th>Balance (UGX)</th>
+              </tr>
+            </thead>
+            <tbody id="transactionBody">
+              <!-- Dynamically loaded by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Sample transaction data per member
+    const transactionData = {
+      "Mukasa John": {
+        balance: 450000,
+        totals: { deposits: 750000, pickups: 300000, lastTransaction: "10 Apr 2026" },
+        transactions: [
+          { date: "10 Apr 2026", type: "deposit", description: "Cash deposit", amount: 150000, balance: 450000 },
+          { date: "05 Apr 2026", type: "pickup", description: "2 x Cement (CEM II N)", amount: -56000, balance: 300000 },
+          { date: "01 Apr 2026", type: "deposit", description: "Mobile Money deposit", amount: 200000, balance: 356000 },
+          { date: "28 Mar 2026", type: "deposit", description: "Initial deposit", amount: 156000, balance: 156000 }
+        ]
+      },
+      "Nakato Sarah": {
+        balance: 230000,
+        totals: { deposits: 314000, pickups: 84000, lastTransaction: "05 Apr 2026" },
+        transactions: [
+          { date: "05 Apr 2026", type: "pickup", description: "3 x Cement (CEM II N)", amount: -84000, balance: 230000 },
+          { date: "28 Mar 2026", type: "deposit", description: "Deposit", amount: 158000, balance: 314000 },
+          { date: "15 Mar 2026", type: "deposit", description: "Initial deposit", amount: 156000, balance: 156000 }
+        ]
+      },
+      "Okello Peter": {
+        balance: 675000,
+        totals: { deposits: 875000, pickups: 200000, lastTransaction: "08 Apr 2026" },
+        transactions: [
+          { date: "08 Apr 2026", type: "pickup", description: "5 x Iron Bar 12mm", amount: -200000, balance: 675000 },
+          { date: "01 Apr 2026", type: "deposit", description: "Deposit", amount: 200000, balance: 875000 },
+          { date: "20 Mar 2026", type: "deposit", description: "Deposit", amount: 275000, balance: 675000 },
+          { date: "10 Mar 2026", type: "deposit", description: "Initial deposit", amount: 400000, balance: 400000 }
+        ]
+      }
+    };
+
+    function loadStatement() {
+      const member = document.getElementById('memberSelect').value;
+      const data = transactionData[member] || transactionData["Mukasa John"];
+      const dateRange = document.getElementById('dateRange').value;
+      
+      // Update summary cards
+      document.getElementById('currentBalance').innerHTML = data.balance.toLocaleString() + ' UGX';
+      document.getElementById('totalDeposits').innerHTML = data.totals.deposits.toLocaleString() + ' UGX';
+      document.getElementById('totalPickups').innerHTML = data.totals.pickups.toLocaleString() + ' UGX';
+      document.getElementById('lastTransaction').innerHTML = data.totals.lastTransaction;
+      
+      // Filter transactions by date range
+      let filtered = [...data.transactions];
+      if (dateRange !== 'all') {
+        const now = new Date();
+        let cutoff = new Date();
+        if (dateRange === '30days') cutoff.setDate(now.getDate() - 30);
+        else if (dateRange === 'thisMonth') cutoff = new Date(now.getFullYear(), now.getMonth(), 1);
+        else if (dateRange === 'last3months') cutoff.setMonth(now.getMonth() - 3);
+        
+        filtered = filtered.filter(t => {
+          const tDate = new Date(t.date);
+          return tDate >= cutoff;
+        });
+      }
+      
+      // Render table
+      const tbody = document.getElementById('transactionBody');
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4">No transactions in selected period.</td></tr>`;
+        return;
+      }
+      
+      tbody.innerHTML = filtered.map(t => {
+        const amountClass = t.amount > 0 ? 'text-success' : 'text-warning';
+        const amountSymbol = t.amount > 0 ? '+' : '';
+        const typeIcon = t.type === 'deposit' ? '<i class="fa-solid fa-arrow-up text-success"></i>' : '<i class="fa-solid fa-arrow-down text-warning"></i>';
+        return `
+          <tr>
+            <td><i class="fa-regular fa-calendar me-1"></i> ${t.date}</i></i></td>
+            <td>${typeIcon} ${t.type === 'deposit' ? 'Deposit' : 'Pickup'}</i></i></td>
+            <td>${t.description}</i></i></td>
+            <td class="${amountClass} fw-bold">${amountSymbol}${Math.abs(t.amount).toLocaleString()}</i></i></td>
+            <td class="fw-bold">${t.balance.toLocaleString()}</i></i></td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Load default statement on page load
+    document.addEventListener('DOMContentLoaded', loadStatement);
+  </script>
+</body>
+</html>

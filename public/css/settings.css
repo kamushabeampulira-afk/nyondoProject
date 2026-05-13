@@ -1,0 +1,132 @@
+/* settings.css – Settings page specific styles */
+
+/* Page heading (consistent with other pages) */
+.page-heading-center {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--gold);
+}
+.page-heading-center h1 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--dark-green), var(--gold));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  display: inline-block;
+}
+
+/* Settings section card */
+.settings-section {
+  background: var(--card-bg);
+  border-radius: 20px;
+  border: 1px solid var(--border-light);
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  transition: box-shadow 0.2s;
+}
+.settings-section:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.settings-section h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: var(--gold);
+  border-left: 4px solid var(--gold);
+  padding-left: 12px;
+}
+
+/* Toggle switch (modern) */
+.toggle-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-light);
+  margin-bottom: 20px;
+}
+.toggle-label {
+  font-weight: 600;
+  color: var(--text-dark);
+}
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 52px;
+  height: 28px;
+}
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: 0.3s;
+  border-radius: 34px;
+}
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 22px;
+  width: 22px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+}
+input:checked + .slider {
+  background-color: var(--gold);
+}
+input:checked + .slider:before {
+  transform: translateX(24px);
+}
+
+/* Form labels */
+.form-label {
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--text-dark);
+}
+.form-control,
+.form-select {
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  padding: 10px 14px;
+}
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 0.2rem rgba(255, 204, 0, 0.25);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .page-heading-center h1 {
+    font-size: 1.4rem;
+  }
+  .settings-section {
+    padding: 16px;
+  }
+  .settings-section h3 {
+    font-size: 1rem;
+  }
+  .d-flex.gap-3 {
+    flex-direction: column;
+  }
+  .btn-outline {
+    width: 100%;
+    text-align: center;
+  }
+}
