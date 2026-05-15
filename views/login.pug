@@ -12,7 +12,7 @@ block head
     .login-card {
       background: white;
       border-radius: 1.5rem;
-      box-shadow: 0 20px 35px -10px rgba(0,0,0,0.15);
+      box-shadow: 0 20px 35px -10px #003300;
       overflow: hidden;
       max-width: 480px;
       width: 100%;
@@ -22,7 +22,7 @@ block head
       transform: translateY(-3px);
     }
     .login-header {
-      background: var(--dark-bg, #1e2a2f);  /* uses your sidebar color variable */
+      background: var(--dark-bg, #003300);
       padding: 2rem 1.5rem;
       text-align: center;
       position: relative;
@@ -37,7 +37,7 @@ block head
       justify-content: center;
       margin: 0 auto 1rem;
       font-size: 2rem;
-      color: var(--dark-bg, #1e2a2f);
+      color: var(--dark-bg, #003300);
       box-shadow: 0 5px 15px rgba(0,0,0,0.2);
     }
     .login-header h3 {
@@ -57,7 +57,7 @@ block head
     }
     .form-group label {
       font-weight: 500;
-      color: #1e2a2f;
+      color: #003300;
       margin-bottom: 0.5rem;
       display: block;
     }
@@ -83,10 +83,10 @@ block head
     .input-icon input:focus {
       border-color: var(--gold);
       outline: none;
-      box-shadow: 0 0 0 3px rgba(247,179,43,0.2);
+      box-shadow: 0 0 0 3px #003300;
     }
     .btn-login {
-      background: var(--dark-bg, #1e2a2f);
+      background: var(--dark-bg, #003300);
       color: white;
       border: none;
       border-radius: 0.75rem;
@@ -98,7 +98,7 @@ block head
     }
     .btn-login:hover {
       background: var(--gold);
-      color: var(--dark-bg, #1e2a2f);
+      color: var(--dark-bg, #003300);
     }
     .login-footer {
       text-align: center;
@@ -159,6 +159,6 @@ block content
           button.btn-login(type="submit")
             i.fa-solid.fa-arrow-right-to-bracket.me-2
             | Login
-      .login-footer
-        | Don't have an account? 
-        a(href="/signup") Create one
+      //- .login-footer
+      //-   | Don't have an account? 
+      //-   a(href="/signup") Create one

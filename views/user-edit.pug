@@ -1,0 +1,26 @@
+extends layout
+
+block content
+  .container.mt-4
+    h1 Edit User
+    form(method="POST" action=`/users/${user._id}`)
+      .mb-3
+        label.form-label Full Name
+        input.form-control(type="text" name="fullName" value=user.fullName required)
+      .mb-3
+        label.form-label Role
+        select.form-select(name="role")
+          option(value="admin" selected=user.role === 'admin') Admin
+          option(value="manager" selected=user.role === 'manager') Manager
+          option(value="sales" selected=user.role === 'sales') Sales
+          option(value="attendant" selected=user.role === 'attendant') Attendant
+      .mb-3
+        label.form-label Status
+        select.form-select(name="status")
+          option(value="Active" selected=user.status === 'Active') Active
+          option(value="Inactive" selected=user.status === 'Inactive') Inactive
+      .mb-3
+        label.form-label Department
+        input.form-control(type="text" name="department" value=user.department)
+      button.btn-primary(type="submit") Save
+      a.btn-outline.ms-2(href="/users") Cancel

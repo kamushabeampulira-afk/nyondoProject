@@ -66,6 +66,11 @@ block content
               span.input-group-text: i.fa-solid.fa-location-dot
               input.form-control(type='text' name='address')
           .mb-3
+            label.form-label Product
+            .input-group
+              span.input-group-text: i.fa-solid.fa-location-dot
+              input.form-control(type='text' name='product')
+          .mb-3
             label.form-label Employer / Workplace
             .input-group
               span.input-group-text: i.fa-solid.fa-briefcase
@@ -121,8 +126,11 @@ block content
                 th Name
                 th NIN
                 th Phone
+                th Product 
+                th Total Deposited
                 th Balance (UGX)
-                th Joined
+                th Date 
+                th Received by
                 th Actions
             tbody
               if members && members.length

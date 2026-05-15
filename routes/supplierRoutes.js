@@ -3,10 +3,10 @@ const express = require('express');
 const router = express.Router();
 const Supplier = require('../models/Supplier');
 const CreditInvoice = require('../models/CreditInvoice'); // for outstanding calculation
-const { ensureAuthenticated } = require('../middleware/auth');
+const { isManagerOrAdmin } = require('../middleware/auth');   // changed
 
 // GET /suppliers – show list
-router.get('/', ensureAuthenticated, async (req, res) => {
+router.get('/', isManagerOrAdmin, async (req, res) => {
   try {
     const suppliers = await Supplier.find().sort({ companyName: 1 });
     const totalSuppliers = suppliers.length;
@@ -41,7 +41,7 @@ router.get('/', ensureAuthenticated, async (req, res) => {
 });
 
 // POST /suppliers – add new supplier
-router.post('/', ensureAuthenticated, async (req, res) => {
+router.post('/', isManagerOrAdmin, async (req, res) => {
   try {
     const { companyName, contactPerson, phone, email, address, paymentTerms, creditLimit, productsSupplied } = req.body;
     const existing = await Supplier.findOne({ companyName });
@@ -57,8 +57,8 @@ router.post('/', ensureAuthenticated, async (req, res) => {
   res.redirect('/suppliers');
 });
 
-// Optional: GET /suppliers/:id/edit – show edit form (create later)
-router.get('/:id/edit', ensureAuthenticated, async (req, res) => {
+// Optional: GET /suppliers/:id/edit – show edit form
+router.get('/:id/edit', isManagerOrAdmin, async (req, res) => {
   try {
     const supplier = await Supplier.findById(req.params.id);
     if (!supplier) throw new Error('Supplier not found');
@@ -70,7 +70,7 @@ router.get('/:id/edit', ensureAuthenticated, async (req, res) => {
 });
 
 // Optional: POST /suppliers/:id – update supplier
-router.post('/:id', ensureAuthenticated, async (req, res) => {
+router.post('/:id', isManagerOrAdmin, async (req, res) => {
   try {
     await Supplier.findByIdAndUpdate(req.params.id, req.body, { runValidators: true });
     req.session.success_msg = 'Supplier updated successfully';

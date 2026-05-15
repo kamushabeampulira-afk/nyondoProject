@@ -1,178 +1,289 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sales Counter – NYONDO Hardware</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <link rel="stylesheet" href="../css/main.css">
-  <link rel="stylesheet" href="../css/sales.css">
-</head>
-<body>
-  <input type="checkbox" id="nav-toggle" style="display: none">
-  <label class="sidebar-overlay" for="nav-toggle"></label>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sales Counter – NYONDO Hardware</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="../css/main.css" />
+    <link rel="stylesheet" href="../css/sales.css" />
+  </head>
+  <body>
+    <input type="checkbox" id="nav-toggle" style="display: none" />
+    <label class="sidebar-overlay" for="nav-toggle"></label>
 
-  <aside class="sidebar">
-    <div class="sidebar-brand">
-      <div class="brand-logo"><i class="fa-solid fa-tools"></i></div>
-      <span class="brand-name">NYONDO</span>
-    </div>
-    <nav class="sidebar-nav">
-      <div class="nav-sec-label">Main Menu</div>
-      <a href="admin-dashboard.html" class="nav-link-item"><span class="nicon"><i class="fa-solid fa-grid-2"></i></span>Dashboard</a>
-      <a href="sales.html" class="nav-link-item active"><span class="nicon"><i class="fa-solid fa-cash-register"></i></span>Sales Counter</a>
-      <a href="inventory.html" class="nav-link-item"><span class="nicon"><i class="fa-solid fa-boxes-stacked"></i></span>Inventory</a>
-    </nav>
-    <div class="sidebar-footer">
-      <div class="user-chip">
-        <div class="user-av">SA</div>
-        <div><div class="user-name">Sales</div><div class="user-role">Attendant</div></div>
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-logo"><i class="fa-solid fa-tools"></i></div>
+        <span class="brand-name">NYONDO</span>
       </div>
-    </div>
-  </aside>
-
-  <div class="main-wrap">
-    <header class="topbar">
-      <label for="nav-toggle" class="hamburger"><i class="fa-solid fa-bars"></i></label>
-      <div><div class="store-name-t">NYONDO <span>Hardware</span></div></div>
-      <div class="topbar-right">
-        <div class="profile-pill">
-          <div class="pill-av">SA</div>
-          <span>Sales</span>
-        </div>
-      </div>
-    </header>
-
-    <main class="page-content">
-      <!-- Centered heading (matches other dashboards) -->
-      <div class="page-heading-center mb-4">
-        <h1><i class="fa-solid fa-cart-shopping"></i> Sales Counter</h1>
-        <p class="text-muted">Add items to cart, apply delivery charges, and complete sale</p>
-      </div>
-
-      <div class="row g-4">
-        <!-- Left Column - Product Selection & Customer Details -->
-        <div class="col-lg-5">
-          <div class="form-card">
-            <h4 class="mb-4"><i class="fa-solid fa-cart-plus me-2" style="color: var(--gold);"></i> Add Product to Cart</h4>
-            <div class="mb-4">
-              <label class="form-label">Select Product</label>
-              <select id="productSelect" class="form-select">
-                <option value="28000" data-name="Cement (CEM II N)">Cement (CEM II N) - 28,000 UGX</option>
-                <option value="30000" data-name="Cement (CEM III N)">Cement (CEM III N) - 30,000 UGX</option>
-                <option value="18500" data-name="Iron Bar 12mm">Iron Bar 12mm - 18,500 UGX</option>
-                <option value="42000" data-name="Iron Sheet (Color)">Iron Sheet (Color) - 42,000 UGX</option>
-                <option value="80000" data-name="Wheelbarrow">Wheelbarrow - 80,000 UGX</option>
-                <option value="48000" data-name="Wire Mesh">Wire Mesh - 48,000 UGX</option>
-              </select>
-            </div>
-            <div class="mb-4">
-              <label class="form-label">Quantity</label>
-              <input type="number" id="productQty" class="form-control" value="1" min="1">
-            </div>
-            <button class="btn-primary w-100 py-2" onclick="addToCart()">
-              <i class="fa-solid fa-plus me-2"></i> Add to Cart
-            </button>
-          </div>
-
-          <div class="form-card mt-4">
-            <h4 class="mb-4"><i class="fa-solid fa-truck me-2" style="color: var(--gold);"></i> Customer & Delivery</h4>
-            <div class="mb-4">
-              <label class="form-label">Customer Name</label>
-              <div class="input-group">
-                <span class="input-group-text"><i class="fa-solid fa-user"></i></span>
-                <input type="text" id="custName" class="form-control" placeholder="Walk-in Customer">
-              </div>
-            </div>
-            <div class="mb-4">
-              <label class="form-label">Distance from Nansana (km)</label>
-              <div class="input-group">
-                <span class="input-group-text"><i class="fa-solid fa-location-dot"></i></span>
-                <input type="number" id="distance" class="form-control" value="5" step="1">
-              </div>
-              <small class="text-muted">Free delivery if total ≥ 500,000 UGX and distance ≤ 10km</small>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Payment Method</label>
-              <select id="paymentMethod" class="form-select">
-                <option>Cash</option>
-                <option>Mobile Money</option>
-                <option>Credit</option>
-                <option>Deposit Scheme</option>
-              </select>
-            </div>
+      <nav class="sidebar-nav">
+        <div class="nav-sec-label">Main Menu</div>
+        <a href="admin-dashboard.html" class="nav-link-item"
+          ><span class="nicon"><i class="fa-solid fa-grid-2"></i></span
+          >Dashboard</a
+        >
+        <a href="sales.html" class="nav-link-item active"
+          ><span class="nicon"><i class="fa-solid fa-cash-register"></i></span
+          >Sales Counter</a
+        >
+        <a href="inventory.html" class="nav-link-item"
+          ><span class="nicon"><i class="fa-solid fa-boxes-stacked"></i></span
+          >Inventory</a
+        >
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-chip">
+          <div class="user-av">SA</div>
+          <div>
+            <div class="user-name">Sales</div>
+            <div class="user-role">Attendant</div>
           </div>
         </div>
+      </div>
+    </aside>
 
-        <!-- Right Column - Shopping Cart -->
-        <div class="col-lg-7">
-          <div class="section-card">
-            <div class="section-head">
-              <h2><i class="fa-solid fa-cart-shopping me-2" style="color: var(--gold);"></i> Shopping Cart</h2>
-              <button class="btn-outline btn-sm" onclick="clearCart()">
-                <i class="fa-solid fa-trash-can me-1"></i> Clear Cart
+    <div class="main-wrap">
+      <header class="topbar">
+        <label for="nav-toggle" class="hamburger"
+          ><i class="fa-solid fa-bars"></i
+        ></label>
+        <div>
+          <div class="store-name-t">NYONDO <span>Hardware</span></div>
+        </div>
+        <div class="topbar-right">
+          <div class="profile-pill">
+            <div class="pill-av">SA</div>
+            <span>Sales</span>
+          </div>
+        </div>
+      </header>
+
+      <main class="page-content">
+        <!-- Centered heading (matches other dashboards) -->
+        <div class="page-heading-center mb-4">
+          <h1><i class="fa-solid fa-cart-shopping"></i> Sales Counter</h1>
+          <p class="text-muted">
+            Add items to cart, apply delivery charges, and complete sale
+          </p>
+        </div>
+
+        <div class="row g-4">
+          <!-- Left Column - Product Selection & Customer Details -->
+          <div class="col-lg-5">
+            <div class="form-card">
+              <h4 class="mb-4">
+                <i
+                  class="fa-solid fa-cart-plus me-2"
+                  style="color: var(--gold)"
+                ></i>
+                Add Product to Cart
+              </h4>
+              <div class="mb-4">
+                <label class="form-label">Select Product</label>
+                <select id="productSelect" class="form-select">
+                  <option value="28000" data-name="Cement (CEM II N)">
+                    Cement (CEM II N) - 28,000 UGX
+                  </option>
+                  <option value="30000" data-name="Cement (CEM III N)">
+                    Cement (CEM III N) - 30,000 UGX
+                  </option>
+                  <option value="18500" data-name="Iron Bar 12mm">
+                    Iron Bar 12mm - 18,500 UGX
+                  </option>
+                  <option value="42000" data-name="Iron Sheet (Color)">
+                    Iron Sheet (Color) - 42,000 UGX
+                  </option>
+                  <option value="80000" data-name="Wheelbarrow">
+                    Wheelbarrow - 80,000 UGX
+                  </option>
+                  <option value="48000" data-name="Wire Mesh">
+                    Wire Mesh - 48,000 UGX
+                  </option>
+                </select>
+              </div>
+              <div class="mb-4">
+                <label class="form-label">Quantity</label>
+                <input
+                  type="number"
+                  id="productQty"
+                  class="form-control"
+                  value="1"
+                  min="1"
+                />
+              </div>
+              <button class="btn-primary w-100 py-2" onclick="addToCart()">
+                <i class="fa-solid fa-plus me-2"></i> Add to Cart
               </button>
             </div>
-            <div class="table-responsive">
-              <table class="data-table cart-table">
-                <thead>
-                  <tr><th>Item</th><th>Qty</th><th>Unit Price (UGX)</th><th>Total (UGX)</th><th></th></tr>
-                </thead>
-                <tbody id="cartBody">
-                  <tr><td colspan="5" class="text-center text-muted py-4">
-                    <i class="fa-solid fa-cart-empty fa-2x mb-2 d-block"></i>Cart is empty. Add products to continue.
-                  </td></tr>
-                </tbody>
-                <tfoot id="cartFooter" style="display: none;">
-                  <tr class="table-active"><td colspan="3" class="text-end fw-bold">Subtotal:</td><td id="subtotal" class="fw-bold">0 UGX</td><td></td></tr>
-                  <tr class="table-active"><td colspan="3" class="text-end fw-bold">Delivery Fee:</td><td id="deliveryFee" class="fw-bold">0 UGX</td><td></td></tr>
-                  <tr class="table-success"><td colspan="3" class="text-end fw-bold fs-5">Grand Total:</td><td id="grandTotal" class="total-amount fw-bold">0 UGX</td><td></td></tr>
-                </tfoot>
-              </table>
+
+            <div class="form-card mt-4">
+              <h4 class="mb-4">
+                <i
+                  class="fa-solid fa-truck me-2"
+                  style="color: var(--gold)"
+                ></i>
+                Customer & Delivery
+              </h4>
+              <div class="mb-4">
+                <label class="form-label">Customer Name</label>
+                <div class="input-group">
+                  <span class="input-group-text"
+                    ><i class="fa-solid fa-user"></i
+                  ></span>
+                  <input
+                    type="text"
+                    id="custName"
+                    class="form-control"
+                    placeholder="Walk-in Customer"
+                  />
+                </div>
+              </div>
+              <div class="mb-4">
+                <label class="form-label">Distance from Nansana (km)</label>
+                <div class="input-group">
+                  <span class="input-group-text"
+                    ><i class="fa-solid fa-location-dot"></i
+                  ></span>
+                  <input
+                    type="number"
+                    id="distance"
+                    class="form-control"
+                    value="5"
+                    step="1"
+                  />
+                </div>
+                <small class="text-muted"
+                  >Free delivery if total ≥ 500,000 UGX and distance ≤
+                  10km</small
+                >
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Payment Method</label>
+                <select id="paymentMethod" class="form-select">
+                  <option>Cash</option>
+                  <option>Mobile Money</option>
+                  <option>Credit</option>
+                  <option>Deposit Scheme</option>
+                </select>
+              </div>
             </div>
-            <div class="p-3 bg-light border-top">
-              <button class="btn-primary w-100 py-2" onclick="checkout()">
-                <i class="fa-solid fa-check-circle me-2"></i> Complete Sale
-              </button>
+          </div>
+
+          <!-- Right Column - Shopping Cart -->
+          <div class="col-lg-7">
+            <div class="section-card">
+              <div class="section-head">
+                <h2>
+                  <i
+                    class="fa-solid fa-cart-shopping me-2"
+                    style="color: var(--gold)"
+                  ></i>
+                  Shopping Cart
+                </h2>
+                <button class="btn-outline btn-sm" onclick="clearCart()">
+                  <i class="fa-solid fa-trash-can me-1"></i> Clear Cart
+                </button>
+              </div>
+              <div class="table-responsive">
+                <table class="data-table cart-table">
+                  <thead>
+                    <tr>
+                      <th>Item</th>
+                      <th>Qty</th>
+                      <th>Unit Price (UGX)</th>
+                      <th>Total (UGX)</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="cartBody">
+                    <tr>
+                      <td colspan="5" class="text-center text-muted py-4">
+                        <i class="fa-solid fa-cart-empty fa-2x mb-2 d-block"></i
+                        >Cart is empty. Add products to continue.
+                      </td>
+                    </tr>
+                  </tbody>
+                  <tfoot id="cartFooter" style="display: none">
+                    <tr class="table-active">
+                      <td colspan="3" class="text-end fw-bold">Subtotal:</td>
+                      <td id="subtotal" class="fw-bold">0 UGX</td>
+                      <td></td>
+                    </tr>
+                    <tr class="table-active">
+                      <td colspan="3" class="text-end fw-bold">
+                        Delivery Fee:
+                      </td>
+                      <td id="deliveryFee" class="fw-bold">0 UGX</td>
+                      <td></td>
+                    </tr>
+                    <tr class="table-success">
+                      <td colspan="3" class="text-end fw-bold fs-5">
+                        Grand Total:
+                      </td>
+                      <td id="grandTotal" class="total-amount fw-bold">
+                        0 UGX
+                      </td>
+                      <td></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+              <div class="p-3 bg-light border-top">
+                <button class="btn-primary w-100 py-2" onclick="checkout()">
+                  <i class="fa-solid fa-check-circle me-2"></i> Complete Sale
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </main>
-  </div>
+      </main>
+    </div>
 
-  <script>
-    let cart = [];
+    <script>
+      let cart = [];
 
-    function addToCart() {
-      const select = document.getElementById("productSelect");
-      const price = parseInt(select.value);
-      const name = select.options[select.selectedIndex].getAttribute("data-name");
-      const qty = parseInt(document.getElementById("productQty").value);
-      if (qty < 1) { alert("Please enter a valid quantity"); return; }
-      const existing = cart.find(item => item.name === name);
-      if (existing) existing.qty += qty;
-      else cart.push({ name, price, qty });
-      renderCart();
-      document.getElementById("productQty").value = 1;
-    }
-
-    function renderCart() {
-      const tbody = document.getElementById("cartBody");
-      const footer = document.getElementById("cartFooter");
-      if (cart.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4"><i class="fa-solid fa-cart-empty fa-2x mb-2 d-block"></i>Cart is empty. Add products to continue.</td></tr>`;
-        footer.style.display = "none";
-        return;
+      function addToCart() {
+        const select = document.getElementById("productSelect");
+        const price = parseInt(select.value);
+        const name =
+          select.options[select.selectedIndex].getAttribute("data-name");
+        const qty = parseInt(document.getElementById("productQty").value);
+        if (qty < 1) {
+          alert("Please enter a valid quantity");
+          return;
+        }
+        const existing = cart.find((item) => item.name === name);
+        if (existing) existing.qty += qty;
+        else cart.push({ name, price, qty });
+        renderCart();
+        document.getElementById("productQty").value = 1;
       }
-      footer.style.display = "table-footer-group";
-      tbody.innerHTML = "";
-      let subtotal = 0;
-      cart.forEach((item, idx) => {
-        const total = item.price * item.qty;
-        subtotal += total;
-        tbody.insertAdjacentHTML("beforeend", `
+
+      function renderCart() {
+        const tbody = document.getElementById("cartBody");
+        const footer = document.getElementById("cartFooter");
+        if (cart.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4"><i class="fa-solid fa-cart-empty fa-2x mb-2 d-block"></i>Cart is empty. Add products to continue.</td></tr>`;
+          footer.style.display = "none";
+          return;
+        }
+        footer.style.display = "table-footer-group";
+        tbody.innerHTML = "";
+        let subtotal = 0;
+        cart.forEach((item, idx) => {
+          const total = item.price * item.qty;
+          subtotal += total;
+          tbody.insertAdjacentHTML(
+            "beforeend",
+            `
           <tr>
             <td><i class="fa-solid fa-cube me-2" style="color: var(--gold);"></i>${item.name}</td>
             <td><input type="number" class="quantity-input form-control" value="${item.qty}" min="1" onchange="updateQty(${idx}, this.value)"></td>
@@ -180,45 +291,78 @@
             <td class="fw-bold">${total.toLocaleString()}</td>
             <td><i class="fa-regular fa-trash-can remove-item" onclick="removeItem(${idx})"></i></td>
           </tr>
-        `);
-      });
-      document.getElementById("subtotal").innerHTML = subtotal.toLocaleString() + " UGX";
-      calculateDelivery(subtotal);
-    }
-
-    function updateQty(idx, newQty) { let qty = parseInt(newQty); if (isNaN(qty) || qty < 1) qty = 1; cart[idx].qty = qty; renderCart(); }
-    function removeItem(idx) { cart.splice(idx, 1); renderCart(); }
-    function clearCart() { if (cart.length > 0 && confirm("Clear entire cart?")) { cart = []; renderCart(); } }
-
-    function calculateDelivery(subtotal) {
-      const distance = parseFloat(document.getElementById("distance").value) || 0;
-      let fee = 0;
-      if (subtotal >= 500000 && distance <= 10) fee = 0;
-      else { fee = 30000; if (distance > 10) fee += (distance - 10) * 1000; }
-      document.getElementById("deliveryFee").innerHTML = fee.toLocaleString() + " UGX";
-      document.getElementById("grandTotal").innerHTML = (subtotal + fee).toLocaleString() + " UGX";
-    }
-
-    document.getElementById("distance").addEventListener("input", () => {
-      const sub = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
-      calculateDelivery(sub);
-    });
-
-    function checkout() {
-      if (cart.length === 0) { alert("Cart is empty. Please add items before checkout."); return; }
-      const customer = document.getElementById("custName").value || "Walk-in Customer";
-      const payment = document.getElementById("paymentMethod").value;
-      const subtotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
-      const fee = parseFloat(document.getElementById("deliveryFee").innerHTML.replace(/[^0-9]/g, "")) || 0;
-      const total = subtotal + fee;
-      const confirmMsg = `📋 SALE SUMMARY\n━━━━━━━━━━━━━━━━━\nCustomer: ${customer}\nPayment: ${payment}\nItems: ${cart.length}\nSubtotal: ${subtotal.toLocaleString()} UGX\nDelivery: ${fee.toLocaleString()} UGX\n━━━━━━━━━━━━━━━━━\nTOTAL: ${total.toLocaleString()} UGX\n━━━━━━━━━━━━━━━━━\n\nProceed with this sale?`;
-      if (confirm(confirmMsg)) {
-        alert(`✅ Sale completed successfully!\n\nInvoice sent to printer.\nRedirecting to invoice page...`);
-        cart = []; renderCart();
-        document.getElementById("custName").value = "";
-        document.getElementById("distance").value = "5";
+        `,
+          );
+        });
+        document.getElementById("subtotal").innerHTML =
+          subtotal.toLocaleString() + " UGX";
+        calculateDelivery(subtotal);
       }
-    }
-  </script>
-</body>
+
+      function updateQty(idx, newQty) {
+        let qty = parseInt(newQty);
+        if (isNaN(qty) || qty < 1) qty = 1;
+        cart[idx].qty = qty;
+        renderCart();
+      }
+      function removeItem(idx) {
+        cart.splice(idx, 1);
+        renderCart();
+      }
+      function clearCart() {
+        if (cart.length > 0 && confirm("Clear entire cart?")) {
+          cart = [];
+          renderCart();
+        }
+      }
+
+      function calculateDelivery(subtotal) {
+        const distance =
+          parseFloat(document.getElementById("distance").value) || 0;
+        let fee = 0;
+        if (subtotal >= 500000 && distance <= 10) fee = 0;
+        else {
+          fee = 30000;
+          if (distance > 10) fee += (distance - 10) * 1000;
+        }
+        document.getElementById("deliveryFee").innerHTML =
+          fee.toLocaleString() + " UGX";
+        document.getElementById("grandTotal").innerHTML =
+          (subtotal + fee).toLocaleString() + " UGX";
+      }
+
+      document.getElementById("distance").addEventListener("input", () => {
+        const sub = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
+        calculateDelivery(sub);
+      });
+
+      function checkout() {
+        if (cart.length === 0) {
+          alert("Cart is empty. Please add items before checkout.");
+          return;
+        }
+        const customer =
+          document.getElementById("custName").value || "Walk-in Customer";
+        const payment = document.getElementById("paymentMethod").value;
+        const subtotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
+        const fee =
+          parseFloat(
+            document
+              .getElementById("deliveryFee")
+              .innerHTML.replace(/[^0-9]/g, ""),
+          ) || 0;
+        const total = subtotal + fee;
+        const confirmMsg = `📋 SALE SUMMARY\n━━━━━━━━━━━━━━━━━\nCustomer: ${customer}\nPayment: ${payment}\nItems: ${cart.length}\nSubtotal: ${subtotal.toLocaleString()} UGX\nDelivery: ${fee.toLocaleString()} UGX\n━━━━━━━━━━━━━━━━━\nTOTAL: ${total.toLocaleString()} UGX\n━━━━━━━━━━━━━━━━━\n\nProceed with this sale?`;
+        if (confirm(confirmMsg)) {
+          alert(
+            `✅ Sale completed successfully!\n\nInvoice sent to printer.\nRedirecting to invoice page...`,
+          );
+          cart = [];
+          renderCart();
+          document.getElementById("custName").value = "";
+          document.getElementById("distance").value = "5";
+        }
+      }
+    </script>
+  </body>
 </html>

@@ -1,0 +1,15 @@
+extends layout
+
+block content
+  .container.mt-4
+    h1 Customer Details
+    p
+      strong Name: #{customer.fullName}
+    p
+      strong Email: #{customer.email || '—'}
+    p
+      strong Phone: #{customer.phone}
+    p
+      strong Address: #{customer.address || '—'}
+    a.btn-primary(href=`/customers/${customer._id}/edit`) Edit
+    a.btn-outline.ms-2(href="/customers") Back

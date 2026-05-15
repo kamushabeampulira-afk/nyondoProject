@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const Product = require('../models/Product');
-const { ensureAuthenticated } = require('../middleware/auth');
+const { isManager } = require('../middleware/auth');   // changed
 
 // Helper to map product type to category (optional but good for reports)
 function getCategoryFromProductType(productType) {
@@ -17,7 +17,7 @@ function getCategoryFromProductType(productType) {
 }
 
 // GET /inventory – show inventory page
-router.get('/', ensureAuthenticated, async (req, res) => {
+router.get('/', isManager, async (req, res) => {
   try {
     const products = await Product.find().sort({ createdAt: -1 });
     const totalSkus = products.length;
@@ -45,7 +45,7 @@ router.get('/', ensureAuthenticated, async (req, res) => {
 });
 
 // POST /inventory – add new product (using productType dropdown)
-router.post('/', ensureAuthenticated, async (req, res) => {
+router.post('/', isManager, async (req, res) => {
   try {
     const { productType, unitCost, unitPrice, currentStock, reorderLevel, supplier, sku, description } = req.body;
     if (!productType || !unitCost || !unitPrice) {
@@ -80,7 +80,7 @@ router.post('/', ensureAuthenticated, async (req, res) => {
 });
 
 // GET /inventory/:id/edit – show edit form
-router.get('/:id/edit', ensureAuthenticated, async (req, res) => {
+router.get('/:id/edit', isManager, async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
     if (!product) throw new Error('Product not found');
@@ -92,7 +92,7 @@ router.get('/:id/edit', ensureAuthenticated, async (req, res) => {
 });
 
 // POST /inventory/:id – update product
-router.post('/:id', ensureAuthenticated, async (req, res) => {
+router.post('/:id', isManager, async (req, res) => {
   try {
     const { productType, unitCost, unitPrice, currentStock, reorderLevel, supplier, sku, description } = req.body;
     if (unitPrice <= unitCost) {
@@ -125,7 +125,7 @@ router.post('/:id', ensureAuthenticated, async (req, res) => {
 });
 
 // POST /inventory/:id/delete – delete product
-router.post('/:id/delete', ensureAuthenticated, async (req, res) => {
+router.post('/:id/delete', isManager, async (req, res) => {
   try {
     const product = await Product.findByIdAndDelete(req.params.id);
     if (!product) throw new Error('Product not found');

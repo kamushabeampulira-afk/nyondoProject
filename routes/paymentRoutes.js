@@ -1,13 +1,14 @@
+// routes/payments.js
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const Supplier = require('../models/Supplier');
 const CreditInvoice = require('../models/CreditInvoice');
 const Payment = require('../models/Payment');
-const { ensureAuthenticated } = require('../middleware/auth');
+const { isManagerOrAdmin } = require('../middleware/auth');   // changed
 
 // GET /payments/record – show payment form
-router.get('/record', ensureAuthenticated, async (req, res) => {
+router.get('/record', isManagerOrAdmin, async (req, res) => {
   try {
     const { supplierId } = req.query;
     const suppliers = await Supplier.find().sort({ companyName: 1 });
@@ -37,7 +38,7 @@ router.get('/record', ensureAuthenticated, async (req, res) => {
 });
 
 // POST /payments/record – process payment
-router.post('/record', ensureAuthenticated, async (req, res) => {
+router.post('/record', isManagerOrAdmin, async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   try {

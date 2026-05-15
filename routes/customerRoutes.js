@@ -2,10 +2,10 @@
 const express = require('express');
 const router = express.Router();
 const Customer = require('../models/Customer');
-const { ensureAuthenticated } = require('../middleware/auth');
+const { isSalesOrAdmin } = require('../middleware/auth');   // changed
 
 // GET /customers – show list and “add” form
-router.get('/', ensureAuthenticated, async (req, res) => {
+router.get('/', isSalesOrAdmin, async (req, res) => {
   try {
     const customers = await Customer.find().sort({ createdAt: -1 });
     res.render('customers', {
@@ -25,7 +25,7 @@ router.get('/', ensureAuthenticated, async (req, res) => {
 });
 
 // POST /customers – add a new customer
-router.post('/', ensureAuthenticated, async (req, res) => {
+router.post('/', isSalesOrAdmin, async (req, res) => {
   try {
     const customer = new Customer(req.body);
     await customer.save();
@@ -38,14 +38,14 @@ router.post('/', ensureAuthenticated, async (req, res) => {
 });
 
 // GET /customers/:id – view single customer details (optional)
-router.get('/:id', ensureAuthenticated, async (req, res) => {
+router.get('/:id', isSalesOrAdmin, async (req, res) => {
   try {
     const customer = await Customer.findById(req.params.id);
     if (!customer) {
       req.session.error_msg = 'Customer not found';
       return res.redirect('/customers');
     }
-    res.render('customer-detail', { customer, user: req.user }); // you can create this view later
+    res.render('customer-detail', { customer, user: req.user });
   } catch (err) {
     req.session.error_msg = err.message;
     res.redirect('/customers');
@@ -53,14 +53,14 @@ router.get('/:id', ensureAuthenticated, async (req, res) => {
 });
 
 // GET /customers/:id/edit – show edit form
-router.get('/:id/edit', ensureAuthenticated, async (req, res) => {
+router.get('/:id/edit', isSalesOrAdmin, async (req, res) => {
   try {
     const customer = await Customer.findById(req.params.id);
     if (!customer) {
       req.session.error_msg = 'Customer not found';
       return res.redirect('/customers');
     }
-    res.render('customer-edit', { customer, user: req.user }); // you can create this view later
+    res.render('customer-edit', { customer, user: req.user });
   } catch (err) {
     req.session.error_msg = err.message;
     res.redirect('/customers');
@@ -68,7 +68,7 @@ router.get('/:id/edit', ensureAuthenticated, async (req, res) => {
 });
 
 // POST /customers/:id – update customer
-router.post('/:id', ensureAuthenticated, async (req, res) => {
+router.post('/:id', isSalesOrAdmin, async (req, res) => {
   try {
     const customer = await Customer.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
     if (!customer) throw new Error('Customer not found');
@@ -81,7 +81,7 @@ router.post('/:id', ensureAuthenticated, async (req, res) => {
 });
 
 // POST /customers/:id/delete – delete customer (using POST for simplicity)
-router.post('/:id/delete', ensureAuthenticated, async (req, res) => {
+router.post('/:id/delete', isSalesOrAdmin, async (req, res) => {
   try {
     const customer = await Customer.findByIdAndDelete(req.params.id);
     if (!customer) throw new Error('Customer not found');

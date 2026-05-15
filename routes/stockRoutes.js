@@ -3,16 +3,15 @@ const express = require('express');
 const router = express.Router();
 const Product = require('../models/Product');
 const StockTransaction = require('../models/StockTransaction');
-const { ensureAuthenticated } = require('../middleware/auth');
+const { isManager } = require('../middleware/auth');   // changed
 
-// Show add stock form
-router.get('/add', ensureAuthenticated, async (req, res) => {
+router.get('/add', isManager, async (req, res) => {
   const products = await Product.find().select('_id productName currentStock');
   res.render('add-stock', { products, user: req.user });
 });
 
-// Process stock addition
-router.post('/add', ensureAuthenticated, async (req, res) => {
+// Process stock addition – only managers
+router.post('/add', isManager, async (req, res) => {
   try {
     const { productId, quantityAdded, unitCost, unitPrice, supplierName, supplierPhone, factoryName, paymentStatus } = req.body;
     const product = await Product.findById(productId);

@@ -63,12 +63,10 @@ block content
             label.form-label Address
             textarea.form-control(rows='2' name='address' placeholder='Physical address')
           .col-md-6
-            label.form-label Payment Terms
-            select.form-select(name='paymentTerms')
-              option Net 30
-              option Net 15
-              option Net 7
-              option Cash on Delivery
+            label.form-label Payment Status
+            select.form-select(name='paymentStatus')
+              option Fully Paid
+              option Credit
           .col-md-6
             label.form-label Credit Limit (UGX)
             input.form-control(type='number' name='creditLimit' placeholder='0' min='0')

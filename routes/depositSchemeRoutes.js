@@ -4,10 +4,10 @@ const router = express.Router();
 const DepositMember = require('../models/DepositMember');
 const DepositTransaction = require('../models/DepositTransaction');
 const Product = require('../models/Product');
-const { ensureAuthenticated } = require('../middleware/auth');
+const { isManagerOrAdmin } = require('../middleware/auth');   // changed
 
 // GET /deposit-scheme – main page
-router.get('/', ensureAuthenticated, async (req, res) => {
+router.get('/', isManagerOrAdmin, async (req, res) => {
   try {
     const members = await DepositMember.find().sort({ joinedAt: -1 });
     const transactions = await DepositTransaction.find()
@@ -45,7 +45,7 @@ router.get('/', ensureAuthenticated, async (req, res) => {
 });
 
 // POST /deposit-scheme/members – register member
-router.post('/members', ensureAuthenticated, async (req, res) => {
+router.post('/members', isManagerOrAdmin, async (req, res) => {
   try {
     const { fullName, nin, phone, address, employer } = req.body;
     const existing = await DepositMember.findOne({ $or: [{ nin }, { phone }] });
@@ -60,7 +60,7 @@ router.post('/members', ensureAuthenticated, async (req, res) => {
 });
 
 // POST /deposit-scheme/deposit – record deposit
-router.post('/deposit', ensureAuthenticated, async (req, res) => {
+router.post('/deposit', isManagerOrAdmin, async (req, res) => {
   try {
     const { memberId, amount, paymentMethod } = req.body;
     if (!memberId || !amount || amount < 1000) throw new Error('Invalid deposit amount');
@@ -82,7 +82,7 @@ router.post('/deposit', ensureAuthenticated, async (req, res) => {
 });
 
 // POST /deposit-scheme/pickup – pick goods
-router.post('/pickup', ensureAuthenticated, async (req, res) => {
+router.post('/pickup', isManagerOrAdmin, async (req, res) => {
   try {
     const { memberId, productId, quantity } = req.body;
     if (!memberId || !productId || !quantity || quantity < 1) throw new Error('Invalid pickup data');
@@ -112,7 +112,7 @@ router.post('/pickup', ensureAuthenticated, async (req, res) => {
 });
 
 // GET /deposit-scheme/member-statement – full member statement with filtering (preferred)
-router.get('/member-statement', ensureAuthenticated, async (req, res) => {
+router.get('/member-statement', isManagerOrAdmin, async (req, res) => {
   try {
     const { memberId, range } = req.query;
     const membersList = await DepositMember.find().sort({ fullName: 1 });
@@ -168,7 +168,7 @@ router.get('/member-statement', ensureAuthenticated, async (req, res) => {
 });
 
 // GET /deposit-scheme/statement/:id – simple statement (legacy, kept for compatibility)
-router.get('/statement/:id', ensureAuthenticated, async (req, res) => {
+router.get('/statement/:id', isManagerOrAdmin, async (req, res) => {
   try {
     const member = await DepositMember.findById(req.params.id);
     if (!member) throw new Error('Member not found');
@@ -181,7 +181,7 @@ router.get('/statement/:id', ensureAuthenticated, async (req, res) => {
 });
 
 // GET /deposit-scheme/export – placeholder
-router.get('/export', ensureAuthenticated, async (req, res) => {
+router.get('/export', isManagerOrAdmin, async (req, res) => {
   req.session.error_msg = 'Export feature coming soon';
   res.redirect('/deposit-scheme');
 });

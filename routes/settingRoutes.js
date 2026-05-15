@@ -2,10 +2,10 @@
 const express = require('express');
 const router = express.Router();
 const Setting = require('../models/Setting');
-const { ensureAuthenticated, allowRoles } = require('../middleware/auth');
+const { isAdmin } = require('../middleware/auth');   // changed
 
 // GET /settings – show settings form
-router.get('/', ensureAuthenticated, allowRoles(['Administrator']), async (req, res) => {
+router.get('/', isAdmin, async (req, res) => {
   try {
     let settings = await Setting.findOne();
     if (!settings) {
@@ -21,7 +21,7 @@ router.get('/', ensureAuthenticated, allowRoles(['Administrator']), async (req, 
 });
 
 // POST /settings – update settings
-router.post('/', ensureAuthenticated, allowRoles(['Administrator']), async (req, res) => {
+router.post('/', isAdmin, async (req, res) => {
   try {
     let settings = await Setting.findOne();
     if (!settings) settings = new Setting();

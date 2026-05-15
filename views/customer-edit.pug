@@ -1,0 +1,20 @@
+extends layout
+
+block content
+  .container.mt-4
+    h1 Edit Customer
+    form(method="POST" action=`/customers/${customer._id}`)
+      .mb-3
+        label.form-label Full Name
+        input.form-control(type="text" name="fullName" value=customer.fullName required)
+      .mb-3
+        label.form-label Email
+        input.form-control(type="email" name="email" value=customer.email)
+      .mb-3
+        label.form-label Phone
+        input.form-control(type="tel" name="phone" value=customer.phone)
+      .mb-3
+        label.form-label Address
+        textarea.form-control(name="address")= customer.address
+      button.btn-primary(type="submit") Save
+      a.btn-outline.ms-2(href="/customers") Cancel

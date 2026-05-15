@@ -48,47 +48,36 @@ block content
             label.form-label Full Name *
             input.form-control(type='text' name='fullName' required)
           .col-md-6
-            label.form-label Email *
+            label.form-label Nin *
+            input.form-control(type='text' name='nin' required)
+          .col-md-6
+            label.form-label Email  *
             input.form-control(type='email' name='email' required)
           .col-md-6
             label.form-label Password *
-            input.form-control(type='password' name='password' minlength='8' required)
+            input.form-control(type='text' name='password' required)
+          .col-md-6
+            label.form-label Phone Number  *
+            input.form-control(type='phone' name='phone' minlength='8' required)
           .col-md-6
             label.form-label Role *
             select.form-select(name='role' required)
               option(value='') Select Role
-              option Administrator
-              option Manager
-              option Sales Attendant
-          .col-12
-            label.form-label Permissions
-            .permissions-group
-              label
-                input(type='checkbox' name='permissions.stockManagement')
-                | Stock Management
-              label
-                input(type='checkbox' name='permissions.salesEntry' checked)
-                | Sales Entry
-              label
-                input(type='checkbox' name='permissions.creditManagement')
-                | Credit Management
-              label
-                input(type='checkbox' name='permissions.reports')
-                | Reports
-              label
-                input(type='checkbox' name='permissions.userManagement')
-                | User Management
-              label
-                input(type='checkbox' name='permissions.settings')
-                | Settings
+              option admin
+              option manager
+              option attendant
+          .col-md-6
+            label.form-label Next Of Kin*
+            input.form-control(type='text' name='nextOfKinName' required placeholder='Full Name')
+          .col-md-6
+            label.form-label Next Of Kin *
+            input.form-control(type='tel' name='nextOfKinPhone' required placeholder='Phone Number')
           .col-md-6
             label.form-label Status
             select.form-select(name='status')
               option Active
               option Inactive
-          .col-md-6
-            label.form-label Department / Branch
-            input.form-control(type='text' name='department')
+          
         .d-flex.gap-3.mt-4
           button.btn-primary(type='submit')
             i.fa-solid.fa-save

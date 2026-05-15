@@ -16,10 +16,10 @@ const supplierSchema = new mongoose.Schema({
   },
   email: String,
   address: String,
-  paymentTerms: { 
+  paymentStatus: { 
     type: String, 
-    enum: ['Net 30', 'Net 15', 'Net 7', 'Cash on Delivery'], 
-    default: 'Net 30' 
+    enum: ['Fully Paid','Credit'], 
+    default: 'Fully Paid' 
   },
   creditLimit: { 
     type: Number, 

@@ -1,0 +1,23 @@
+extends layout
+
+block content
+  .container.mt-4
+    h1 Edit Supplier
+    form(method="POST" action=`/suppliers/${supplier._id}`)
+      .mb-3
+        label.form-label Company Name
+        input.form-control(type="text" name="companyName" value=supplier.companyName required)
+      .mb-3
+        label.form-label Contact Person
+        input.form-control(type="text" name="contactPerson" value=supplier.contactPerson)
+      .mb-3
+        label.form-label Phone
+        input.form-control(type="tel" name="phone" value=supplier.phone)
+      .mb-3
+        label.form-label Email
+        input.form-control(type="email" name="email" value=supplier.email)
+      .mb-3
+        label.form-label Address
+        textarea.form-control(name="address")= supplier.address
+      button.btn-primary(type="submit") Save
+      a.btn-outline.ms-2(href="/suppliers") Cancel
