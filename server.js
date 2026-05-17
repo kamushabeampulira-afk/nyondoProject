@@ -1,61 +1,38 @@
 // 1. DEPENDENCIES
 require('dotenv').config();
-
 const express = require('express');
-const mongoose = require('mongoose');
-const session = require('express-session');
-const passport = require('passport');
+const expressSession = require('express-session');
 const path = require('path');
+const mongoose = require('mongoose');
+const passport = require('passport');
 const flash = require('connect-flash');
 
 const connectDB = require('./config/db');
 
-// USER MODEL
+// MODELS
 const User = require('./models/User');
 
-// AUTH MIDDLEWARE
-const { ensureAuthenticated } = require('./middleware/auth');
-
-// ROUTES – match your actual file names
-const authRoutes = require('./routes/authRoutes');
-const customerRoutes = require('./routes/customerRoutes');
-const supplierRoutes = require('./routes/supplierRoutes');
-const inventoryRoutes = require('./routes/inventoryRoutes');
-const salesRoutes = require('./routes/saleRoutes');
-const depositRoutes = require('./routes/depositSchemeRoutes');
-const creditRoutes = require('./routes/supplierCreditRoutes');   // corrected name
-const paymentRoutes = require('./routes/paymentRoutes');
-const userRoutes = require('./routes/userRoutes');
-const settingRoutes = require('./routes/settingRoutes');
-const transportRoutes = require('./routes/transportRoutes');
-const stockRoutes = require('./routes/stockRoutes');
-const signupRoutes = require('./routes/signup');
-const reportRoutes = require('./routes/reportRoutes');   // file is reports.js
-
-// 2. INSTANTIATIONS
+// 2. INSTANTIATION
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // 3. DATABASE CONNECTION
-connectDB();
+connectDB();   // this should use process.env.MONGO_URI
 
 // 4. CONFIGURATIONS
 app.set('view engine', 'pug');
 app.set('views', path.join(__dirname, 'views'));
-
-// STATIC FILES
 app.use(express.static(path.join(__dirname, 'public')));
-
-// BODY PARSING
+app.use(express.static(path.join(__dirname, 'images')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// SESSION
-app.use(session({
-  secret: 'Shussh',
+// SESSION (in‑memory – fine for development)
+app.use(expressSession({
+  secret: process.env.SESSION_SECRET || 'Shussh',
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 30 * 60 * 1000 }
+  cookie: { maxAge: 1000 * 60 * 60 * 2 } // 2 hours
 }));
 
 // FLASH
@@ -68,7 +45,7 @@ passport.use(User.createStrategy());
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
-// GLOBAL VARIABLES – flash messages auto‑cleared
+// GLOBAL VARIABLES
 app.use((req, res, next) => {
   res.locals.user = req.user || null;
   res.locals.success_msg = req.flash('success_msg');
@@ -77,76 +54,29 @@ app.use((req, res, next) => {
   next();
 });
 
-// 5. ROUTES
-app.use('/auth', authRoutes);
-app.use('/customers', customerRoutes);
-app.use('/suppliers', supplierRoutes);
-app.use('/inventory', inventoryRoutes);
-app.use('/sales', salesRoutes);
-app.use('/deposit-scheme', depositRoutes);
-app.use('/supplier-credit', creditRoutes);
-app.use('/payments', paymentRoutes);
-app.use('/users', userRoutes);
-app.use('/settings', settingRoutes);
-app.use('/transport', transportRoutes);
-app.use('/stock', stockRoutes);
-app.use('/reports', reportRoutes);
-app.use('/', signupRoutes)
-// app.use('/', signRoute);
+// 5. ROUTES (all mounted at '/')
+app.use('/', require('./routes/authRoutes'));
+app.use('/', require('./routes/dashboardRoutes'));
+app.use('/', require('./routes/customerRoutes'));
+app.use('/', require('./routes/supplierRoutes'));
+app.use('/', require('./routes/inventoryRoutes'));
+app.use('/', require('./routes/saleRoutes'));
+app.use('/', require('./routes/depositSchemeRoutes'));
+app.use('/', require('./routes/supplierCreditRoutes'));
+app.use('/', require('./routes/paymentRoutes'));
+app.use('/', require('./routes/userRoutes'));
+app.use('/', require('./routes/settingRoutes'));
+app.use('/', require('./routes/transportRoutes'));
+// app.use('/', require('./routes/stock'));          
+app.use('/', require('./routes/reportRoutes'));         
+app.use('/', require('./routes/signup'));       
 
-// Redirect /login to /auth/login for simplicity
-app.get('/login', (req, res) => {
-  res.redirect('/auth/login');
-});
-
-// DASHBOARD – with real database data
-app.get('/dashboard', ensureAuthenticated, async (req, res) => {
-  try {
-    const Sale = require('./models/Sale');
-    const Product = require('./models/Product');
-    const DepositMember = require('./models/DepositMember');
-    const CreditInvoice = require('./models/CreditInvoice');
-
-    const todayStart = new Date(); todayStart.setHours(0,0,0,0);
-    const todayEnd = new Date(); todayEnd.setHours(23,59,59,999);
-    const todaySalesAgg = await Sale.aggregate([
-      { $match: { createdAt: { $gte: todayStart, $lte: todayEnd } } },
-      { $group: { _id: null, total: { $sum: '$grandTotal' } } }
-    ]);
-    const todaySales = todaySalesAgg[0]?.total || 0;
-
-    const products = await Product.find();
-    const stockValue = products.reduce((sum, p) => sum + (p.currentStock * p.unitCost), 0);
-
-    const creditAgg = await CreditInvoice.aggregate([
-      { $group: { _id: null, total: { $sum: '$outstanding' } } }
-    ]);
-    const creditBalance = creditAgg[0]?.total || 0;
-
-    const depositMembers = await DepositMember.countDocuments();
-
-    const lowStockCount = products.filter(p => p.currentStock <= (p.reorderLevel || 15) && p.currentStock > 0).length;
-
-    const transactionsToday = await Sale.countDocuments({
-      createdAt: { $gte: todayStart, $lte: todayEnd }
-    });
-
-    const pendingInvoices = await CreditInvoice.countDocuments({ outstanding: { $gt: 0 } });
-
-    res.render('dashboard', {
-      user: req.user,
-      todaySales,
-      stockValue,
-      creditBalance,
-      depositMembers,
-      lowStockCount,
-      transactionsToday,
-      pendingInvoices
-    });
-  } catch (err) {
-    console.error(err);
-    req.flash('error_msg', 'Failed to load dashboard data');
+// Root route
+app.get('/', (req, res) => {
+  if (req.isAuthenticated()) {
     res.redirect('/dashboard');
+  } else {
+    res.redirect('/login');
   }
 });
 

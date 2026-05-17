@@ -2,6 +2,59 @@ extends layout
 
 block head
   link(rel="stylesheet" href="/css/inventory.css")
+  style.
+    .tab-btn {
+      cursor: pointer;
+      padding: 0.5rem 1.2rem;
+      background: #f5f5f5;
+      border-radius: 2rem;
+      margin-right: 0.5rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .tab-btn.active {
+      background: var(--gold);
+      color: #003300;
+      font-weight: bold;
+    }
+    .low-stock-alert {
+      background: #fff3e0;
+      border-left: 4px solid #f39c12;
+      margin-bottom: 0.75rem;
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+    }
+    .low-stock-alert i {
+      color: #f39c12;
+      margin-right: 0.5rem;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: white;
+      border-radius: 1rem;
+      max-width: 600px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .modal-header {
+      padding: 1rem;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-body { padding: 1rem; }
+    .modal-footer { padding: 1rem; border-top: 1px solid #eee; text-align: right; }
 
 block title
   | Inventory – NYONDO Hardware
@@ -11,9 +64,9 @@ block content
     h1
       i.fa-solid.fa-boxes-stacked
       |  Inventory Management
-    p.text-muted Track stock levels, low stock alerts, and incoming shipments
+    p.text-muted Track stock levels, add stock, and view transaction history
 
-  // Stats Cards – dynamic from backend
+  // Stats Cards
   .row.g-4.mb-4
     .col-md-3.col-sm-6
       .section-card.metric-card.p-3.text-center
@@ -32,177 +85,243 @@ block content
         h3.text-danger= outOfStockCount || 0
     .col-md-3.col-sm-6
       .section-card.metric-card.p-3.text-center
-        i.fa-solid.fa-truck-fast.fa-2x.mb-2(style="color: var(--gold);")
-        h6.text-muted In Transit
-        h3= inTransitCount || 0
+        i.fa-solid.fa-chart-line.fa-2x.mb-2(style="color: var(--gold);")
+        h6.text-muted Total Stock Value
+        h3= (totalStockValue || 0).toLocaleString() + ' UGX'
 
-  // Add Product Form (Collapsible) – POST to backend
-  .product-form-container#productFormContainer
-    .form-card
-      .d-flex.justify-content-between.align-items-center.mb-3
-        h4.mb-0
-          i.fa-solid.fa-plus-circle.me-2(style="color: var(--gold);")
-          | Add New Product
-        button.btn-close(type='button' onclick='hideProductForm()')
-      form(method="POST" action="/inventory")
-        .row.g-3
-          .col-md-6
-            label.form-label Product Name *
-            input.form-control(type='text' name='productName' placeholder='e.g., Cement (CEM II N)' required)
-          //- Inside the add product form
-          .col-md-6
-            label.form-label Product Type *
-            select.form-select(name='productType' required)
-              option(value='') -- Select Product --
-              option(value='Cement (CEM II N)') Cement (CEM II N)
-              option(value='Cement (CEM III N)') Cement (CEM III N)
-              option(value='Iron Bar 10mm') Iron Bar 10mm
-              option(value='Iron Bar 12mm') Iron Bar 12mm
-              option(value='Iron Bar 16mm') Iron Bar 16mm
-              option(value='Nails 1 inch (5kg)') Nails 1 inch (5kg)
-              option(value='Nails 3 inch (5kg)') Nails 3 inch (5kg)
-              option(value='Nails 4 inch (5kg)') Nails 4 inch (5kg)
-              option(value='Nails 5 inch (5kg)') Nails 5 inch (5kg)
-              option(value='Roofing Nails (5kg)') Roofing Nails (5kg)
-              option(value='Wheelbarrow') Wheelbarrow
-              option(value='Wire Mesh') Wire Mesh
-              option(value='Barbed Wire (High Tensile)') Barbed Wire (High Tensile)
-              option(value='Barbed Wire (Low Tensile)') Barbed Wire (Low Tensile)
-              option(value='Iron Sheet (Blue)') Iron Sheet (Blue)
-              option(value='Iron Sheet (Red)') Iron Sheet (Red)
-              option(value='Iron Sheet (Green)') Iron Sheet (Green)
-              option(value='Iron Sheet (White)') Iron Sheet (White)
-              option(value='Iron Sheet (Brown)') Iron Sheet (Brown)
-          .col-md-3
-            label.form-label Unit Cost (UGX) *
-            input.form-control(type='number' name='unitCost' placeholder='0' min='0' step='500' required)
-          .col-md-3
-            label.form-label Unit Price (UGX) *
-            input.form-control(type='number' name='unitPrice' placeholder='0' min='0' step='500' required)
-            small.text-muted Must be greater than cost
-          .col-md-3
-            label.form-label Initial Stock *
-            input.form-control(type='number' name='currentStock' placeholder='0' min='0' required)
-          .col-md-3
-            label.form-label Reorder Level
-            input.form-control(type='number' name='reorderLevel' placeholder='Minimum stock alert' min='0')
-          .col-md-6
-            label.form-label Supplier
-            input.form-control(type='text' name='supplier' placeholder='e.g., Tororo Cement')
-          .col-md-6
-            label.form-label SKU (Optional)
-            input.form-control(type='text' name='sku' placeholder='Auto-generated if blank')
-          .col-12
-            label.form-label Description / Notes
-            textarea.form-control(rows='2' name='description' placeholder='Additional product details...')
-        .d-flex.gap-3.mt-4
-          button.btn-primary(type='submit')
-            i.fa-solid.fa-save
-            |  Save Product
-          button.btn-outline(type='button' onclick='hideProductForm()') Cancel
+  // Tab Buttons
+  .d-flex.flex-wrap.mb-4
+    button.tab-btn.active(onclick="switchTab('products')") 📦 Products
+    button.tab-btn(onclick="switchTab('addStock')") ➕ Add Stock to Product
+    button.tab-btn(onclick="switchTab('transactions')") 📜 Stock Transactions
 
-  // Stock Table – dynamic rows from database
-  .section-card
-    .section-head
-      h2
-        i.fa-solid.fa-list.me-2(style="color: var(--gold);")
-        | Current Stock
-      button#showProductFormBtn.btn-primary(onclick='showProductForm()')
-        i.fa-solid.fa-plus
-        |  Add Product
-    .table-responsive
-      table.data-table
-        thead
-          tr
-            th Product
-            th Category
-            th Stock
-            th Unit Price (UGX)
-            th Status
-            th
-        tbody
-          if products && products.length
-            each prod in products
-              - const isLowStock = prod.currentStock <= (prod.reorderLevel || 15)
-              - const stockClass = isLowStock ? 'text-warning fw-bold' : ''
-              - const statusClass = isLowStock ? 'sp-pending' : 'sp-paid'
-              - const statusText = isLowStock ? '⚠️ Low Stock' : '✓ In Stock'
-              tr.stock-item(class=isLowStock ? 'low-stock-row' : '')
-                td
-                  i.fa-solid.fa-cube.me-2(style="color: var(--gold);")
-                  = prod.productName
-                td= prod.category || '—'
-                td(class=stockClass)
-                  = prod.currentStock
-                  |  #{prod.unit || 'units'}
-                td= prod.unitPrice.toLocaleString()
-                td
-                  span.status-pill(class=statusClass)= statusText
-                td
-                  a(href=`/inventory/${prod._id}/edit`)
-                    i.fa-regular.fa-pen-to-square
-          else
+  // Tab 1: Products
+  #productsTab.tab-content
+    .section-card.mb-4
+      .section-head
+        h2
+          i.fa-solid.fa-list.me-2(style="color: var(--gold);")
+          | Product List
+        button#showProductFormBtn.btn-primary(onclick='showProductForm()')
+          i.fa-solid.fa-plus
+          |  Add New Product
+      .table-responsive
+        table.data-table
+          thead
             tr
-              td(colspan='6').text-center No products found.
+              th Product
+              th Category
+              th Stock
+              th Unit Price (UGX)
+              th Status
+              th
+          tbody
+            if products && products.length
+              each prod in products
+                - const isLow = prod.currentStock <= (prod.reorderLevel || 15) && prod.currentStock > 0
+                - const out = prod.currentStock === 0
+                - let statusText = '✓ In Stock'
+                - let statusClass = 'sp-paid'
+                if out
+                  statusText = '❌ Out of Stock'
+                  statusClass = 'sp-credit'
+                else if isLow
+                  statusText = '⚠️ Low Stock'
+                  statusClass = 'sp-pending'
+                tr
+                  td
+                    i.fa-solid.fa-cube.me-2(style="color: var(--gold);")
+                    = prod.productName
+                  td= prod.category || '—'
+                  td(class=isLow || out ? 'fw-bold text-warning' : '')= prod.currentStock
+                  td= prod.unitPrice.toLocaleString()
+                  td
+                    span.status-pill(class=statusClass)= statusText
+                  td
+                    a(href=`/inventory/${prod._id}/edit`)
+                      i.fa-regular.fa-pen-to-square
+            else
+              tr
+                td(colspan='6').text-center No products found.
 
-  // Notification bell JavaScript (original client‑side demo – kept as is)
+      // Add New Product form (collapsible)
+      .product-form-container#productFormContainer
+        .form-card
+          .d-flex.justify-content-between.align-items-center.mb-3
+            h4.mb-0
+              i.fa-solid.fa-plus-circle.me-2(style="color: var(--gold);")
+              | Add New Product
+            button.btn-close(type='button' onclick='hideProductForm()')
+          form(method="POST" action="/inventory")
+            .row.g-3
+              .col-md-6
+                label.form-label Product Type *
+                select.form-select(name='productType' required)
+                  option(value='') -- Select Product --
+                  option(value='Cement (CEM II N)') Cement (CEM II N)
+                  option(value='Cement (CEM III N)') Cement (CEM III N)
+                  option(value='Iron Bar 10mm') Iron Bar 10mm
+                  option(value='Iron Bar 12mm') Iron Bar 12mm
+                  option(value='Iron Bar 16mm') Iron Bar 16mm
+                  option(value='Nails 1 inch (5kg)') Nails 1 inch (5kg)
+                  option(value='Nails 3 inch (5kg)') Nails 3 inch (5kg)
+                  option(value='Nails 4 inch (5kg)') Nails 4 inch (5kg)
+                  option(value='Nails 5 inch (5kg)') Nails 5 inch (5kg)
+                  option(value='Roofing Nails (5kg)') Roofing Nails (5kg)
+                  option(value='Wheelbarrow') Wheelbarrow
+                  option(value='Wire Mesh') Wire Mesh
+                  option(value='Barbed Wire (High Tensile)') Barbed Wire (High Tensile)
+                  option(value='Barbed Wire (Low Tensile)') Barbed Wire (Low Tensile)
+                  option(value='Iron Sheet (Blue)') Iron Sheet (Blue)
+                  option(value='Iron Sheet (Red)') Iron Sheet (Red)
+                  option(value='Iron Sheet (Green)') Iron Sheet (Green)
+                  option(value='Iron Sheet (White)') Iron Sheet (White)
+                  option(value='Iron Sheet (Brown)') Iron Sheet (Brown)
+              .col-md-3
+                label.form-label Unit Cost (UGX) *
+                input.form-control(type='number' name='unitCost' step='500' required)
+              .col-md-3
+                label.form-label Unit Price (UGX) *
+                input.form-control(type='number' name='unitPrice' step='500' required)
+              .col-md-3
+                label.form-label Initial Stock *
+                input.form-control(type='number' name='currentStock' min='0' required)
+              .col-md-3
+                label.form-label Reorder Level
+                input.form-control(type='number' name='reorderLevel' min='0' value='15')
+              .col-md-6
+                label.form-label Supplier
+                input.form-control(type='text' name='supplier')
+              .col-md-6
+                label.form-label SKU
+                input.form-control(type='text' name='sku')
+              .col-12
+                label.form-label Description
+                textarea.form-control(rows='2' name='description')
+            .d-flex.gap-3.mt-4
+              button.btn-primary(type='submit')
+                i.fa-solid.fa-save
+                |  Save Product
+              button.btn-outline(type='button' onclick='hideProductForm()') Cancel
+
+    // Low Stock Alerts section
+    .section-card
+      .section-head
+        h2
+          i.fa-solid.fa-triangle-exclamation.me-2(style="color: var(--gold);")
+          | Low Stock Alerts
+      .p-3
+        if lowStockItems && lowStockItems.length
+          each item in lowStockItems
+            .low-stock-alert
+              i.fa-solid.fa-exclamation-triangle
+              strong #{item.name}
+              |  – only #{item.quantity} left (reorder at #{item.reorderLevel})
+        else
+          .text-muted
+            i.fa-solid.fa-check-circle.text-success
+            |  No low stock items. All products are above reorder level.
+
+  // Tab 2: Add Stock to Existing Product
+  #addStockTab.tab-content(style="display:none")
+    .section-card
+      .section-head
+        h2
+          i.fa-solid.fa-cart-plus.me-2(style="color: var(--gold);")
+          | Add Stock to Product
+        p.text-muted.mb-0 Increase inventory and update cost/price
+      .p-3
+        form(method="POST" action="/inventory/add-stock")
+          .row.g-3
+            .col-md-6
+              label.form-label Product *
+              select.form-select(name='productId' required)
+                option(value='') Select product
+                each prod in products
+                  option(value=prod._id) #{prod.productName} (current: #{prod.currentStock})
+            .col-md-3
+              label.form-label Quantity Added *
+              input.form-control(type='number' name='quantityAdded' min='1' required)
+            .col-md-3
+              label.form-label Unit Cost (UGX) *
+              input.form-control(type='number' name='unitCost' step='500' required)
+            .col-md-3
+              label.form-label Unit Price (UGX) *
+              input.form-control(type='number' name='unitPrice' step='500' required)
+            .col-md-3
+              label.form-label Supplier Name
+              input.form-control(type='text' name='supplierName')
+            .col-md-3
+              label.form-label Supplier Phone
+              input.form-control(type='tel' name='supplierPhone')
+            .col-md-3
+              label.form-label Factory Name
+              input.form-control(type='text' name='factoryName')
+            .col-md-3
+              label.form-label Payment Status
+              select.form-select(name='paymentStatus')
+                option(value='cash') Cash
+                option(value='credit') Credit
+          .mt-4
+            button.btn-primary(type='submit')
+              i.fa-solid.fa-save
+              |  Add Stock
+
+  // Tab 3: Stock Transactions
+  #transactionsTab.tab-content(style="display:none")
+    .section-card
+      .section-head
+        h2
+          i.fa-solid.fa-clock-rotate-left.me-2(style="color: var(--gold);")
+          | Stock Transaction History
+      .table-responsive
+        table.data-table
+          thead
+            tr
+              th Date
+              th Product
+              th Quantity
+              th Unit Cost (UGX)
+              th Total (UGX)
+              th Supplier
+              th Payment
+          tbody
+            if stockTransactions && stockTransactions.length
+              each tx in stockTransactions
+                tr
+                  td= tx.createdAt ? tx.createdAt.toLocaleDateString() : '—'
+                  td= tx.productName
+                  td= tx.quantityAdded
+                  td= tx.unitCost.toLocaleString()
+                  td= (tx.quantityAdded * tx.unitCost).toLocaleString()
+                  td= tx.supplierName || '—'
+                  td
+                    span.status-pill(class=tx.paymentStatus === 'cash' ? 'sp-paid' : 'sp-pending')
+                      = tx.paymentStatus === 'cash' ? 'Cash' : 'Credit'
+            else
+              tr
+                td(colspan='7').text-center No stock transactions recorded.
+
   script.
-    const lowStockItems = [
-      { name: "Cement (CEM III N)", quantity: 12, unit: "bags" },
-      { name: "Iron Bar 16mm", quantity: 8, unit: "pieces" },
-      { name: "Wheelbarrow", quantity: 6, unit: "units" }
-    ];
-    const transitItems = [
-      { name: "Cement (CEM II N)", quantity: 200, unit: "bags", eta: "12 Apr" },
-      { name: "Iron Bars 12mm", quantity: 500, unit: "pcs", eta: "14 Apr" },
-      { name: "Iron Sheets (Blue)", quantity: 300, unit: "sheets", eta: "15 Apr" }
-    ];
-
-    const formContainer = document.getElementById("productFormContainer");
-    const showBtn = document.getElementById("showProductFormBtn");
-
+    // Tabs
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
+      document.getElementById(`${tabName}Tab`).style.display = 'block';
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+    }
+    // Add new product form toggle
+    const formContainer = document.getElementById('productFormContainer');
+    const showBtn = document.getElementById('showProductFormBtn');
     function showProductForm() {
-      formContainer.classList.add("show");
-      if (showBtn) showBtn.style.display = "none";
-      formContainer.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      formContainer.classList.add('show');
+      if (showBtn) showBtn.style.display = 'none';
+      formContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
     function hideProductForm() {
-      formContainer.classList.remove("show");
-      if (showBtn) showBtn.style.display = "inline-flex";
+      formContainer.classList.remove('show');
+      if (showBtn) showBtn.style.display = 'inline-flex';
     }
-
-    function renderNotifications() {
-      const lowDiv = document.getElementById("lowStockNotifications");
-      if (lowDiv) lowDiv.innerHTML = lowStockItems.map(item => `<div class="notification-item unread" onclick="location.href='/inventory'"><div class="notification-icon icon-low"><i class="fa-solid fa-cubes"></i></div><div class="notification-content"><div class="notification-title">${item.name}</div><div class="notification-desc">Only ${item.quantity} ${item.unit} left</div></div></div>`).join("");
-      const transDiv = document.getElementById("transitNotifications");
-      if (transDiv) transDiv.innerHTML = transitItems.map(item => `<div class="notification-item" onclick="location.href='/inventory'"><div class="notification-icon icon-transit"><i class="fa-solid fa-truck"></i></div><div class="notification-content"><div class="notification-title">${item.name}</div><div class="notification-desc">${item.quantity} ${item.unit} arriving ETA ${item.eta}</div></div></div>`).join("");
-      const bell = document.getElementById("notificationBell");
-      if (bell && lowStockItems.length) bell.classList.add("has-notifications");
-    }
-
-    function toggleNotifications(e) {
-      e.stopPropagation();
-      document.getElementById("notificationDropdown").classList.toggle("show");
-      renderNotifications();
-    }
-
-    function markAllRead() {
-      document.querySelectorAll(".notification-item").forEach(i => i.classList.remove("unread"));
-      document.getElementById("notificationBell")?.classList.remove("has-notifications");
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-      const bell = document.getElementById("notificationBell");
-      if (bell) bell.addEventListener("click", toggleNotifications);
-      renderNotifications();
-    });
-
-    document.addEventListener("click", (e) => {
-      const d = document.getElementById("notificationDropdown");
-      const b = document.getElementById("notificationBell");
-      if (d && b && !d.contains(e.target) && !b.contains(e.target)) d.classList.remove("show");
-    });
-
+    window.switchTab = switchTab;
     window.showProductForm = showProductForm;
     window.hideProductForm = hideProductForm;
-    window.markAllRead = markAllRead;

@@ -28,49 +28,48 @@ html(lang="en")
         a.nav-link-item(href="/dashboard")
           span.nicon: i.fa-solid.fa-grid-2
           | Dashboard
-        if user
-          if user.role === 'admin' || user.role === 'manager'
-            a.nav-link-item(href="/sales")
-              span.nicon: i.fa-solid.fa-cash-register
-              | Sales
-            a.nav-link-item(href="/inventory")
-              span.nicon: i.fa-solid.fa-boxes-stacked
-              | Inventory
-            a.nav-link-item(href="/transport")
-              span.nicon: i.fa-solid.fa-truck
-              | Transport
-          if user.role === 'sales' || user.role === 'attendant'
-            a.nav-link-item(href="/sales")
-              span.nicon: i.fa-solid.fa-cash-register
-              | Sales Counter
-            a.nav-link-item(href="/customers")
-              span.nicon: i.fa-solid.fa-users
-              | Customers
-          if user.role === 'admin'
-            .nav-sec-label Finance
-            a.nav-link-item(href="/supplier-credit")
-              span.nicon: i.fa-solid.fa-credit-card
-              | Supplier Credit
-            a.nav-link-item(href="/deposit-scheme")
-              span.nicon: i.fa-solid.fa-piggy-bank
-              | Deposit Scheme
-            a.nav-link-item(href="/reports")
-              span.nicon: i.fa-solid.fa-chart-bar
-              | Reports
-            .nav-sec-label Management
-            a.nav-link-item(href="/customers")
-              span.nicon: i.fa-solid.fa-users
-              | Customers
-            a.nav-link-item(href="/suppliers")
-              span.nicon: i.fa-solid.fa-truck-field
-              | Suppliers
-            .nav-sec-label Admin
-            a.nav-link-item(href="/users")
-              span.nicon: i.fa-solid.fa-user-shield
-              | Users
-            a.nav-link-item(href="/settings")
-              span.nicon: i.fa-solid.fa-gear
-              | Settings
+        if user.role === 'admin' || user.role === 'manager'
+          a.nav-link-item(href="/sales")
+            span.nicon: i.fa-solid.fa-cash-register
+            | Sales
+          a.nav-link-item(href="/inventory")
+            span.nicon: i.fa-solid.fa-boxes-stacked
+            | Inventory
+          a.nav-link-item(href="/transport")
+            span.nicon: i.fa-solid.fa-truck
+            | Transport
+        if user.role === 'sales' || user.role === 'attendant'
+          a.nav-link-item(href="/sales")
+            span.nicon: i.fa-solid.fa-cash-register
+            | Sales Counter
+          a.nav-link-item(href="/customers")
+            span.nicon: i.fa-solid.fa-users
+            | Customers
+        if user.role === 'admin'
+          .nav-sec-label Finance
+          a.nav-link-item(href="/supplier-credit")
+            span.nicon: i.fa-solid.fa-credit-card
+            | Supplier Credit
+          a.nav-link-item(href="/deposit-scheme")
+            span.nicon: i.fa-solid.fa-piggy-bank
+            | Deposit Scheme
+          a.nav-link-item(href="/reports")
+            span.nicon: i.fa-solid.fa-chart-bar
+            | Reports
+          .nav-sec-label Management
+          a.nav-link-item(href="/customers")
+            span.nicon: i.fa-solid.fa-users
+            | Customers
+          a.nav-link-item(href="/suppliers")
+            span.nicon: i.fa-solid.fa-truck-field
+            | Suppliers
+          .nav-sec-label Admin
+          a.nav-link-item(href="/users")
+            span.nicon: i.fa-solid.fa-user-shield
+            | Users
+          a.nav-link-item(href="/settings")
+            span.nicon: i.fa-solid.fa-gear
+            | Settings
       .sidebar-footer
         .user-chip
           .user-av= user ? user.fullName[0].toUpperCase() : 'U'
@@ -79,29 +78,19 @@ html(lang="en")
             .user-role= user ? user.role : 'Not logged in'
         if user 
           .mt-3(style="border-top: 1px solid rgba(255,255,255,0.1); padding-top:0.75rem;") 
-            a(href='/auth/logout' style="color: var(--gold); text-decoration: none; display: block; text-align: center;")
+            a(href='/logout' style="color: var(--gold); text-decoration: none; display: block; text-align: center;")
               i.fa-solid.fa-sign-out-alt.me-1 
               | Logout
-    .main-wrap
-      header.topbar
-        label.hamburger(for="nav-toggle")
-          i.fa-solid.fa-bars
-        .store-name-t NYONDO <span>Hardware</span>
-        .topbar-right
-          .profile-pill
-            .pill-av= user ? user.fullName[0].toUpperCase() : 'U'
-            span= user ? user.fullName : 'Guest'
-      main.page-content
-        if success_msg
-          .alert.alert-success.alert-dismissible.fade.show
-            i.fa-solid.fa-check-circle.me-2
-            = success_msg
-            button.btn-close(data-bs-dismiss="alert")
-        if error_msg
-          .alert.alert-danger.alert-dismissible.fade.show
-            i.fa-solid.fa-exclamation-triangle.me-2
-            = error_msg
-            button.btn-close(data-bs-dismiss="alert")
-        block content
+  .main-wrap
+    header.topbar
+      label.hamburger(for="nav-toggle")
+        i.fa-solid.fa-bars
+      .store-name-t NYONDO <span>Hardware</span>
+      .topbar-right
+        .profile-pill
+          .pill-av= user ? user.fullName[0].toUpperCase() : 'U'
+          span= user ? user.fullName : 'Guest'
+    main.page-content
+      block content
 
     script(src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js")

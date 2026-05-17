@@ -1,9 +1,13 @@
-extends layout
+extends login-layout
 
 block head
   style.
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
     .login-wrapper {
-      min-height: calc(100vh - 120px);
+      height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -137,15 +141,7 @@ block content
         h3 Welcome Back
         p Sign in to continue to the portal
       .login-body
-        if error_msg
-          .alert-custom
-            i.fa-solid.fa-circle-exclamation.me-2
-            = error_msg
-        if success_msg
-          .alert.alert-success.alert-dismissible.fade.show
-            i.fa-solid.fa-check-circle.me-2
-            = success_msg
-        form(method="POST" action="/auth/login")
+        form(method="POST" action="/login")
           .form-group
             label Email Address
             .input-icon

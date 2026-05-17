@@ -1,10 +1,10 @@
-// routes/inventory.js
 const express = require('express');
 const router = express.Router();
 const Product = require('../models/Product');
-const { isManager } = require('../middleware/auth');   // changed
+const StockTransaction = require('../models/StockTransaction');
+const { isManager } = require('../middleware/auth');
 
-// Helper to map product type to category (optional but good for reports)
+// Helper to map product type to category
 function getCategoryFromProductType(productType) {
   if (productType.includes('Cement')) return 'Cement';
   if (productType.includes('Iron Bar')) return 'Steel / Iron Bars';
@@ -16,50 +16,54 @@ function getCategoryFromProductType(productType) {
   return 'Other';
 }
 
-// GET /inventory – show inventory page
-router.get('/', isManager, async (req, res) => {
+// GET /inventory – main inventory page
+router.get('/inventory', isManager, async (req, res) => {
   try {
     const products = await Product.find().sort({ createdAt: -1 });
     const totalSkus = products.length;
     const lowStockCount = products.filter(p => p.currentStock <= (p.reorderLevel || 15) && p.currentStock > 0).length;
     const outOfStockCount = products.filter(p => p.currentStock === 0).length;
-    const inTransitCount = 0; // placeholder
+    const totalStockValue = products.reduce((sum, p) => sum + (p.currentStock * p.unitCost), 0);
+
+    // Real low stock items for alerts
+    const lowStockItems = products
+      .filter(p => p.currentStock <= (p.reorderLevel || 15) && p.currentStock > 0)
+      .map(p => ({ name: p.productName, quantity: p.currentStock, reorderLevel: p.reorderLevel || 15 }));
+
+    // Stock transactions (last 20)
+    const stockTransactions = await StockTransaction.find()
+      .populate('productId', 'productName')
+      .sort({ createdAt: -1 })
+      .limit(20);
 
     res.render('inventory', {
       products,
       totalSkus,
       lowStockCount,
       outOfStockCount,
-      inTransitCount,
+      totalStockValue,
+      lowStockItems,
+      stockTransactions,
       user: req.user,
-      success_msg: req.session.success_msg,
-      error_msg: req.session.error_msg
+      success_msg: req.flash('success_msg'),
+      error_msg: req.flash('error_msg')
     });
-
-    req.session.success_msg = null;
-    req.session.error_msg = null;
   } catch (err) {
-    req.session.error_msg = err.message;
+    req.flash('error_msg', err.message);
     res.redirect('/dashboard');
   }
 });
 
-// POST /inventory – add new product (using productType dropdown)
-router.post('/', isManager, async (req, res) => {
+// POST /inventory – add new product
+router.post('/inventory', isManager, async (req, res) => {
   try {
     const { productType, unitCost, unitPrice, currentStock, reorderLevel, supplier, sku, description } = req.body;
-    if (!productType || !unitCost || !unitPrice) {
-      throw new Error('Product type, unit cost, and unit price are required.');
-    }
-    if (unitPrice <= unitCost) {
-      throw new Error('Selling price must be greater than unit cost.');
-    }
-
+    if (!productType || !unitCost || !unitPrice) throw new Error('Product type, cost, and price are required.');
+    if (unitPrice <= unitCost) throw new Error('Selling price must be greater than unit cost.');
     const category = getCategoryFromProductType(productType);
-
     const product = new Product({
       productType,
-      productName: productType, // for backward compatibility
+      productName: productType,
       category,
       unitCost,
       unitPrice,
@@ -69,70 +73,114 @@ router.post('/', isManager, async (req, res) => {
       sku: sku || '',
       description: description || ''
     });
-
     await product.save();
-    req.session.success_msg = `${productType} added successfully!`;
+
+    // If initial stock >0, create a transaction
+    if (currentStock > 0) {
+      const transaction = new StockTransaction({
+        productId: product._id,
+        productName: product.productName,
+        quantityAdded: Number(currentStock),
+        unitCost,
+        unitPrice,
+        supplierName: supplier || 'Initial stock',
+        paymentStatus: 'cash',
+        recordedBy: req.user._id
+      });
+      await transaction.save();
+    }
+
+    req.flash('success_msg', `${productType} added successfully!`);
     res.redirect('/inventory');
   } catch (err) {
-    req.session.error_msg = err.message;
+    req.flash('error_msg', err.message);
     res.redirect('/inventory');
   }
 });
 
-// GET /inventory/:id/edit – show edit form
-router.get('/:id/edit', isManager, async (req, res) => {
+// POST /inventory/add-stock – add stock to existing product (AJAX or regular POST)
+router.post('/inventory/add-stock', isManager, async (req, res) => {
+  try {
+    const { productId, quantityAdded, unitCost, unitPrice, supplierName, supplierPhone, factoryName, paymentStatus } = req.body;
+    if (!productId || !quantityAdded || quantityAdded <= 0) throw new Error('Invalid product or quantity');
+    const product = await Product.findById(productId);
+    if (!product) throw new Error('Product not found');
+    if (unitPrice <= unitCost) throw new Error('Selling price must be greater than unit cost');
+
+    product.currentStock += Number(quantityAdded);
+    product.unitCost = unitCost;
+    product.unitPrice = unitPrice;
+    await product.save();
+
+    const transaction = new StockTransaction({
+      productId: product._id,
+      productName: product.productName,
+      quantityAdded: Number(quantityAdded),
+      unitCost,
+      unitPrice,
+      supplierName: supplierName || 'Unknown',
+      supplierPhone,
+      factoryName,
+      paymentStatus: paymentStatus || 'cash',
+      recordedBy: req.user._id
+    });
+    await transaction.save();
+
+    req.flash('success_msg', `${quantityAdded} units added to ${product.productName}`);
+    res.redirect('/inventory');
+  } catch (err) {
+    req.flash('error_msg', err.message);
+    res.redirect('/inventory');
+  }
+});
+
+// GET /inventory/:id/edit
+router.get('/inventory/:id/edit', isManager, async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
     if (!product) throw new Error('Product not found');
     res.render('product-edit', { product, user: req.user });
   } catch (err) {
-    req.session.error_msg = err.message;
+    req.flash('error_msg', err.message);
     res.redirect('/inventory');
   }
 });
 
 // POST /inventory/:id – update product
-router.post('/:id', isManager, async (req, res) => {
+router.post('/inventory/:id', isManager, async (req, res) => {
   try {
     const { productType, unitCost, unitPrice, currentStock, reorderLevel, supplier, sku, description } = req.body;
-    if (unitPrice <= unitCost) {
-      throw new Error('Selling price must be greater than unit cost.');
-    }
+    if (unitPrice <= unitCost) throw new Error('Selling price must be greater than unit cost.');
     const category = getCategoryFromProductType(productType);
-    const product = await Product.findByIdAndUpdate(
-      req.params.id,
-      {
-        productType,
-        productName: productType,
-        category,
-        unitCost,
-        unitPrice,
-        currentStock,
-        reorderLevel,
-        supplier,
-        sku,
-        description
-      },
-      { new: true, runValidators: true }
-    );
-    if (!product) throw new Error('Product not found');
-    req.session.success_msg = `${product.productType} updated successfully!`;
+    await Product.findByIdAndUpdate(req.params.id, {
+      productType,
+      productName: productType,
+      category,
+      unitCost,
+      unitPrice,
+      currentStock,
+      reorderLevel,
+      supplier,
+      sku,
+      description
+    }, { runValidators: true });
+    req.flash('success_msg', `${productType} updated successfully!`);
     res.redirect('/inventory');
   } catch (err) {
-    req.session.error_msg = err.message;
+    req.flash('error_msg', err.message);
     res.redirect(`/inventory/${req.params.id}/edit`);
   }
 });
 
 // POST /inventory/:id/delete – delete product
-router.post('/:id/delete', isManager, async (req, res) => {
+router.post('/inventory/:id/delete', isManager, async (req, res) => {
   try {
     const product = await Product.findByIdAndDelete(req.params.id);
     if (!product) throw new Error('Product not found');
-    req.session.success_msg = `${product.productType} deleted.`;
+    req.flash('success_msg', `${product.productType} deleted.`);
     res.redirect('/inventory');
   } catch (err) {
-    req.session.error_msg = err.message;
+    req.flash('error_msg', err.message);
     res.redirect('/inventory');
   }
 });

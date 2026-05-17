@@ -1,0 +1,184 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1.0")
+    title Receipt | Nyondo Hardware
+    // Bootstrap 5 + Icons
+    link(href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet")
+    link(rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css")
+    style.
+      @media print {
+        .no-print { display: none !important; }
+        body { background: white; padding: 1rem; }
+        .receipt-card { box-shadow: none; border: 1px solid #ddd; }
+      }
+      body {
+        background: #f4f6f9;
+        font-family: 'Segoe UI', Roboto, sans-serif;
+        padding: 2rem 1rem;
+      }
+      .receipt-card {
+        max-width: 500px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 24px;
+        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+        overflow: hidden;
+      }
+      .receipt-header {
+        background: #2c3e2b;
+        color: white;
+        padding: 1.5rem;
+        text-align: center;
+      }
+      .brand-icon {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+      }
+      .brand-text h1 {
+        font-size: 1.6rem;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+      }
+      .brand-text span {
+        font-weight: 400;
+      }
+      .badge-paid {
+        background: #28a745;
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 30px;
+        font-size: 0.75rem;
+        margin-bottom: 0.75rem;
+      }
+      .receipt-meta {
+        background: #f8f9fa;
+        padding: 0.75rem;
+        border-radius: 16px;
+        margin-top: 0.5rem;
+        color: #212529;
+      }
+      .receipt-body {
+        padding: 1.5rem;
+      }
+      .item-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+      }
+      hr {
+        margin: 1rem 0;
+      }
+      .total-row {
+        font-weight: 700;
+        font-size: 1.2rem;
+      }
+      .thankyou {
+        text-align: center;
+        margin-top: 1.5rem;
+      }
+      .footer-note {
+        font-size: 0.7rem;
+        color: #6c757d;
+        text-align: center;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px dashed #dee2e6;
+      }
+  body
+    .receipt-card
+      .receipt-header
+        .brand-icon
+          i.fas.fa-tools
+        .brand-text
+          h1 NYONDO <span>HARDWARE</span>
+          p.mb-0
+            i.fas.fa-location-dot
+            |  Nansana Branch, Hoima Road
+          p.mb-0
+            i.fas.fa-phone-alt
+            |  +256 700 123 456
+
+      .receipt-body
+        // Receipt meta info
+        .receipt-meta
+          .d-flex.justify-content-between.mb-2
+            div
+              i.fas.fa-check-circle.text-success
+              span.ms-1.badge-paid 
+                = sale.status === 'Paid' ? 'PAID IN FULL' : sale.status
+            div
+              i.fas.fa-hashtag
+              |  Invoice #: 
+              strong #{sale.invoiceNumber}
+          .d-flex.justify-content-between.mb-2
+            span
+              i.far.fa-calendar-alt
+              |  Date:
+            span #{sale.createdAt ? new Date(sale.createdAt).toLocaleString() : '—'}
+          .d-flex.justify-content-between.mb-2
+            span
+              i.fas.fa-user
+              |  Customer:
+            span #{sale.customerName || 'Walk-in Customer'}
+          .d-flex.justify-content-between
+            span
+              i.fas.fa-credit-card
+              |  Payment:
+            span #{sale.paymentMethod || '—'}
+
+        hr
+
+        // Items header
+        .d-flex.justify-content-between.fw-bold.mb-2
+          span Description
+          span Amount
+
+        // Loop through items
+        if sale.items && sale.items.length
+          each item in sale.items
+            .d-flex.justify-content-between.mb-1
+              span #{item.productName} (qty: #{item.quantity}) @ #{item.unitPrice.toLocaleString()} UGX
+              span #{item.total.toLocaleString()} UGX
+        else
+          .text-muted No items
+
+        hr
+
+        // Subtotal
+        .d-flex.justify-content-between.mb-1
+          span Subtotal
+          span #{sale.subtotal.toLocaleString()} UGX
+
+        // Delivery fee (if any)
+        if sale.deliveryFee && sale.deliveryFee > 0
+          .d-flex.justify-content-between.mb-1
+            span Delivery Fee
+            span #{sale.deliveryFee.toLocaleString()} UGX
+
+        // Grand total
+        .d-flex.justify-content-between.fw-bold.total-row
+          span TOTAL
+          span #{sale.grandTotal.toLocaleString()} UGX
+
+        hr
+
+        .thankyou
+          p.mb-0.small Served by: #{sale.attendant ? sale.attendant.fullName : 'System'}
+          p.mb-0.fw-bold Thank you for choosing Nyondo Hardware!
+          p.mb-0.small.text-muted Goods once sold are not returnable
+
+        .footer-note
+          i.fas.fa-print
+          |  Keep this receipt for warranty claims
+
+      .text-center.p-3.bg-light.no-print
+        button.btn.btn-primary.me-2(onclick="window.print()")
+          i.fas.fa-print.me-1
+          | Print Receipt
+        a.btn.btn-outline-secondary(href="/sales")
+          i.fas.fa-arrow-left.me-1
+          | Back to Sales
+
+    script(src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js")

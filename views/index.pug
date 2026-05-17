@@ -3,51 +3,76 @@ html(lang="en")
   head
     meta(charset='UTF-8')
     meta(name='viewport' content='width=device-width, initial-scale=1.0')
-    title NYONDO Hardware – Portal
+    title NYONDO – Portal
     link(href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css' rel='stylesheet')
     link(rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css')
     link(href='https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..800&family=Syne:wght@400..800&family=DM+Sans:wght@300..600&display=swap' rel='stylesheet')
     link(rel='stylesheet' href='/css/main.css')
     link(rel='stylesheet' href='/css/index.css')
     style.
-      body { background: linear-gradient(135deg, #f5f7fa 0%, #e9edf2 100%); min-height: 100vh; }
-      .brand-logo { width:80px; height:80px; background:#1e2a2f; border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--gold,#f7b32b); font-size:2.5rem; margin:0 auto 1rem; box-shadow:0 10px 25px -5px #003300; }
-      .role-card { background:#1e2a2f; border-radius:1.5rem; padding:2rem 1.5rem; text-align:center; color:white; cursor:pointer; transition:0.2s; height:100%; }
-      .role-card:hover { transform:translateY(-5px); box-shadow:0 20px 25px -5px #003300; }
-      .role-icon { font-size:3rem; color:var(--gold); margin-bottom:1rem; }
-      .role-btn { background:var(--gold); border:none; color:#1e2a2f; padding:0.5rem 1.5rem; border-radius:2rem; margin-top:1rem; font-weight:bold; }
-      .footer { text-align:center; margin-top:4rem; color:#6c757d; font-size:0.9rem; }
+      body { min-height: 100vh; font-family: 'Inter', sans-serif; position: relative; overflow-x: hidden; background: #f5f7fa; }
+      .video-background { position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; }
+      .video-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.3); z-index: -1; }
+      .brand-display { text-align: center; padding: 3rem 2rem 2rem; position: relative; z-index: 1; }
+      .brand-icon { width: 100px; height: 100px; background: linear-gradient(135deg, #1e2a2f 0%, #2d3e45 100%); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #f7b32b; font-size: 3rem; box-shadow: 0 10px 30px rgba(0,0,0,0.2); margin-bottom: 1rem; }
+      .brand-name { font-size: 2.5rem; font-weight: 800; color: #1e2a2f; margin: 0; }
+      .hero-section { text-align: center; padding: 3rem 2rem; position: relative; z-index: 1; }
+      .hero-title { font-size: 3rem; font-weight: 800; color: #1e2a2f; margin-bottom: 1rem; }
+      .hero-subtitle { font-size: 1.25rem; color: #6c757d; margin-bottom: 2rem; }
+      .btn-signin { background: #1e2a2f; color: white; padding: 0.75rem 2rem; border-radius: 2rem; font-weight: 600; border: none; transition: 0.3s; }
+      .btn-signin:hover { background: #0d1316; transform: translateY(-2px); }
+      .role-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 1.5rem; padding: 2.5rem 2rem; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.08); transition: 0.3s; height: 100%; border: 1px solid #e9ecef; }
+      .role-card:hover { transform: translateY(-8px); box-shadow: 0 12px 30px rgba(0,0,0,0.15); }
+      .role-icon { width: 80px; height: 80px; background: linear-gradient(135deg, #1e2a2f 0%, #2d3e45 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; color: #f7b32b; font-size: 2rem; }
+      .role-title { font-size: 1.5rem; font-weight: 700; color: #1e2a2f; margin-bottom: 0.75rem; }
+      .role-desc { color: #6c757d; font-size: 0.95rem; margin-bottom: 1.5rem; line-height: 1.6; }
+      .btn-open-app { background: #f7b32b; color: #1e2a2f; padding: 0.6rem 2rem; border-radius: 2rem; font-weight: 600; border: none; transition: 0.3s; }
+      .btn-open-app:hover { background: #e5a020; transform: translateY(-2px); }
+      .footer { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); padding: 2rem; margin-top: 4rem; border-top: 1px solid #e9ecef; position: relative; z-index: 1; }
+      .footer-links a { color: #6c757d; text-decoration: none; margin: 0 1rem; font-size: 0.9rem; }
+      .footer-links a:hover { color: #1e2a2f; }
+      .footer-text { color: #6c757d; font-size: 0.85rem; margin-bottom: 0.5rem; }
   body
+    video.video-background(autoplay muted loop playsinline)
+      source(src='/Nyondo.mp4' type='video/mp4')
+    .video-overlay
+    
+    .brand-display
+      .brand-icon
+        i.fa-solid.fa-tools
+      h1.brand-name Nyondo
+    
     .container
-      .text-center.py-5
-        .brand-logo
-          i.fa-solid.fa-tools
-        h1.display-4.fw-bold NYONDO Hardware
-        p.lead.text-muted Enterprise Resource Management System
-
-      .row.g-4.justify-content-center
+      .hero-section
+        h1.hero-title Welcome to Nyondo
+        p.hero-subtitle Your all-in-one business management solution
+        button.btn-signin(onclick="location.href='/login'") Sign in to Dashboard
+      
+      .row.g-4.justify-content-center.mt-5
         .col-md-4
           .role-card(onclick="location.href='/login'")
             .role-icon
-              i.fa-solid.fa-shield-haltered
-            h4 Administrator
-            p.text-white-50 Full system control & reports
-            button.role-btn Login →
+              i.fa-solid.fa-cash-register
+            h4.role-title Sales Attendant
+            p.role-desc Process sales and manage customer interactions
+            button.btn-open-app Open App
         .col-md-4
           .role-card(onclick="location.href='/login'")
             .role-icon
-              i.fa-solid.fa-chart-line
-            h4 Manager
-            p.text-white-50 Analytics & stock management
-            button.role-btn Login →
+              i.fa-solid.fa-store
+            h4.role-title Store Manager
+            p.role-desc Oversee inventory and store operations
+            button.btn-open-app Open App
         .col-md-4
           .role-card(onclick="location.href='/login'")
             .role-icon
-              i.fa-solid.fa-cart-shopping
-            h4 Sales Attendant
-            p.text-white-50 Point of sale & customers
-            button.role-btn Login →
-
-      .footer
-        i.fa-regular.fa-copyright
-        |  2026 NYONDO General Hardware LTD. Secure portal.
+              i.fa-solid.fa-calculator
+            h4.role-title Accounts & Admin
+            p.role-desc Handle financial records and administrative tasks
+            button.btn-open-app Open App
+    
+    .footer
+      .container
+        .row
+          .col-12.text-center
+            p.footer-text © 2026 Nyondo. All rights reserved.

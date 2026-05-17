@@ -35,10 +35,6 @@ const settingSchema = new mongoose.Schema({
       type: Number,
       default: 30000,
     },
-    // extraPerKm: {
-    //   type: Number,
-    //   default: 1000,
-    // },
     freeDistance: {
       type: Number,
       default: 10,

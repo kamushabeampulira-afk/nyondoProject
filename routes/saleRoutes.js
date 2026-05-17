@@ -233,5 +233,15 @@ router.post('/delivery', isSalesOrAdmin, (req, res) => {
   req.session.deliveryDistance = Number(req.body.distance);
   res.redirect('/sales');
 });
+router.get('/invoice/:id', isSalesOrAdmin, async (req, res) => {
+  try {
+    const sale = await Sale.findById(req.params.id).populate('attendant', 'fullName');
+    if (!sale) throw new Error('Sale not found');
+    res.render('receipt', { sale, user: req.user });
+  } catch (err) {
+    req.flash('error_msg', err.message);
+    res.redirect('/sales');
+  }
+});
 
 module.exports = router;

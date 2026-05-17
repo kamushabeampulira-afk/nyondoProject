@@ -166,6 +166,29 @@ router.get('/member-statement', isManagerOrAdmin, async (req, res) => {
     res.redirect('/deposit-scheme');
   }
 });
+// GET /deposit-scheme/receipt/:id – show receipt for a deposit/pickup transaction
+router.get('/deposit-scheme/receipt/:id', isManagerOrAdmin, async (req, res) => {
+  try {
+    const transaction = await DepositTransaction.findById(req.params.id)
+      .populate('memberId', 'fullName nin phone balance')
+      .populate('recordedBy', 'fullName');
+    if (!transaction) throw new Error('Transaction not found');
+    // Attach member and recordedBy as plain objects for template
+    const member = transaction.memberId;
+    const recordedBy = transaction.recordedBy;
+    res.render('deposit-receipt', { 
+      transaction: {
+        ...transaction.toObject(),
+        member,
+        recordedBy
+      },
+      user: req.user 
+    });
+  } catch (err) {
+    req.flash('error_msg', err.message);
+    res.redirect('/deposit-scheme');
+  }
+});
 
 // GET /deposit-scheme/statement/:id – simple statement (legacy, kept for compatibility)
 router.get('/statement/:id', isManagerOrAdmin, async (req, res) => {
