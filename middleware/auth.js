@@ -3,13 +3,13 @@ module.exports = {
     if (req.isAuthenticated()) return next();
     req.session.returnTo = req.originalUrl;
     req.session.error_msg = 'Please log in to continue.';
-    res.redirect('/login');
+    res.redirect('auth/login');
   },
 
   allowRoles: (roles) => (req, res, next) => {
     if (!req.isAuthenticated()) {
       req.session.error_msg = 'Unauthorized – please login.';
-      return res.redirect('/login');
+      return res.redirect('auth/login');
     }
     if (!roles.includes(req.user.role)) {
       req.session.error_msg = 'You do not have permission to access this page.';

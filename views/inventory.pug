@@ -92,7 +92,7 @@ block content
   // Tab Buttons
   .d-flex.flex-wrap.mb-4
     button.tab-btn.active(onclick="switchTab('products')") 📦 Products
-    button.tab-btn(onclick="switchTab('addStock')") ➕ Add Stock to Product
+    button.tab-btn(onclick="switchTab('addStock')") ➕ Add Product to stock
     button.tab-btn(onclick="switchTab('transactions')") 📜 Stock Transactions
 
   // Tab 1: Products
@@ -114,7 +114,7 @@ block content
               th Stock
               th Unit Price (UGX)
               th Status
-              th
+              th Actions 
           tbody
             if products && products.length
               each prod in products

@@ -6,9 +6,9 @@ router.get('/login', (req, res) => {
   res.render('login');
 });
 
-router.post('/login', 
+router.post('/login',
   passport.authenticate('local', {
-    failureRedirect: '/login',
+    failureRedirect: '/auth/login',
     failureFlash: true
   }),
   (req, res) => {
@@ -21,7 +21,7 @@ router.get('/logout', (req, res, next) => {
   req.logout((err) => {
     if (err) return next(err);
     req.flash('success_msg', 'You have been logged out successfully.');
-    res.redirect('/login');
+    res.redirect('/auth/login');
   });
 });
 

@@ -28,7 +28,7 @@ html(lang="en")
         a.nav-link-item(href="/dashboard")
           span.nicon: i.fa-solid.fa-grid-2
           | Dashboard
-        if user.role === 'admin' || user.role === 'manager'
+        if user && (user.role === 'admin' || user.role === 'manager')
           a.nav-link-item(href="/sales")
             span.nicon: i.fa-solid.fa-cash-register
             | Sales
@@ -38,14 +38,14 @@ html(lang="en")
           a.nav-link-item(href="/transport")
             span.nicon: i.fa-solid.fa-truck
             | Transport
-        if user.role === 'sales' || user.role === 'attendant'
+        if user && (user.role === 'sales' || user.role === 'attendant')
           a.nav-link-item(href="/sales")
             span.nicon: i.fa-solid.fa-cash-register
             | Sales Counter
           a.nav-link-item(href="/customers")
             span.nicon: i.fa-solid.fa-users
             | Customers
-        if user.role === 'admin'
+        if user && user.role === 'admin'
           .nav-sec-label Finance
           a.nav-link-item(href="/supplier-credit")
             span.nicon: i.fa-solid.fa-credit-card
@@ -78,7 +78,7 @@ html(lang="en")
             .user-role= user ? user.role : 'Not logged in'
         if user 
           .mt-3(style="border-top: 1px solid rgba(255,255,255,0.1); padding-top:0.75rem;") 
-            a(href='/logout' style="color: var(--gold); text-decoration: none; display: block; text-align: center;")
+            a(href='auth/logout' style="color: var(--gold); text-decoration: none; display: block; text-align: center;")
               i.fa-solid.fa-sign-out-alt.me-1 
               | Logout
   .main-wrap

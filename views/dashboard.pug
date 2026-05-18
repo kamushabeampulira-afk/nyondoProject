@@ -2,6 +2,7 @@ extends layout
 
 block head
   link(rel="stylesheet" href="/css/dashboard.css")
+  script(src="https://cdn.jsdelivr.net/npm/chart.js")
 
 block title
   | Dashboard – NYONDO Hardware
@@ -25,66 +26,256 @@ block content
       p.text-muted Quick actions and today's performance
 
   .row.g-4.mb-5
-    .col-md-4.col-sm-6(class=user.role === 'admin' ? 'col-md-3' : 'col-md-4')
-      a(href="/reports" style="text-decoration: none; display: block;")
-        .section-card.metric-card.p-3.text-center
-          i.fa-solid.fa-sack-dollar.fa-2x.mb-2(style="color: var(--gold);")
-          h6.text-muted Today's Sales
-          h3= (todaySales || 0).toLocaleString() + ' UGX'
-          small.text-success +18.4%
+    .col-md-3.col-sm-6
+      .section-card.metric-card.p-3.text-center
+        i.fa-solid.fa-sack-dollar.fa-2x.mb-2(style="color: var(--gold);")
+        h6.text-muted Today's Sales
+        h3= (todaySales || 0).toLocaleString() + ' UGX'
+        small.text-success
     if user.role === 'admin' || user.role === 'manager'
       .col-md-3.col-sm-6
-        a(href="/inventory" style="text-decoration: none; display: block;")
-          .section-card.metric-card.p-3.text-center
-            i.fa-solid.fa-warehouse.fa-2x.mb-2(style="color: var(--gold);")
-            h6.text-muted Stock Value
-            h3= (stockValue || 0).toLocaleString() + ' UGX'
-            small.text-warning -2.1%
+        .section-card.metric-card.p-3.text-center
+          i.fa-solid.fa-warehouse.fa-2x.mb-2(style="color: var(--gold);")
+          h6.text-muted Stock Value
+          h3= (stockValue || 0).toLocaleString() + ' UGX'
+          small.text-warning
     if user.role === 'admin'
       .col-md-3.col-sm-6
-        a(href="/supplier-credit" style="text-decoration: none; display: block;")
-          .section-card.metric-card.p-3.text-center
-            i.fa-solid.fa-hand-holding-dollar.fa-2x.mb-2(style="color: var(--gold);")
-            h6.text-muted Credit Balance
-            h3= (creditBalance || 0).toLocaleString() + ' UGX'
-            small.text-info 18 active accounts
+        .section-card.metric-card.p-3.text-center
+          i.fa-solid.fa-hand-holding-dollar.fa-2x.mb-2(style="color: var(--gold);")
+          h6.text-muted Credit Balance
+          h3= (creditBalance || 0).toLocaleString() + ' UGX'
+          small.text-info
       .col-md-3.col-sm-6
-        a(href="/deposit-scheme" style="text-decoration: none; display: block;")
-          .section-card.metric-card.p-3.text-center
-            i.fa-solid.fa-piggy-bank.fa-2x.mb-2(style="color: var(--gold);")
-            h6.text-muted Deposit Members
-            h3= (depositMembers || 0)
-            small.text-success +12%
+        .section-card.metric-card.p-3.text-center
+          i.fa-solid.fa-piggy-bank.fa-2x.mb-2(style="color: var(--gold);")
+          h6.text-muted Deposit Members
+          h3= (depositMembers || 0)
+          small.text-success
     if user.role === 'manager'
-      .col-md-4.col-sm-6
-        a(href="/inventory" style="text-decoration: none; display: block;")
-          .section-card.metric-card.p-3.text-center
-            i.fa-solid.fa-triangle-exclamation.fa-2x.mb-2(style="color: var(--gold);")
-            h6.text-muted Low Stock Items
-            h3.text-warning= lowStockCount || 0
-            small.text-danger Reorder soon
+      .col-md-3.col-sm-6
+        .section-card.metric-card.p-3.text-center
+          i.fa-solid.fa-triangle-exclamation.fa-2x.mb-2(style="color: var(--gold);")
+          h6.text-muted Low Stock Items
+          h3.text-warning= lowStockCount || 0
+          small.text-danger Reorder soon
     if user.role === 'sales' || user.role === 'attendant'
-      .col-md-4.col-sm-6
+      .col-md-3.col-sm-6
         .section-card.metric-card.p-3.text-center
           i.fa-solid.fa-receipt.fa-2x.mb-2(style="color: var(--gold);")
           h6.text-muted Transactions Today
           h3= transactionsToday || 0
-          small.text-info Avg. 133,906 UGX
-      .col-md-4.col-sm-6
+          small.text-info
+      .col-md-3.col-sm-6
         .section-card.metric-card.p-3.text-center
           i.fa-solid.fa-clock.fa-2x.mb-2(style="color: var(--gold);")
           h6.text-muted Pending Invoices
           h3.text-warning= pendingInvoices || 0
           small.text-danger Awaiting payment
 
-  if user.role === 'sales' || user.role === 'attendant'
-    .section-card
+  if user.role === 'admin' || user.role === 'manager'
+    .section-card.mb-4
       .section-head
         h2
-          i.fa-solid.fa-cart-plus.me-2(style="color: var(--gold);")
-          | Start New Sale
-        a.btn-primary(href="/sales")
-          i.fa-solid.fa-arrow-right
-          | Go to Sales Counter
-      .p-3.text-center
-        p.text-muted.mb-0 Click the button above to begin a new transaction.
+          i.fa-solid.fa-chart-line.me-2(style="color: var(--gold);")
+          | Sales Trend (Last 7 Days)
+      .p-3
+        canvas#salesChart(height='250')
+
+  if user.role === 'sales' || user.role === 'attendant'
+    .row.g-4.mb-4
+      .col-md-6
+        .section-card
+          .section-head
+            h2
+              i.fa-solid.fa-cart-plus.me-2(style="color: var(--gold);")
+              | Quick Sale
+          .p-3.text-center
+            p Start a new transaction in seconds
+            a.btn-primary(href="/sales")
+              i.fa-solid.fa-cash-register.me-2
+              | New Sale
+      .col-md-6
+        .section-card
+          .section-head
+            h2
+              i.fa-solid.fa-users.me-2(style="color: var(--gold);")
+              | Customer Management
+          .p-3.text-center
+            p Add or edit customer details
+            a.btn-outline(href="/customers")
+              i.fa-solid.fa-user-plus.me-2
+              | Manage Customers
+
+  if user.role === 'manager'
+    .row.g-4.mb-4
+      .col-md-6
+        .section-card
+          .section-head
+            h2
+              i.fa-solid.fa-boxes-stacked.me-2(style="color: var(--gold);")
+              | Stock Management
+          .p-3.text-center
+            p Monitor inventory, add new stock
+            a.btn-primary(href="/inventory")
+              i.fa-solid.fa-warehouse.me-2
+              | Go to Inventory
+      .col-md-6
+        .section-card
+          .section-head
+            h2
+              i.fa-solid.fa-truck.me-2(style="color: var(--gold);")
+              | Delivery Calculator
+          .p-3.text-center
+            p Estimate delivery fees
+            a.btn-outline(href="/transport")
+              i.fa-solid.fa-calculator.me-2
+              | Transport
+
+  if user.role === 'admin'
+    .row.g-4.mb-4
+      .col-md-4
+        .section-card
+          .section-head
+            h2
+              i.fa-solid.fa-credit-card.me-2(style="color: var(--gold);")
+              | Supplier Credit
+          .p-3.text-center
+            p Record credit purchases and payments
+            a.btn-primary(href="/supplier-credit")
+              i.fa-solid.fa-hand-holding-dollar.me-2
+              | Supplier Credit
+      .col-md-4
+        .section-card
+          .section-head
+            h2
+              i.fa-solid.fa-piggy-bank.me-2(style="color: var(--gold);")
+              | Deposit Scheme
+          .p-3.text-center
+            p Manage members, deposits, pickups
+            a.btn-outline(href="/deposit-scheme")
+              i.fa-solid.fa-receipt.me-2
+              | Deposit Scheme
+      .col-md-4
+        .section-card
+          .section-head
+            h2
+              i.fa-solid.fa-chart-bar.me-2(style="color: var(--gold);")
+              | Reports
+          .p-3.text-center
+            p View analytics and export data
+            a.btn-outline(href="/reports")
+              i.fa-solid.fa-chart-line.me-2
+              | Reports
+
+  if user.role === 'admin' || user.role === 'manager'
+    .row.g-4
+      if recentSales && recentSales.length
+        .col-md-6
+          .section-card
+            .section-head
+              h2
+                i.fa-solid.fa-clock-rotate-left.me-2(style="color: var(--gold);")
+                | Recent Sales
+            .p-0
+              .table-responsive
+                table.table.table-sm.mb-0
+                  thead
+                    tr
+                      th Invoice
+                      th Customer
+                      th Total (UGX)
+                      th Attendant
+                  tbody
+                    each sale in recentSales
+                      tr
+                        td= sale.invoiceNumber
+                        td= sale.customerName || 'Walk-in'
+                        td= sale.grandTotal.toLocaleString()
+                        td= sale.attendant ? sale.attendant.fullName : '—'
+      if recentStock && recentStock.length
+        .col-md-6
+          .section-card
+            .section-head
+              h2
+                i.fa-solid.fa-cube.me-2(style="color: var(--gold);")
+                | Recent Stock Additions
+            .p-0
+              .table-responsive
+                table.table.table-sm.mb-0
+                  thead
+                    tr
+                      th Product
+                      th Quantity
+                      th Supplier
+                      th Date
+                  tbody
+                    each tx in recentStock
+                      tr
+                        td= tx.productName
+                        td= tx.quantityAdded
+                        td= tx.supplierName || '—'
+                        td= tx.createdAt ? tx.createdAt.toLocaleDateString() : '—'
+
+  if user.role === 'admin' && recentDeposits && recentDeposits.length
+    .row.g-4.mt-4
+      .col-12
+        .section-card
+          .section-head
+            h2
+              i.fa-solid.fa-piggy-bank.me-2(style="color: var(--gold);")
+              | Recent Deposit Transactions
+          .p-0
+            .table-responsive
+              table.table.table-sm.mb-0
+                thead
+                  tr
+                    th Member
+                    th Type
+                    th Amount (UGX)
+                    th Date
+                tbody
+                  each tx in recentDeposits
+                    tr
+                      td= tx.memberId ? tx.memberId.fullName : '—'
+                      td
+                        if tx.type === 'deposit'
+                          span.text-success Deposit
+                        else
+                          span.text-warning Pickup
+                      td
+                        if tx.type === 'deposit'
+                          | + #{tx.amount.toLocaleString()}
+                        else
+                          | - #{Math.abs(tx.amount).toLocaleString()}
+                      td= tx.createdAt ? tx.createdAt.toLocaleDateString() : '—'
+
+  script.
+    const ctx = document.getElementById('salesChart')?.getContext('2d');
+    if (ctx) {
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: !{JSON.stringify(chartLabels || [])},
+          datasets: [{
+            label: 'Sales (UGX)',
+            data: !{JSON.stringify(chartSales || [])},
+            borderColor: '#f7b32b',
+            backgroundColor: 'rgba(247,179,43,0.1)',
+            fill: true,
+            tension: 0.3,
+            pointBackgroundColor: '#f7b32b',
+            pointRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            tooltip: { callbacks: { label: (ctx) => `${ctx.raw.toLocaleString()} UGX` } }
+          },
+          scales: {
+            y: { ticks: { callback: (v) => v.toLocaleString() + ' UGX' } }
+          }
+        }
+      });
+    }

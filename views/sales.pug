@@ -8,424 +8,222 @@ block title
 
 block content
   .page-heading-center.mb-4
-      h1
-        i.fa-solid.fa-cart-shopping
-        |  Sales Counter
-      p.text-muted
-        | Add items to cart, apply delivery charges, and complete sale
-      .row.g-4
-        // Left Column - Product Selection & Customer Details
-        .col-lg-5
-          .form-card
-            h4.mb-4
-              i.fa-solid.fa-cart-plus.me-2(style='color: var(--gold)')
-              |                 Add Product to Cart
-            .mb-4
-              label.form-label Select Product
-              select#productSelect.form-select
-                option(value='28000' data-name='Cement (CEM II N)')
-                  | Cement (CEM II N) - 28,000 UGX
-                option(value='30000' data-name='Cement (CEM III N)')
-                  | Cement (CEM III N) - 30,000 UGX
-                option(value='18500' data-name='Iron Bar 12mm')
-                  | Iron Bar 12mm - 18,500 UGX
-                option(value='42000' data-name='Iron Sheet (Color)')
-                  | Iron Sheet (Color) - 42,000 UGX
-                option(value='80000' data-name='Wheelbarrow')
-                  | Wheelbarrow - 80,000 UGX
-                option(value='48000' data-name='Wire Mesh')
-                  | Wire Mesh - 48,000 UGX
-            .mb-4
-              label.form-label Quantity
-              input#productQty.form-control(type='number' value='1' min='1')
-            button.btn-primary.w-100.py-2(onclick='addToCart()')
-              i.fa-solid.fa-plus.me-2
-              |  Add to Cart
-          .form-card.mt-4
-            h4.mb-4
-              i.fa-solid.fa-truck.me-2(style='color: var(--gold)')
-              |                 Customer &amp; Delivery
-            .mb-4
-              label.form-label Customer Name
-              .input-group
-                span.input-group-text
-                  i.fa-solid.fa-user
-                input#custName.form-control(type='text' placeholder='Walk-in Customer')
-            .mb-4
-              label.form-label Distance from Nansana (km)
-              .input-group
-                span.input-group-text
-                  i.fa-solid.fa-location-dot
-                input#distance.form-control(type='number' value='5' step='1')
-              small.text-muted
-                | Free delivery if total &ge; 500,000 UGX and distance &le;
-                | 10km
-            .mb-3
-              label.form-label Payment Method
-              select#paymentMethod.form-select
-                option Cash
-                option Mobile Money
-                option Credit
-                option Deposit Scheme
-        // Right Column - Shopping Cart
-        .col-lg-7
-          .section-card
-            .section-head
-              h2
-                i.fa-solid.fa-cart-shopping.me-2(style='color: var(--gold)')
-                |                   Shopping Cart
-              button.btn-outline.btn-sm(onclick='clearCart()')
-                i.fa-solid.fa-trash-can.me-1
-                |  Clear Cart
-            .table-responsive
-              table.data-table.cart-table
-                thead
+    h1
+      i.fa-solid.fa-cart-shopping
+      |  Sales Counter
+    p.text-muted Add items to cart, then complete the sale
+
+  .row.g-4
+    // Left column: Product selection + Customer details (unified card)
+    .col-lg-5
+      .form-card
+        h4.mb-4
+          i.fa-solid.fa-cart-plus.me-2(style="color: var(--gold);")
+          | Add to Cart
+        // Product selection – dynamic from database
+        .mb-3
+          label.form-label Product
+          select#productSelect.form-select
+            option(value='') -- Select Product --
+            each prod in products
+              option(
+                value=prod._id
+                data-name=prod.productName
+                data-price=prod.unitPrice
+                data-stock=prod.currentStock
+              ) #{prod.productName} - #{prod.unitPrice.toLocaleString()} UGX (Stock: #{prod.currentStock})
+        .mb-3
+          label.form-label Quantity
+          input#productQty.form-control(type='number' value='1' min='1')
+        button.btn-primary.w-100.mb-4(type='button' onclick='addToCart()')
+          i.fa-solid.fa-plus.me-2
+          | Add to Cart
+
+        hr
+        h5.mt-3 Customer & Delivery
+        .mb-3
+          label.form-label Customer Name
+          input#custName.form-control(type='text' placeholder='Walk-in Customer')
+        .mb-3
+          label.form-label Distance from Nansana (km)
+          .input-group
+            span.input-group-text: i.fa-solid.fa-location-dot
+            input#distance.form-control(type='number' value='5' step='1')
+          small.text-muted Free delivery if total ≥ 500,000 UGX and distance ≤ 10km
+        .mb-3
+          label.form-label Payment Method
+          select#paymentMethod.form-select
+            option Cash
+            option Mobile Money
+            option Credit
+            option Deposit Scheme
+
+    // Right column: Shopping Cart (table with totals)
+    .col-lg-7
+      .section-card
+        .section-head
+          h2
+            i.fa-solid.fa-cart-shopping.me-2(style="color: var(--gold);")
+            | Shopping Cart
+          button.btn-outline.btn-sm(type='button' onclick='clearCart()')
+            i.fa-solid.fa-trash-can.me-1
+            | Clear Cart
+        .table-responsive
+          table.data-table.cart-table
+            thead
+              tr
+                th Item
+                th Qty
+                th Unit Price (UGX)
+                th Total (UGX)
+                th
+            tbody#cartBody
+              if cart && cart.length
+                each item, idx in cart
                   tr
-                    th Item
-                    th Qty
-                    th Unit Price (UGX)
-                    th Total (UGX)
-                    th
-                tbody#cartBody
-                  tr
-                    td.text-center.text-muted.py-4(colspan='5')
-                      i.fa-solid.fa-cart-empty.fa-2x.mb-2.d-block
-                      | Cart is empty. Add products to continue.
-                tfoot#cartFooter(style='display: none')
-                  tr.table-active
-                    td.text-end.fw-bold(colspan='3') Subtotal:
-                    td#subtotal.fw-bold 0 UGX
                     td
-                  tr.table-active
-                    td.text-end.fw-bold(colspan='3')
-                      | Delivery Fee:
-                    td#deliveryFee.fw-bold 0 UGX
+                      i.fa-solid.fa-cube.me-2(style="color: var(--gold);")
+                      = item.name
                     td
-                  tr.table-success
-                    td.text-end.fw-bold.fs-5(colspan='3')
-                      | Grand Total:
-                    td#grandTotal.total-amount.fw-bold
-                      | 0 UGX
+                      input.quantity-input.form-control(type='number' value=item.qty min='1' onchange=`updateQty(${idx}, this.value)`)
+                    td= item.price.toLocaleString()
+                    td.fw-bold= (item.price * item.qty).toLocaleString()
                     td
-            .p-3.bg-light.border-top
-              button.btn-primary.w-100.py-2(onclick='checkout()')
-                i.fa-solid.fa-check-circle.me-2
-                |  Complete Sale
+                      i.fa-regular.fa-trash-can.remove-item(onclick=`removeItem(${idx})`)
+              else
+                tr
+                  td(colspan='5').text-center Cart is empty.
+            tfoot#cartFooter(style='display: none')
+              tr.table-active
+                td.text-end.fw-bold(colspan='3') Subtotal:
+                td#subtotal 0 UGX
+                td
+              tr.table-active
+                td.text-end.fw-bold(colspan='3') Delivery Fee:
+                td#deliveryFee 0 UGX
+                td
+              tr.table-success
+                td.text-end.fw-bold.fs-5(colspan='3') Grand Total:
+                td#grandTotal.total-amount 0 UGX
+                td
+        .p-3.bg-light.border-top
+          button.btn-primary.w-100.py-2(onclick='checkout()')
+            i.fa-solid.fa-check-circle.me-2
+            | Complete Sale
+
   script.
-    let cart = [];
-    function addToCart() {
-    const select = document.getElementById("productSelect");
-    const price = parseInt(select.value);
-    const name =
-    select.options[select.selectedIndex].getAttribute("data-name");
-    const qty = parseInt(document.getElementById("productQty").value);
-    if (qty < 1) {
-    alert("Please enter a valid quantity");
-    return;
-    }
-    const existing = cart.find((item) => item.name === name);
-    if (existing) existing.qty += qty;
-    else cart.push({ name, price, qty });
-    renderCart();
-    document.getElementById("productQty").value = 1;
-    }
+    let cart = !{JSON.stringify(cart || [])};
+
     function renderCart() {
-    const tbody = document.getElementById("cartBody");
-    const footer = document.getElementById("cartFooter");
-    if (cart.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4"><i class="fa-solid fa-cart-empty fa-2x mb-2 d-block"></i>Cart is empty. Add products to continue.</td></tr>`;
-    footer.style.display = "none";
-    return;
+      const tbody = document.getElementById('cartBody');
+      const footer = document.getElementById('cartFooter');
+      if (!cart.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4"><i class="fa-solid fa-cart-empty fa-2x mb-2 d-block"></i>Cart is empty. Add products to continue.</td></tr>';
+        footer.style.display = 'none';
+        return;
+      }
+      footer.style.display = 'table-footer-group';
+      let subtotal = 0;
+      tbody.innerHTML = '';
+      cart.forEach((item, idx) => {
+        const total = item.price * item.qty;
+        subtotal += total;
+        tbody.innerHTML += `
+          <tr>
+            <td><i class="fa-solid fa-cube me-2" style="color: var(--gold);"></i>${escapeHtml(item.name)}</td>
+            <td><input type="number" class="quantity-input form-control" value="${item.qty}" min="1" onchange="updateQty(${idx}, this.value)"></td>
+            <td>${item.price.toLocaleString()}</td>
+            <td class="fw-bold">${total.toLocaleString()}</td>
+            <td><i class="fa-regular fa-trash-can remove-item" onclick="removeItem(${idx})"></i></td>
+          </tr>
+        `;
+      });
+      document.getElementById('subtotal').innerHTML = subtotal.toLocaleString() + ' UGX';
+      calculateDelivery(subtotal);
     }
-    footer.style.display = "table-footer-group";
-    tbody.innerHTML = "";
-    let subtotal = 0;
-    cart.forEach((item, idx) => {
-    const total = item.price * item.qty;
-    subtotal += total;
-    tbody.insertAdjacentHTML(
-    "beforeend",
-    `
-    <tr>
-    <td><i class="fa-solid fa-cube me-2" style="color: var(--gold);"></i>${item.name}</td>
-    <td><input type="number" class="quantity-input form-control" value="${item.qty}" min="1" onchange="updateQty(${idx}, this.value)"></td>
-    <td>${item.price.toLocaleString()}</td>
-    <td class="fw-bold">${total.toLocaleString()}</td>
-    <td><i class="fa-regular fa-trash-can remove-item" onclick="removeItem(${idx})"></i></td>
-    </tr>
-    `,
-    );
-    });
-    document.getElementById("subtotal").innerHTML =
-    subtotal.toLocaleString() + " UGX";
-    calculateDelivery(subtotal);
+
+    function addToCart() {
+      const select = document.getElementById('productSelect');
+      const selectedOption = select.options[select.selectedIndex];
+      const productId = select.value;
+      if (!productId) return alert('Select a product');
+      const name = selectedOption.getAttribute('data-name');
+      const price = parseFloat(selectedOption.getAttribute('data-price'));
+      const qty = parseInt(document.getElementById('productQty').value);
+      if (qty < 1) {
+        alert('Please enter a valid quantity');
+        return;
+      }
+      const existing = cart.find(item => item.productId === productId);
+      if (existing) {
+        existing.qty += qty;
+      } else {
+        cart.push({ productId, name, price, qty });
+      }
+      renderCart();
+      document.getElementById('productQty').value = 1;
     }
+
     function updateQty(idx, newQty) {
-    let qty = parseInt(newQty);
-    if (isNaN(qty) || qty < 1) qty = 1;
-    cart[idx].qty = qty;
-    renderCart();
+      let qty = parseInt(newQty);
+      if (isNaN(qty) || qty < 1) qty = 1;
+      cart[idx].qty = qty;
+      renderCart();
     }
+
     function removeItem(idx) {
-    cart.splice(idx, 1);
-    renderCart();
+      cart.splice(idx, 1);
+      renderCart();
     }
+
     function clearCart() {
-    if (cart.length > 0 && confirm("Clear entire cart?")) {
-    cart = [];
-    renderCart();
+      if (cart.length && confirm('Clear entire cart?')) {
+        cart = [];
+        renderCart();
+      }
     }
-    }
+
     function calculateDelivery(subtotal) {
-    const distance =
-    parseFloat(document.getElementById("distance").value) || 0;
-    let fee = 0;
-    if (subtotal >= 500000 && distance <= 10) fee = 0;
-    else {
-    fee = 30000;
-    if (distance > 10) fee += (distance - 10) * 1000;
+      const distance = parseFloat(document.getElementById('distance').value) || 0;
+      let fee = 0;
+      if (!(subtotal >= 500000 && distance <= 10)) {
+        fee = 30000;
+      }
+      document.getElementById('deliveryFee').innerHTML = fee.toLocaleString() + ' UGX';
+      document.getElementById('grandTotal').innerHTML = (subtotal + fee).toLocaleString() + ' UGX';
     }
-    document.getElementById("deliveryFee").innerHTML =
-    fee.toLocaleString() + " UGX";
-    document.getElementById("grandTotal").innerHTML =
-    (subtotal + fee).toLocaleString() + " UGX";
-    }
-    document.getElementById("distance").addEventListener("input", () => {
-    const sub = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
-    calculateDelivery(sub);
+
+    document.getElementById('distance').addEventListener('input', () => {
+      const sub = cart.reduce((s, i) => s + i.price * i.qty, 0);
+      calculateDelivery(sub);
     });
+
     function checkout() {
-    if (cart.length === 0) {
-    alert("Cart is empty. Please add items before checkout.");
-    return;
+      if (!cart.length) return alert('Cart is empty');
+      const customer = document.getElementById('custName').value || 'Walk-in Customer';
+      const payment = document.getElementById('paymentMethod').value;
+      const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+      const fee = parseFloat(document.getElementById('deliveryFee').innerHTML.replace(/[^0-9]/g, '')) || 0;
+      const total = subtotal + fee;
+      if (!confirm(`Proceed with sale?\nCustomer: ${customer}\nTotal: ${total.toLocaleString()} UGX`)) return;
+      fetch('/sales/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: cart, customerName: customer, paymentMethod: payment, deliveryFee: fee })
+      }).then(res => res.json()).then(data => {
+        if (data.error) alert(data.error);
+        else { alert('Sale completed!'); cart = []; renderCart(); window.location.href = `/invoice/${data.saleId}`; }
+      }).catch(err => alert(err.message));
     }
-    const customer =
-    document.getElementById("custName").value || "Walk-in Customer";
-    const payment = document.getElementById("paymentMethod").value;
-    const subtotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
-    const fee =
-    parseFloat(
-    document
-    .getElementById("deliveryFee")
-    .innerHTML.replace(/[^0-9]/g, ""),
-    ) || 0;
-    const total = subtotal + fee;
-    const confirmMsg = `📋 SALE SUMMARY\\n━━━━━━━━━━━━━━━━━\nCustomer: ${customer}\nPayment: ${payment}\nItems: ${cart.length}\nSubtotal: ${subtotal.toLocaleString()} UGX\nDelivery: ${fee.toLocaleString()} UGX\n━━━━━━━━━━━━━━━━━\nTOTAL: ${total.toLocaleString()} UGX\n━━━━━━━━━━━━━━━━━\n\nProceed with this sale?`;
-    if (confirm(confirmMsg)) {
-    alert(
-    `✅ Sale completed successfully!\\n\nInvoice sent to printer.\nRedirecting to invoice page...`,
-    );
-    cart = [];
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+      });
+    }
+
     renderCart();
-    document.getElementById("custName").value = "";
-    document.getElementById("distance").value = "5";
-    }
-    }
-  //- .page-heading-center.mb-4
-  //-   h1
-  //-     i.fa-solid.fa-cart-shopping
-  //-     |  Sales Counter
-  //-   p.text-muted Add items to cart, then complete the sale
-
-  //- .row.g-4
-  //-   // Left column: Product selection + Customer details (unified card)
-  //-   .col-lg-5
-  //-     .form-card
-  //-       h4.mb-4
-  //-         i.fa-solid.fa-cart-plus.me-2(style="color: var(--gold);")
-  //-         | Add to Cart
-  //-       // Product selection
-  //-       .mb-3
-  //-         label.form-label Product
-  //-         select#productSelect.form-select
-  //-           option(value='') -- Select Product --
-  //-           each prod in products
-  //-             option(value=prod._id data-price=prod.unitPrice data-stock=prod.currentStock) #{prod.productName} - #{prod.unitPrice.toLocaleString()} UGX (Stock: #{prod.currentStock})
-  //-       .mb-3
-  //-         label.form-label Quantity
-  //-         input#productQty.form-control(type='number' value='1' min='1')
-  //-       button.btn-primary.w-100.mb-4(type='button' onclick='addToCart()')
-  //-         i.fa-solid.fa-plus.me-2
-  //-         | Add to Cart
-
-  //-       hr
-  //-       h5.mt-3 Customer & Delivery
-  //-       .mb-3
-  //-         label.form-label Customer Name
-  //-         input#custName.form-control(type='text' placeholder='Walk-in Customer')
-  //-       .mb-3
-  //-         label.form-label Distance from Nansana (km)
-  //-         .input-group
-  //-           span.input-group-text: i.fa-solid.fa-location-dot
-  //-           input#distance.form-control(type='number' value='5' step='1')
-  //-         small.text-muted Free delivery if total ≥ 500,000 UGX and distance ≤ 10km
-  //-       .mb-3
-  //-         label.form-label Payment Method
-  //-         select#paymentMethod.form-select
-  //-           option Cash
-  //-           option Mobile Money
-  //-           option Credit
-  //-           option Deposit Scheme
-
-  //-   // Right column: Shopping Cart (table with totals)
-  //-   .col-lg-7
-  //-     .section-card
-  //-       .section-head
-  //-         h2
-  //-           i.fa-solid.fa-cart-shopping.me-2(style="color: var(--gold);")
-  //-           | Shopping Cart
-  //-         button.btn-outline.btn-sm(type='button' onclick='clearCart()')
-  //-           i.fa-solid.fa-trash-can.me-1
-  //-           | Clear Cart
-  //-       .table-responsive
-  //-         table.data-table.cart-table
-  //-           thead
-  //-             tr
-  //-               th Item
-  //-               th Qty
-  //-               th Unit Price (UGX)
-  //-               th Total (UGX)
-  //-               th
-  //-           tbody#cartBody
-  //-             if cart && cart.length
-  //-               each item, idx in cart
-  //-                 tr
-  //-                   td
-  //-                     i.fa-solid.fa-cube.me-2(style="color: var(--gold);")
-  //-                     = item.name
-  //-                   td
-  //-                     input.quantity-input.form-control(type='number' value=item.qty min='1' onchange=`updateQty(${idx}, this.value)`)
-  //-                   td= item.price.toLocaleString()
-  //-                   td.fw-bold= (item.price * item.qty).toLocaleString()
-  //-                   td
-  //-                     i.fa-regular.fa-trash-can.remove-item(onclick=`removeItem(${idx})`)
-  //-             else
-  //-               tr
-  //-                 td(colspan='5').text-center Cart is empty.
-  //-           tfoot#cartFooter(style='display: none')
-  //-             tr.table-active
-  //-               td.text-end.fw-bold(colspan='3') Subtotal:
-  //-               td#subtotal 0 UGX
-  //-               td
-  //-             tr.table-active
-  //-               td.text-end.fw-bold(colspan='3') Delivery Fee:
-  //-               td#deliveryFee 0 UGX
-  //-               td
-  //-             tr.table-success
-  //-               td.text-end.fw-bold.fs-5(colspan='3') Grand Total:
-  //-               td#grandTotal.total-amount 0 UGX
-  //-               td
-  //-       .p-3.bg-light.border-top
-  //-         button.btn-primary.w-100.py-2(onclick='checkout()')
-  //-           i.fa-solid.fa-check-circle.me-2
-  //-           | Complete Sale
-
-  //- script.
-  //-   let cart = !{JSON.stringify(cart || [])};
-  //-   let products = !{JSON.stringify(products)};
-
-  //-   function renderCart() {
-  //-     const tbody = document.getElementById('cartBody');
-  //-     const footer = document.getElementById('cartFooter');
-  //-     if (!cart.length) {
-  //-       tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4"><i class="fa-solid fa-cart-empty fa-2x mb-2 d-block"></i>Cart is empty. Add products to continue.</td></tr>';
-  //-       footer.style.display = 'none';
-  //-       return;
-  //-     }
-  //-     footer.style.display = 'table-footer-group';
-  //-     let subtotal = 0;
-  //-     tbody.innerHTML = '';
-  //-     cart.forEach((item, idx) => {
-  //-       const total = item.price * item.qty;
-  //-       subtotal += total;
-        
-  //-       tbody.innerHTML += `
-  //-         <tr>
-  //-           <td><i class="fa-solid fa-cube me-2" style="color: var(--gold);"></i>${escapeHtml(item.name)}</td>
-  //-           <td><input type="number" class="quantity-input form-control" value="${item.qty}" min="1" onchange="updateQty(${idx}, this.value)"></td>
-  //-           <td>${item.price.toLocaleString()}</td>
-  //-           <td class="fw-bold">${total.toLocaleString()}</td>
-  //-           <td><i class="fa-regular fa-trash-can remove-item" onclick="removeItem(${idx})"></i></td>
-  //-         </tr>
-  //-       `;
-  //-     });
-  //-     document.getElementById('subtotal').innerHTML = subtotal.toLocaleString() + ' UGX';
-  //-     calculateDelivery(subtotal);
-  //-   }}
-
-  //-   function addToCart() {
-  //-     const select = document.getElementById('productSelect');
-  //-     const productId = select.value;
-  //-     if (!productId) return alert('Select a product');
-  //-     const product = products.find(p => p._id === productId);
-  //-     const qty = parseInt(document.getElementById('productQty').value);
-  //-     if (product.currentStock < qty) return alert(`Only ${product.currentStock} in stock`);
-  //-     const existing = cart.find(i => i.productId === productId);
-  //-     if (existing) existing.qty += qty;
-  //-     else cart.push({ productId, name: product.productName, price: product.unitPrice, qty });
-  //-     renderCart();
-  //-   }
-
-  //-   function updateQty(idx, newQty) {
-  //-     let qty = parseInt(newQty);
-  //-     if (isNaN(qty) || qty < 1) qty = 1;
-  //-     cart[idx].qty = qty;
-  //-     renderCart();
-  //-   }
-
-  //-   function removeItem(idx) {
-  //-     cart.splice(idx, 1);
-  //-     renderCart();
-  //-   }
-
-  //-   function clearCart() {
-  //-     if (cart.length && confirm('Clear entire cart?')) {
-  //-       cart = [];
-  //-       renderCart();
-  //-     }
-  //-   }
-
-  //-   function calculateDelivery(subtotal) {
-  //-     const distance = parseFloat(document.getElementById('distance').value) || 0;
-  //-     let fee = 0;
-  //-     if (!(subtotal >= 500000 && distance <= 10)) {
-  //-       fee = 30000;
-  //-     }
-  //-     document.getElementById('deliveryFee').innerHTML = fee.toLocaleString() + ' UGX';
-  //-     document.getElementById('grandTotal').innerHTML = (subtotal + fee).toLocaleString() + ' UGX';
-  //-   }
-
-  //-   document.getElementById('distance').addEventListener('input', () => {
-  //-     const sub = cart.reduce((s, i) => s + i.price * i.qty, 0);
-  //-     calculateDelivery(sub);
-  //-   });
-
-  //-   function checkout() {
-  //-     if (!cart.length) return alert('Cart is empty');
-  //-     const customer = document.getElementById('custName').value || 'Walk-in Customer';
-  //-     const payment = document.getElementById('paymentMethod').value;
-  //-     const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-  //-     const fee = parseFloat(document.getElementById('deliveryFee').innerHTML.replace(/[^0-9]/g, '')) || 0;
-  //-     const total = subtotal + fee;
-  //-     if (!confirm(`Proceed with sale?\nCustomer: ${customer}\nTotal: ${total.toLocaleString()} UGX`)) return;
-  //-     fetch('/sales/checkout', {
-  //-       method: 'POST',
-  //-       headers: { 'Content-Type': 'application/json' },
-  //-       body: JSON.stringify({ items: cart, customerName: customer, paymentMethod: payment, deliveryFee: fee })
-  //-     }).then(res => res.json()).then(data => {
-  //-       if (data.error) alert(data.error);
-  //-       else { alert('Sale completed!'); cart = []; renderCart(); window.location.href = `/invoice/${data.saleId}`; }
-  //-     }).catch(err => alert(err.message));
-  //-   }
-
-  //-   function escapeHtml(str) {
-  //-     if (!str) return '';
-  //-     return str.replace(/[&<>]/g, function(m) {
-  //-       if (m === '&') return '&amp;';
-  //-       if (m === '<') return '&lt;';
-  //-       if (m === '>') return '&gt;';
-  //-       return m;
-  //-     });
-  //-   }
-
-  //-   renderCart();\\\\\
