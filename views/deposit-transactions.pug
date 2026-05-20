@@ -1,0 +1,41 @@
+extends layout
+
+block title
+  | Recent Transactions – NYONDO Hardware
+
+block content
+  .page-heading-center.mb-4
+    h1
+      i.fa-solid.fa-clock-rotate-left
+      |  Recent Deposit Transactions
+    p.text-muted Last 50 deposits and pickups
+
+  .section-card
+    .table-responsive
+      table.data-table
+        thead
+          tr
+            th Date
+            th Member
+            th Type
+            th Amount (UGX)
+            th Balance After
+        tbody
+          each tx in transactions
+            tr
+              td #{tx.createdAt.toLocaleDateString()}
+              td #{tx.memberId ? tx.memberId.fullName : '—'}
+              td
+                if tx.type === 'deposit'
+                  span.text-success Deposit
+                else
+                  span.text-warning Pickup
+              td(class=tx.type === 'deposit' ? 'text-success' : 'text-warning')
+                = tx.type === 'deposit' ? '+' : '-'
+                = Math.abs(tx.amount).toLocaleString()
+              td #{tx.balanceAfter.toLocaleString()}
+          else
+            tr
+              td(colspan="5") No transactions found.
+    .p-3
+      a.btn-outline(href="/deposit-scheme") ← Back to Deposit Scheme

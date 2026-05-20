@@ -1,0 +1,42 @@
+extends layout
+
+block title
+  | Stock Transactions – NYONDO Hardware
+
+block content
+  .page-heading-center.mb-4
+    h1
+      i.fa-solid.fa-clock-rotate-left
+      |  Stock Transaction History
+    p.text-muted All stock additions (initial and subsequent)
+
+  .section-card
+    .table-responsive
+      table.data-table
+        thead
+          tr
+            th Date
+            th Product
+            th Quantity
+            th Unit Cost (UGX)
+            th Total (UGX)
+            th Supplier
+            th Payment
+        tbody
+          if transactions && transactions.length
+            each tx in transactions
+              tr
+                td= tx.createdAt ? tx.createdAt.toLocaleDateString() : '—'
+                td= tx.productName
+                td= tx.quantityAdded
+                td= tx.unitCost.toLocaleString()
+                td= (tx.quantityAdded * tx.unitCost).toLocaleString()
+                td= tx.supplierName || '—'
+                td
+                  span.status-pill(class=tx.paymentStatus === 'cash' ? 'sp-paid' : 'sp-pending')
+                    = tx.paymentStatus === 'cash' ? 'Cash' : 'Credit'
+          else
+            tr
+              td(colspan='7').text-center No stock transactions recorded.
+    .p-3
+      a.btn-outline(href="/inventory") ← Back to Inventory

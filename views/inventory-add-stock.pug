@@ -1,0 +1,90 @@
+extends layout
+
+block title
+  | Add Stock to Product – NYONDO Hardware
+
+block content
+  .page-heading-center.mb-4
+    h1
+      i.fa-solid.fa-cart-plus
+      |  Add Stock to Product
+    p.text-muted Increase inventory and record the purchase details
+
+  .form-card
+    form(method="POST" action="/inventory/add-stock")
+      .row.g-3
+        .col-md-6
+          label.form-label Product *
+          select.form-select(name='productId' required)
+            option(value='') Select product
+            each prod in products
+              option(value=prod._id) #{prod.productName} (current stock: #{prod.currentStock})
+        .col-md-3
+          label.form-label Quantity Added *
+          input.form-control(type='number' name='quantityAdded' min='1' required)
+        .col-md-3
+          label.form-label Unit Cost (UGX) *
+          input.form-control(type='number' name='unitCost' step='500' required)
+        .col-md-3
+          label.form-label Unit Price (UGX) *
+          input.form-control(type='number' name='unitPrice' step='500' required)
+        .col-md-6
+          label.form-label Supplier Name *
+          input.form-control(type='text' name='supplierName' required)
+        .col-md-6
+          label.form-label Supplier Phone
+          input.form-control(type='tel' name='supplierPhone')
+        .col-md-6
+          label.form-label Factory Name
+          input.form-control(type='text' name='factoryName')
+        .col-md-6
+          label.form-label Payment Status *
+          select.form-select(name='paymentStatus' required onchange='togglePaymentFields()')
+            option(value='cash') Cash
+            option(value='credit') Credit
+        .col-md-6(id='amountPaidField')
+          label.form-label Amount Paid (UGX)
+          input.form-control(type='number' name='amountPaid' step='1000' value='0')
+        .col-md-6(id='balanceDueField' style='display:none')
+          label.form-label Balance Due (UGX)
+          input.form-control(type='number' name='balanceDue' readonly class='bg-light')
+      .d-flex.gap-3.mt-4
+        button.btn-primary(type='submit')
+          i.fa-solid.fa-save
+          |  Add Stock & Record Purchase
+        a.btn-outline(href="/inventory") Cancel
+
+  script.
+    function togglePaymentFields() {
+      const status = document.querySelector('select[name="paymentStatus"]').value;
+      const amountField = document.getElementById('amountPaidField');
+      const balanceField = document.getElementById('balanceDueField');
+      if (status === 'credit') {
+        amountField.style.display = 'block';
+        balanceField.style.display = 'block';
+      } else {
+        amountField.style.display = 'block';
+        balanceField.style.display = 'none';
+        document.querySelector('input[name="amountPaid"]').value = '';
+      }
+    }
+    function calculateTotalCost() {
+      const qty = parseFloat(document.querySelector('input[name="quantityAdded"]').value) || 0;
+      const cost = parseFloat(document.querySelector('input[name="unitCost"]').value) || 0;
+      return qty * cost;
+    }
+    document.querySelector('input[name="amountPaid"]').addEventListener('input', function() {
+      const total = calculateTotalCost();
+      const paid = parseFloat(this.value) || 0;
+      const balance = total - paid;
+      const balanceInput = document.querySelector('input[name="balanceDue"]');
+      if (balanceInput) balanceInput.value = balance > 0 ? balance : 0;
+    });
+    document.querySelectorAll('input[name="quantityAdded"], input[name="unitCost"]').forEach(field => {
+      field.addEventListener('input', () => {
+        const amountPaid = document.querySelector('input[name="amountPaid"]');
+        if (amountPaid && amountPaid.value) amountPaid.dispatchEvent(new Event('input'));
+      });
+    });
+    window.togglePaymentFields = togglePaymentFields;
+    togglePaymentFields();

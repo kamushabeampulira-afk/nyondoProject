@@ -1,0 +1,29 @@
+extends layout
+
+block title
+  | New Customer – NYONDO Hardware
+
+block content
+  .page-heading-center.mb-4
+    h1
+      i.fa-solid.fa-user-plus
+      |  Register New Customer
+    p.text-muted Add a customer to be used in sales
+
+  .form-card
+    form(method="POST" action="/sales/new-customer")
+      .mb-3
+        label.form-label Full Name *
+        input.form-control(type="text" name="fullName" required)
+      .mb-3
+        label.form-label Phone Number *
+        input.form-control(type="tel" name="phone" required)
+      .mb-3
+        label.form-label NIN (optional)
+        input.form-control(type="text" name="nin")
+      .mb-3
+        label.form-label Email (optional)
+        input.form-control(type="email" name="email")
+      .d-flex.gap-3
+        button.btn-primary(type="submit") Save Customer
+        a.btn-outline(href="/sales") Cancel

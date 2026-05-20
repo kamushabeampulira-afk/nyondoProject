@@ -110,7 +110,7 @@
 .mark-read {
   background: none;
   border: none;
-  color: var(--gold);
+  color: var(--dark-green);
   font-size: 0.8rem;
   cursor: pointer;
 }

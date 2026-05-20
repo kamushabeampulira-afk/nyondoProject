@@ -1,4 +1,3 @@
-// models/StockTransaction.js
 const mongoose = require('mongoose');
 
 const stockTransactionSchema = new mongoose.Schema({
@@ -9,20 +8,21 @@ const stockTransactionSchema = new mongoose.Schema({
   productName: String,
   quantityAdded: { 
     type: Number, 
-    required: true, min: 1 
+    required: true, 
+    min: 1 
   },
   unitCost: { 
     type: Number, 
     required: true 
   },
-  totalPaid: { 
+  totalCost: { 
     type: Number, 
     required: true 
-  },   // quantityAdded * unitCost
+  },
   unitPrice: { 
     type: Number, 
     required: true 
-  },   // new selling price (must be > unitCost)
+  },
   supplierName: { 
     type: String, 
     required: true 
@@ -33,6 +33,14 @@ const stockTransactionSchema = new mongoose.Schema({
     type: String, 
     enum: ['cash', 'credit'], 
     required: true 
+  },
+  amountPaid: { 
+    type: Number, 
+    default: 0 
+  },
+  balanceDue: { 
+    type: Number, 
+    default: 0 
   },
   recordedBy: { 
     type: mongoose.Schema.Types.ObjectId, 
@@ -45,7 +53,8 @@ const stockTransactionSchema = new mongoose.Schema({
 });
 
 stockTransactionSchema.pre('save', function(next) {
-  this.totalPaid = this.quantityAdded * this.unitCost;
+  this.totalCost = this.quantityAdded * this.unitCost;
+  this.balanceDue = this.totalCost - this.amountPaid;
   next();
 });
 

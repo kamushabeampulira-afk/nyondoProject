@@ -1,0 +1,46 @@
+extends layout
+
+block title
+  | Scheme Members – NYONDO Hardware
+
+block content
+  .page-heading-center.mb-4
+    h1
+      i.fa-solid.fa-users
+      |  Scheme Members
+    p.text-muted View and manage deposit scheme members
+
+  .section-card
+    .section-head
+      h2
+        i.fa-solid.fa-filter.me-2(style="color: var(--gold);")
+        | Search Members
+      form(method="GET" action="/deposit-scheme/members")
+        .input-group(style="max-width: 300px;")
+          input.form-control(type="text" name="search" placeholder="Name, NIN, Phone" value=search)
+          button.btn-primary(type="submit") Search
+    .table-responsive
+      table.data-table
+        thead
+          tr
+            th Name
+            th NIN
+            th Phone
+            th Balance (UGX)
+            th Joined
+            th Actions
+        tbody
+          each member in members
+            tr
+              td #{member.fullName}
+              td #{member.nin}
+              td #{member.phone}
+              td #{member.balance.toLocaleString()}
+              td #{member.joinedAt.toLocaleDateString()}
+              td
+                a.btn-sm(href=`/deposit-scheme/member-statement?memberId=${member._id}`) Statement
+          else
+            tr
+              td(colspan="6") No members found.
+    .p-3
+      a.btn-outline(href="/deposit-scheme") ← Back to Deposit Scheme

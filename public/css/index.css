@@ -75,7 +75,7 @@ body::before {
 }
 
 .role-btn:hover {
-  background: #e6b800;
+  background: var(--dark-green);
   transform: scale(0.98);
 }
 

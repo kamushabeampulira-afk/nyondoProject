@@ -34,10 +34,13 @@ passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
 // Global user & flash
+app.use(flash());
+// ...
 app.use((req, res, next) => {
   res.locals.user = req.user || null;
   res.locals.success_msg = req.flash('success_msg');
   res.locals.error_msg = req.flash('error_msg');
+  res.locals.error = req.flash('error');
   next();
 });
 
@@ -53,7 +56,7 @@ app.use('/payments', require('./routes/paymentRoutes'));
 app.use('/users', require('./routes/userRoutes'));
 app.use('/dashboard', require('./routes/dashboardRoutes'));
 app.use('/settings', require('./routes/settingRoutes'));
-app.use('/transport', require('./routes/transportRoutes'));
+// app.use('/transport', require('./routes/transportRoutes'));
 app.use('/reports', require('./routes/reportRoutes'));
 app.use('/', require('./routes/signup'));
 

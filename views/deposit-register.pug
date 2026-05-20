@@ -1,0 +1,33 @@
+extends layout
+
+block title
+  | Register Member – NYONDO Hardware
+
+block content
+  .page-heading-center.mb-4
+    h1
+      i.fa-solid.fa-user-plus
+      |  Register New Deposit Member
+    p.text-muted Enter the member's details
+
+  .form-card
+    form(method="POST" action="/deposit-scheme/register")
+      .row.g-3
+        .col-md-6
+          label.form-label Full Name *
+          input.form-control(type="text" name="fullName" required)
+        .col-md-6
+          label.form-label NIN Number *
+          input.form-control(type="text" name="nin" required)
+        .col-md-6
+          label.form-label Phone Number *
+          input.form-control(type="tel" name="phone" pattern="^(07|\\+2567)\\d{8}$" required)
+        .col-md-6
+          label.form-label Address / Location
+          input.form-control(type="text" name="address")
+        .col-md-12
+          label.form-label Employer / Workplace
+          input.form-control(type="text" name="employer")
+      .d-flex.gap-3.mt-4
+        button.btn-primary(type="submit") Save Member
+        a.btn-outline(href="/deposit-scheme") Cancel

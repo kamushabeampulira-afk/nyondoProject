@@ -2,59 +2,6 @@ extends layout
 
 block head
   link(rel="stylesheet" href="/css/inventory.css")
-  style.
-    .tab-btn {
-      cursor: pointer;
-      padding: 0.5rem 1.2rem;
-      background: #f5f5f5;
-      border-radius: 2rem;
-      margin-right: 0.5rem;
-      font-weight: 500;
-      transition: all 0.2s;
-    }
-    .tab-btn.active {
-      background: var(--gold);
-      color: #003300;
-      font-weight: bold;
-    }
-    .low-stock-alert {
-      background: #fff3e0;
-      border-left: 4px solid #f39c12;
-      margin-bottom: 0.75rem;
-      padding: 0.75rem 1rem;
-      border-radius: 0.5rem;
-    }
-    .low-stock-alert i {
-      color: #f39c12;
-      margin-right: 0.5rem;
-    }
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.5);
-      z-index: 2000;
-      align-items: center;
-      justify-content: center;
-    }
-    .modal-content {
-      background: white;
-      border-radius: 1rem;
-      max-width: 600px;
-      width: 90%;
-      max-height: 80vh;
-      overflow-y: auto;
-    }
-    .modal-header {
-      padding: 1rem;
-      border-bottom: 1px solid #eee;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .modal-body { padding: 1rem; }
-    .modal-footer { padding: 1rem; border-top: 1px solid #eee; text-align: right; }
 
 block title
   | Inventory – NYONDO Hardware
@@ -76,7 +23,7 @@ block content
     .col-md-3.col-sm-6
       .section-card.metric-card.p-3.text-center
         i.fa-solid.fa-arrow-down-wide-short.fa-2x.mb-2(style="color: var(--gold);")
-        h6.text-muted Low Stock Items
+        h6.text-muted Low Stock Items (&lt;15)
         h3.text-warning= lowStockCount || 0
     .col-md-3.col-sm-6
       .section-card.metric-card.p-3.text-center
@@ -89,239 +36,86 @@ block content
         h6.text-muted Total Stock Value
         h3= (totalStockValue || 0).toLocaleString() + ' UGX'
 
-  // Tab Buttons
-  .d-flex.flex-wrap.mb-4
-    button.tab-btn.active(onclick="switchTab('products')") 📦 Products
-    button.tab-btn(onclick="switchTab('addStock')") ➕ Add Product to stock
-    button.tab-btn(onclick="switchTab('transactions')") 📜 Stock Transactions
+  // Action Buttons (icons + text)
+  .d-flex.flex-wrap.gap-3.mb-4
+    a.btn-primary.px-4.py-2(href="/inventory/new")
+      i.fa-solid.fa-plus-circle.me-2
+      | Add New Product
+    a.btn-primary.px-4.py-2(href="/inventory/add-stock")
+      i.fa-solid.fa-cart-plus.me-2
+      | Add Stock
+    a.btn-primary.px-4.py-2(href="/inventory/transactions")
+      i.fa-solid.fa-clock-rotate-left.me-2
+      | Stock Transactions
 
-  // Tab 1: Products
-  #productsTab.tab-content
-    .section-card.mb-4
-      .section-head
-        h2
-          i.fa-solid.fa-list.me-2(style="color: var(--gold);")
-          | Product List
-        button#showProductFormBtn.btn-primary(onclick='showProductForm()')
-          i.fa-solid.fa-plus
-          |  Add New Product
-      .table-responsive
-        table.data-table
-          thead
-            tr
-              th Product
-              th Category
-              th Stock
-              th Unit Price (UGX)
-              th Status
-              th Actions 
-          tbody
-            if products && products.length
-              each prod in products
-                - const isLow = prod.currentStock <= (prod.reorderLevel || 15) && prod.currentStock > 0
-                - const out = prod.currentStock === 0
-                - let statusText = '✓ In Stock'
-                - let statusClass = 'sp-paid'
-                if out
-                  statusText = '❌ Out of Stock'
-                  statusClass = 'sp-credit'
-                else if isLow
-                  statusText = '⚠️ Low Stock'
-                  statusClass = 'sp-pending'
-                tr
-                  td
-                    i.fa-solid.fa-cube.me-2(style="color: var(--gold);")
-                    = prod.productName
-                  td= prod.category || '—'
-                  td(class=isLow || out ? 'fw-bold text-warning' : '')= prod.currentStock
-                  td= prod.unitPrice.toLocaleString()
-                  td
-                    span.status-pill(class=statusClass)= statusText
-                  td
-                    a(href=`/inventory/${prod._id}/edit`)
-                      i.fa-regular.fa-pen-to-square
-            else
+  // Product List Table
+  .section-card
+    .section-head
+      h2
+        i.fa-solid.fa-list.me-2(style="color: var(--gold);")
+        | Product List
+    .table-responsive
+      table.data-table
+        thead
+          tr
+            th Product
+            th Category
+            th Stock
+            th Unit Price (UGX)
+            th Supplier
+            th Date Recorded
+            th Recorded By
+            th Status
+            th Actions
+        tbody
+          if products && products.length
+            each prod in products
+              - const isLow = prod.currentStock < 15 && prod.currentStock > 0
+              - const out = prod.currentStock === 0
+              - let statusText = 'In Stock'
+              - let statusClass = 'sp-paid'
+              if out
+                statusText = 'Out of Stock'
+                statusClass = 'sp-credit'
+              else if isLow
+                statusText = 'Low Stock'
+                statusClass = 'sp-pending'
               tr
-                td(colspan='6').text-center No products found.
-
-      // Add New Product form (collapsible)
-      .product-form-container#productFormContainer
-        .form-card
-          .d-flex.justify-content-between.align-items-center.mb-3
-            h4.mb-0
-              i.fa-solid.fa-plus-circle.me-2(style="color: var(--gold);")
-              | Add New Product
-            button.btn-close(type='button' onclick='hideProductForm()')
-          form(method="POST" action="/inventory")
-            .row.g-3
-              .col-md-6
-                label.form-label Product Type *
-                select.form-select(name='productType' required)
-                  option(value='') -- Select Product --
-                  option(value='Cement (CEM II N)') Cement (CEM II N)
-                  option(value='Cement (CEM III N)') Cement (CEM III N)
-                  option(value='Iron Bar 10mm') Iron Bar 10mm
-                  option(value='Iron Bar 12mm') Iron Bar 12mm
-                  option(value='Iron Bar 16mm') Iron Bar 16mm
-                  option(value='Nails 1 inch (5kg)') Nails 1 inch (5kg)
-                  option(value='Nails 3 inch (5kg)') Nails 3 inch (5kg)
-                  option(value='Nails 4 inch (5kg)') Nails 4 inch (5kg)
-                  option(value='Nails 5 inch (5kg)') Nails 5 inch (5kg)
-                  option(value='Roofing Nails (5kg)') Roofing Nails (5kg)
-                  option(value='Wheelbarrow') Wheelbarrow
-                  option(value='Wire Mesh') Wire Mesh
-                  option(value='Barbed Wire (High Tensile)') Barbed Wire (High Tensile)
-                  option(value='Barbed Wire (Low Tensile)') Barbed Wire (Low Tensile)
-                  option(value='Iron Sheet (Blue)') Iron Sheet (Blue)
-                  option(value='Iron Sheet (Red)') Iron Sheet (Red)
-                  option(value='Iron Sheet (Green)') Iron Sheet (Green)
-                  option(value='Iron Sheet (White)') Iron Sheet (White)
-                  option(value='Iron Sheet (Brown)') Iron Sheet (Brown)
-              .col-md-3
-                label.form-label Unit Cost (UGX) *
-                input.form-control(type='number' name='unitCost' step='500' required)
-              .col-md-3
-                label.form-label Unit Price (UGX) *
-                input.form-control(type='number' name='unitPrice' step='500' required)
-              .col-md-3
-                label.form-label Initial Stock *
-                input.form-control(type='number' name='currentStock' min='0' required)
-              .col-md-3
-                label.form-label Reorder Level
-                input.form-control(type='number' name='reorderLevel' min='0' value='15')
-              .col-md-6
-                label.form-label Supplier
-                input.form-control(type='text' name='supplier')
-              .col-md-6
-                label.form-label SKU
-                input.form-control(type='text' name='sku')
-              .col-12
-                label.form-label Description
-                textarea.form-control(rows='2' name='description')
-            .d-flex.gap-3.mt-4
-              button.btn-primary(type='submit')
-                i.fa-solid.fa-save
-                |  Save Product
-              button.btn-outline(type='button' onclick='hideProductForm()') Cancel
-
-    // Low Stock Alerts section
-    .section-card
-      .section-head
-        h2
-          i.fa-solid.fa-triangle-exclamation.me-2(style="color: var(--gold);")
-          | Low Stock Alerts
-      .p-3
-        if lowStockItems && lowStockItems.length
-          each item in lowStockItems
-            .low-stock-alert
-              i.fa-solid.fa-exclamation-triangle
-              strong #{item.name}
-              |  – only #{item.quantity} left (reorder at #{item.reorderLevel})
-        else
-          .text-muted
-            i.fa-solid.fa-check-circle.text-success
-            |  No low stock items. All products are above reorder level.
-
-  // Tab 2: Add Stock to Existing Product
-  #addStockTab.tab-content(style="display:none")
-    .section-card
-      .section-head
-        h2
-          i.fa-solid.fa-cart-plus.me-2(style="color: var(--gold);")
-          | Add Stock to Product
-        p.text-muted.mb-0 Increase inventory and update cost/price
-      .p-3
-        form(method="POST" action="/inventory/add-stock")
-          .row.g-3
-            .col-md-6
-              label.form-label Product *
-              select.form-select(name='productId' required)
-                option(value='') Select product
-                each prod in products
-                  option(value=prod._id) #{prod.productName} (current: #{prod.currentStock})
-            .col-md-3
-              label.form-label Quantity Added *
-              input.form-control(type='number' name='quantityAdded' min='1' required)
-            .col-md-3
-              label.form-label Unit Cost (UGX) *
-              input.form-control(type='number' name='unitCost' step='500' required)
-            .col-md-3
-              label.form-label Unit Price (UGX) *
-              input.form-control(type='number' name='unitPrice' step='500' required)
-            .col-md-3
-              label.form-label Supplier Name
-              input.form-control(type='text' name='supplierName')
-            .col-md-3
-              label.form-label Supplier Phone
-              input.form-control(type='tel' name='supplierPhone')
-            .col-md-3
-              label.form-label Factory Name
-              input.form-control(type='text' name='factoryName')
-            .col-md-3
-              label.form-label Payment Status
-              select.form-select(name='paymentStatus')
-                option(value='cash') Cash
-                option(value='credit') Credit
-          .mt-4
-            button.btn-primary(type='submit')
-              i.fa-solid.fa-save
-              |  Add Stock
-
-  // Tab 3: Stock Transactions
-  #transactionsTab.tab-content(style="display:none")
-    .section-card
-      .section-head
-        h2
-          i.fa-solid.fa-clock-rotate-left.me-2(style="color: var(--gold);")
-          | Stock Transaction History
-      .table-responsive
-        table.data-table
-          thead
+                td
+                  i.fa-solid.fa-cube.me-2(style="color: var(--gold);")
+                  = prod.productName
+                td= prod.category || '—'
+                td(class=isLow || out ? 'fw-bold text-warning' : '')= prod.currentStock
+                td= prod.unitPrice.toLocaleString()
+                td= prod.supplier || '—'
+                td= prod.createdAt ? prod.createdAt.toLocaleDateString() : '—'
+                td= prod.createdBy ? prod.createdBy.fullName : '—'
+                td
+                  span.status-pill(class=statusClass)= statusText
+                td.actions
+                  a.btn-link.me-2(href=`/inventory/${prod._id}/edit`)
+                    i.fa-regular.fa-pen-to-square
+                  form.d-inline(method="POST" action=`/inventory/${prod._id}/delete` onsubmit="return confirm('Delete this product?')")
+                    button.btn-link(type="submit" style="background:none; border:none; padding:0; color:#dc3545;")
+                      i.fa-regular.fa-trash-can
+          else
             tr
-              th Date
-              th Product
-              th Quantity
-              th Unit Cost (UGX)
-              th Total (UGX)
-              th Supplier
-              th Payment
-          tbody
-            if stockTransactions && stockTransactions.length
-              each tx in stockTransactions
-                tr
-                  td= tx.createdAt ? tx.createdAt.toLocaleDateString() : '—'
-                  td= tx.productName
-                  td= tx.quantityAdded
-                  td= tx.unitCost.toLocaleString()
-                  td= (tx.quantityAdded * tx.unitCost).toLocaleString()
-                  td= tx.supplierName || '—'
-                  td
-                    span.status-pill(class=tx.paymentStatus === 'cash' ? 'sp-paid' : 'sp-pending')
-                      = tx.paymentStatus === 'cash' ? 'Cash' : 'Credit'
-            else
-              tr
-                td(colspan='7').text-center No stock transactions recorded.
+              td(colspan='9').text-center No products found.
 
-  script.
-    // Tabs
-    function switchTab(tabName) {
-      document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
-      document.getElementById(`${tabName}Tab`).style.display = 'block';
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-      event.target.classList.add('active');
-    }
-    // Add new product form toggle
-    const formContainer = document.getElementById('productFormContainer');
-    const showBtn = document.getElementById('showProductFormBtn');
-    function showProductForm() {
-      formContainer.classList.add('show');
-      if (showBtn) showBtn.style.display = 'none';
-      formContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-    function hideProductForm() {
-      formContainer.classList.remove('show');
-      if (showBtn) showBtn.style.display = 'inline-flex';
-    }
-    window.switchTab = switchTab;
-    window.showProductForm = showProductForm;
-    window.hideProductForm = hideProductForm;
+  // Low Stock Alerts (only stock < 15)
+  .section-card.mt-4
+    .section-head
+      h2
+        i.fa-solid.fa-triangle-exclamation.me-2(style="color: var(--gold);")
+        | Low Stock Alerts (Stock &lt; 15 units)
+    .p-3
+      if lowStockItems && lowStockItems.length
+        each item in lowStockItems
+          .alert.alert-warning
+            i.fa-solid.fa-exclamation-triangle.me-2
+            strong #{item.name}
+            |  – only #{item.quantity} left (reorder at 15 units)
+      else
+        .text-muted
+          i.fa-solid.fa-check-circle.text-success.me-2
+          | No low stock items. All products have 15 or more units.

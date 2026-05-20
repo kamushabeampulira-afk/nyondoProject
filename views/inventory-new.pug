@@ -1,0 +1,108 @@
+extends layout
+
+block title
+  | Add New Product – NYONDO Hardware
+
+block content
+  .page-heading-center.mb-4
+    h1
+      i.fa-solid.fa-plus-circle
+      |  Add New Product
+    p.text-muted Register a new product and record the initial stock purchase
+
+  .form-card
+    form(method="POST" action="/inventory")
+      .row.g-3
+        .col-md-6
+          label.form-label Product Type *
+          select.form-select(name='productType' required)
+            option(value='') -- Select Product --
+            option(value='Cement (CEM II N)') Cement (CEM II N)
+            option(value='Cement (CEM III N)') Cement (CEM III N)
+            option(value='Iron Bar 10mm') Iron Bar 10mm
+            option(value='Iron Bar 12mm') Iron Bar 12mm
+            option(value='Iron Bar 16mm') Iron Bar 16mm
+            option(value='Nails 1 inch (5kg)') Nails 1 inch (5kg)
+            option(value='Nails 3 inch (5kg)') Nails 3 inch (5kg)
+            option(value='Nails 4 inch (5kg)') Nails 4 inch (5kg)
+            option(value='Nails 5 inch (5kg)') Nails 5 inch (5kg)
+            option(value='Roofing Nails (5kg)') Roofing Nails (5kg)
+            option(value='Wheelbarrow') Wheelbarrow
+            option(value='Wire Mesh') Wire Mesh
+            option(value='Barbed Wire (High Tensile)') Barbed Wire (High Tensile)
+            option(value='Barbed Wire (Low Tensile)') Barbed Wire (Low Tensile)
+            option(value='Iron Sheet (Blue)') Iron Sheet (Blue)
+            option(value='Iron Sheet (Red)') Iron Sheet (Red)
+            option(value='Iron Sheet (Green)') Iron Sheet (Green)
+            option(value='Iron Sheet (White)') Iron Sheet (White)
+            option(value='Iron Sheet (Brown)') Iron Sheet (Brown)
+        .col-md-3
+          label.form-label Unit Cost (UGX) *
+          input.form-control(type='number' name='unitCost' step='500' required)
+        .col-md-3
+          label.form-label Unit Price (UGX) *
+          input.form-control(type='number' name='unitPrice' step='500' required)
+        .col-md-3
+          label.form-label Initial Stock *
+          input.form-control(type='number' name='currentStock' min='0' required)
+        // New supplier & payment fields
+        .col-md-6
+          label.form-label Supplier Name *
+          input.form-control(type='text' name='supplierName' required)
+        .col-md-6
+          label.form-label Supplier Phone
+          input.form-control(type='tel' name='supplierPhone')
+        .col-md-6
+          label.form-label Factory Name
+          input.form-control(type='text' name='factoryName')
+        .col-md-6
+          label.form-label Payment Status *
+          select.form-select(name='paymentStatus' required onchange='togglePaymentFields()')
+            option(value='cash') Cash
+            option(value='credit') Credit
+        .col-md-6(id='amountPaidField')
+          label.form-label Amount Paid (UGX)
+          input.form-control(type='number' name='amountPaid' step='1000' value='0')
+        .col-md-6(id='balanceDueField' style='display:none')
+          label.form-label Balance Due (UGX)
+          input.form-control(type='number' name='balanceDue' readonly class='bg-light')
+      .d-flex.gap-3.mt-4
+        button.btn-primary(type='submit')
+          i.fa-solid.fa-save
+          |  Save Product & Record Purchase
+        a.btn-outline(href="/inventory") Cancel
+
+  script.
+    function togglePaymentFields() {
+      const status = document.querySelector('select[name="paymentStatus"]').value;
+      const amountField = document.getElementById('amountPaidField');
+      const balanceField = document.getElementById('balanceDueField');
+      if (status === 'credit') {
+        amountField.style.display = 'block';
+        balanceField.style.display = 'block';
+      } else {
+        amountField.style.display = 'block';
+        balanceField.style.display = 'none';
+        document.querySelector('input[name="amountPaid"]').value = '';
+      }
+    }
+    function calculateTotalCost() {
+      const qty = parseFloat(document.querySelector('input[name="currentStock"]').value) || 0;
+      const cost = parseFloat(document.querySelector('input[name="unitCost"]').value) || 0;
+      return qty * cost;
+    }
+    document.querySelector('input[name="amountPaid"]').addEventListener('input', function() {
+      const total = calculateTotalCost();
+      const paid = parseFloat(this.value) || 0;
+      const balance = total - paid;
+      const balanceInput = document.querySelector('input[name="balanceDue"]');
+      if (balanceInput) balanceInput.value = balance > 0 ? balance : 0;
+    });
+    document.querySelectorAll('input[name="currentStock"], input[name="unitCost"]').forEach(field => {
+      field.addEventListener('input', function() {
+        const amountPaid = document.querySelector('input[name="amountPaid"]');
+        if (amountPaid && amountPaid.value) amountPaid.dispatchEvent(new Event('input'));
+      });
+    });
+    window.togglePaymentFields = togglePaymentFields;
+    togglePaymentFields();

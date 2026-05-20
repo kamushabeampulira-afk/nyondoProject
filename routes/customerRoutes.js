@@ -2,9 +2,9 @@
 const express = require("express");
 const router = express.Router();
 const Customer = require("../models/Customer");
-const { isSalesOrAdmin } = require("../middleware/auth"); // changed
+const { isSalesOrAdmin } = require("../middleware/auth");
 
-// GET /customers – show list and “add” form
+// GET /customers
 router.get("/", isSalesOrAdmin, async (req, res) => {
   try {
     const customers = await Customer.find().sort({ createdAt: -1 });
@@ -12,62 +12,59 @@ router.get("/", isSalesOrAdmin, async (req, res) => {
       customers,
       totalCustomers: customers.length,
       user: req.user,
-      success_msg: req.session.success_msg,
-      error_msg: req.session.error_msg,
+      success_msg: req.flash("success_msg"),
+      error_msg: req.flash("error_msg"),
     });
-    // clear flash messages after rendering
-    req.session.success_msg = null;
-    req.session.error_msg = null;
   } catch (err) {
-    req.session.error_msg = err.message;
+    req.flash("error_msg", err.message);
     res.redirect("/dashboard");
   }
 });
 
-// POST /customers – add a new customer
+// POST /customers
 router.post("/", isSalesOrAdmin, async (req, res) => {
   try {
     const customer = new Customer(req.body);
     await customer.save();
-    req.session.success_msg = `Customer ${customer.fullName} added successfully!`;
+    req.flash("success_msg", `Customer ${customer.fullName} added successfully!`);
     res.redirect("/customers");
   } catch (err) {
-    req.session.error_msg = err.message;
+    req.flash("error_msg", err.message);
     res.redirect("/customers");
   }
 });
 
-// GET /customers/:id – view single customer details (optional)
+// GET /customers/:id
 router.get("/:id", isSalesOrAdmin, async (req, res) => {
   try {
     const customer = await Customer.findById(req.params.id);
     if (!customer) {
-      req.session.error_msg = "Customer not found";
+      req.flash("error_msg", "Customer not found");
       return res.redirect("/customers");
     }
     res.render("customer-detail", { customer, user: req.user });
   } catch (err) {
-    req.session.error_msg = err.message;
+    req.flash("error_msg", err.message);
     res.redirect("/customers");
   }
 });
 
-// GET /customers/:id/edit – show edit form
+// GET /customers/:id/edit
 router.get("/:id/edit", isSalesOrAdmin, async (req, res) => {
   try {
     const customer = await Customer.findById(req.params.id);
     if (!customer) {
-      req.session.error_msg = "Customer not found";
+      req.flash("error_msg", "Customer not found");
       return res.redirect("/customers");
     }
     res.render("customer-edit", { customer, user: req.user });
   } catch (err) {
-    req.session.error_msg = err.message;
+    req.flash("error_msg", err.message);
     res.redirect("/customers");
   }
 });
 
-// POST /customers/:id – update customer
+// POST /customers/:id
 router.post("/:id", isSalesOrAdmin, async (req, res) => {
   try {
     const customer = await Customer.findByIdAndUpdate(req.params.id, req.body, {
@@ -75,23 +72,23 @@ router.post("/:id", isSalesOrAdmin, async (req, res) => {
       runValidators: true,
     });
     if (!customer) throw new Error("Customer not found");
-    req.session.success_msg = `Customer ${customer.fullName} updated successfully!`;
+    req.flash("success_msg", `Customer ${customer.fullName} updated successfully!`);
     res.redirect("/customers");
   } catch (err) {
-    req.session.error_msg = err.message;
+    req.flash("error_msg", err.message);
     res.redirect(`/customers/${req.params.id}/edit`);
   }
 });
 
-// POST /customers/:id/delete – delete customer (using POST for simplicity)
+// POST /customers/:id/delete
 router.post("/:id/delete", isSalesOrAdmin, async (req, res) => {
   try {
     const customer = await Customer.findByIdAndDelete(req.params.id);
     if (!customer) throw new Error("Customer not found");
-    req.session.success_msg = `Customer ${customer.fullName} deleted.`;
+    req.flash("success_msg", `Customer ${customer.fullName} deleted.`);
     res.redirect("/customers");
   } catch (err) {
-    req.session.error_msg = err.message;
+    req.flash("error_msg", err.message);
     res.redirect("/customers");
   }
 });

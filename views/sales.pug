@@ -1,229 +1,119 @@
 extends layout
 
-block head
-  link(rel="stylesheet" href="/css/sales.css")
-
 block title
-  | Sales Counter – NYONDO Hardware
+  | Sales – NYONDO Hardware
 
 block content
   .page-heading-center.mb-4
     h1
       i.fa-solid.fa-cart-shopping
       |  Sales Counter
-    p.text-muted Add items to cart, then complete the sale
+    p.text-muted Select customer, add items, then checkout
 
-  .row.g-4
-    // Left column: Product selection + Customer details (unified card)
-    .col-lg-5
-      .form-card
-        h4.mb-4
-          i.fa-solid.fa-cart-plus.me-2(style="color: var(--gold);")
-          | Add to Cart
-        // Product selection – dynamic from database
-        .mb-3
-          label.form-label Product
-          select#productSelect.form-select
-            option(value='') -- Select Product --
-            each prod in products
-              option(
-                value=prod._id
-                data-name=prod.productName
-                data-price=prod.unitPrice
-                data-stock=prod.currentStock
-              ) #{prod.productName} - #{prod.unitPrice.toLocaleString()} UGX (Stock: #{prod.currentStock})
-        .mb-3
-          label.form-label Quantity
-          input#productQty.form-control(type='number' value='1' min='1')
-        button.btn-primary.w-100.mb-4(type='button' onclick='addToCart()')
-          i.fa-solid.fa-plus.me-2
-          | Add to Cart
-
-        hr
-        h5.mt-3 Customer & Delivery
-        .mb-3
-          label.form-label Customer Name
-          input#custName.form-control(type='text' placeholder='Walk-in Customer')
-        .mb-3
+  // Customer & distance form
+  .section-card.mb-4
+    .section-head
+      h2
+        i.fa-solid.fa-user.me-2(style="color: var(--gold);")
+        | Customer & Delivery
+    form(method="POST" action="/sales/update-customer")
+      .row.g-3
+        .col-md-5
+          label.form-label Select Customer
+          select.form-select(name="customerId")
+            option(value="") Walk-in Customer
+            each cust in customers
+              option(value=cust._id selected=(selectedCustomerId == cust._id)) #{cust.fullName} (#{cust.phone})
+          .mt-2
+            a.btn-link(href="/sales/new-customer") + New Customer
+        .col-md-4
           label.form-label Distance from Nansana (km)
-          .input-group
-            span.input-group-text: i.fa-solid.fa-location-dot
-            input#distance.form-control(type='number' value='5' step='1')
-          small.text-muted Free delivery if total ≥ 500,000 UGX and distance ≤ 10km
-        .mb-3
-          label.form-label Payment Method
-          select#paymentMethod.form-select
-            option Cash
-            option Mobile Money
-            option Credit
-            option Deposit Scheme
+          input.form-control(type="number" name="distance" value=deliveryDistance step="1")
+        .col-md-3.align-self-end
+          button.btn-primary(type="submit") Update
+    if selectedCustomer
+      .mt-2.text-success Selected: #{selectedCustomer.fullName}
 
-    // Right column: Shopping Cart (table with totals)
-    .col-lg-7
-      .section-card
-        .section-head
-          h2
-            i.fa-solid.fa-cart-shopping.me-2(style="color: var(--gold);")
-            | Shopping Cart
-          button.btn-outline.btn-sm(type='button' onclick='clearCart()')
-            i.fa-solid.fa-trash-can.me-1
-            | Clear Cart
-        .table-responsive
-          table.data-table.cart-table
-            thead
+  // Add item form
+  .section-card.mb-4
+    .section-head
+      h2
+        i.fa-solid.fa-cart-plus.me-2(style="color: var(--gold);")
+        | Add Item to Cart
+    form(method="POST" action="/sales/add-item")
+      .row.g-3
+        .col-md-6
+          label.form-label Product
+          select.form-select(name="productId" required)
+            option(value="") -- Select Product --
+            each prod in products
+              option(value=prod._id) #{prod.productName} - #{prod.unitPrice.toLocaleString()} UGX (Stock: #{prod.currentStock})
+        .col-md-3
+          label.form-label Quantity
+          input.form-control(type="number" name="quantity" value="1" min="1")
+        .col-md-3.align-self-end
+          button.btn-primary(type="submit") Add to Cart
+
+  // Cart display
+  .section-card.mb-4
+    .section-head
+      h2
+        i.fa-solid.fa-cart-shopping.me-2(style="color: var(--gold);")
+        | Shopping Cart
+      form(method="POST" action="/sales/clear-cart" onsubmit="return confirm('Clear entire cart?')")
+        button.btn-outline.btn-sm(type="submit") Clear Cart
+    if cart && cart.length
+      .table-responsive
+        table.table.table-bordered
+          thead
+            tr
+              th Item
+              th Qty
+              th Unit Price (UGX)
+              th Total (UGX)
+              th
+          tbody
+            each item, idx in cart
               tr
-                th Item
-                th Qty
-                th Unit Price (UGX)
-                th Total (UGX)
-                th
-            tbody#cartBody
-              if cart && cart.length
-                each item, idx in cart
-                  tr
-                    td
-                      i.fa-solid.fa-cube.me-2(style="color: var(--gold);")
-                      = item.name
-                    td
-                      input.quantity-input.form-control(type='number' value=item.qty min='1' onchange=`updateQty(${idx}, this.value)`)
-                    td= item.price.toLocaleString()
-                    td.fw-bold= (item.price * item.qty).toLocaleString()
-                    td
-                      i.fa-regular.fa-trash-can.remove-item(onclick=`removeItem(${idx})`)
-              else
-                tr
-                  td(colspan='5').text-center Cart is empty.
-            tfoot#cartFooter(style='display: none')
-              tr.table-active
-                td.text-end.fw-bold(colspan='3') Subtotal:
-                td#subtotal 0 UGX
+                td #{item.name}
+                td #{item.qty}
+                td #{item.price.toLocaleString()}
+                td #{(item.price * item.qty).toLocaleString()}
                 td
-              tr.table-active
-                td.text-end.fw-bold(colspan='3') Delivery Fee:
-                td#deliveryFee 0 UGX
-                td
-              tr.table-success
-                td.text-end.fw-bold.fs-5(colspan='3') Grand Total:
-                td#grandTotal.total-amount 0 UGX
-                td
-        .p-3.bg-light.border-top
-          button.btn-primary.w-100.py-2(onclick='checkout()')
-            i.fa-solid.fa-check-circle.me-2
-            | Complete Sale
+                  form(method="POST" action="/sales/remove-item" style="display:inline")
+                    input(type="hidden" name="index" value=idx)
+                    button.btn-danger.btn-sm(type="submit") Remove
+          tfoot
+            tr
+              td(colspan="3").text-end.fw-bold Subtotal
+              td #{subtotal.toLocaleString()} UGX
+              td
+            tr
+              td(colspan="3").text-end.fw-bold Delivery Fee
+              td #{deliveryFee.toLocaleString()} UGX
+              td
+            tr.table-success
+              td(colspan="3").text-end.fw-bold Grand Total
+              td #{grandTotal.toLocaleString()} UGX
+              td
+    else
+      p.text-muted Cart is empty.
 
-  script.
-    let cart = !{JSON.stringify(cart || [])};
-
-    function renderCart() {
-      const tbody = document.getElementById('cartBody');
-      const footer = document.getElementById('cartFooter');
-      if (!cart.length) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4"><i class="fa-solid fa-cart-empty fa-2x mb-2 d-block"></i>Cart is empty. Add products to continue.</td></tr>';
-        footer.style.display = 'none';
-        return;
-      }
-      footer.style.display = 'table-footer-group';
-      let subtotal = 0;
-      tbody.innerHTML = '';
-      cart.forEach((item, idx) => {
-        const total = item.price * item.qty;
-        subtotal += total;
-        tbody.innerHTML += `
-          <tr>
-            <td><i class="fa-solid fa-cube me-2" style="color: var(--gold);"></i>${escapeHtml(item.name)}</td>
-            <td><input type="number" class="quantity-input form-control" value="${item.qty}" min="1" onchange="updateQty(${idx}, this.value)"></td>
-            <td>${item.price.toLocaleString()}</td>
-            <td class="fw-bold">${total.toLocaleString()}</td>
-            <td><i class="fa-regular fa-trash-can remove-item" onclick="removeItem(${idx})"></i></td>
-          </tr>
-        `;
-      });
-      document.getElementById('subtotal').innerHTML = subtotal.toLocaleString() + ' UGX';
-      calculateDelivery(subtotal);
-    }
-
-    function addToCart() {
-      const select = document.getElementById('productSelect');
-      const selectedOption = select.options[select.selectedIndex];
-      const productId = select.value;
-      if (!productId) return alert('Select a product');
-      const name = selectedOption.getAttribute('data-name');
-      const price = parseFloat(selectedOption.getAttribute('data-price'));
-      const qty = parseInt(document.getElementById('productQty').value);
-      if (qty < 1) {
-        alert('Please enter a valid quantity');
-        return;
-      }
-      const existing = cart.find(item => item.productId === productId);
-      if (existing) {
-        existing.qty += qty;
-      } else {
-        cart.push({ productId, name, price, qty });
-      }
-      renderCart();
-      document.getElementById('productQty').value = 1;
-    }
-
-    function updateQty(idx, newQty) {
-      let qty = parseInt(newQty);
-      if (isNaN(qty) || qty < 1) qty = 1;
-      cart[idx].qty = qty;
-      renderCart();
-    }
-
-    function removeItem(idx) {
-      cart.splice(idx, 1);
-      renderCart();
-    }
-
-    function clearCart() {
-      if (cart.length && confirm('Clear entire cart?')) {
-        cart = [];
-        renderCart();
-      }
-    }
-
-    function calculateDelivery(subtotal) {
-      const distance = parseFloat(document.getElementById('distance').value) || 0;
-      let fee = 0;
-      if (!(subtotal >= 500000 && distance <= 10)) {
-        fee = 30000;
-      }
-      document.getElementById('deliveryFee').innerHTML = fee.toLocaleString() + ' UGX';
-      document.getElementById('grandTotal').innerHTML = (subtotal + fee).toLocaleString() + ' UGX';
-    }
-
-    document.getElementById('distance').addEventListener('input', () => {
-      const sub = cart.reduce((s, i) => s + i.price * i.qty, 0);
-      calculateDelivery(sub);
-    });
-
-    function checkout() {
-      if (!cart.length) return alert('Cart is empty');
-      const customer = document.getElementById('custName').value || 'Walk-in Customer';
-      const payment = document.getElementById('paymentMethod').value;
-      const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-      const fee = parseFloat(document.getElementById('deliveryFee').innerHTML.replace(/[^0-9]/g, '')) || 0;
-      const total = subtotal + fee;
-      if (!confirm(`Proceed with sale?\nCustomer: ${customer}\nTotal: ${total.toLocaleString()} UGX`)) return;
-      fetch('/sales/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: cart, customerName: customer, paymentMethod: payment, deliveryFee: fee })
-      }).then(res => res.json()).then(data => {
-        if (data.error) alert(data.error);
-        else { alert('Sale completed!'); cart = []; renderCart(); window.location.href = `/invoice/${data.saleId}`; }
-      }).catch(err => alert(err.message));
-    }
-
-    function escapeHtml(str) {
-      if (!str) return '';
-      return str.replace(/[&<>]/g, function(m) {
-        if (m === '&') return '&amp;';
-        if (m === '<') return '&lt;';
-        if (m === '>') return '&gt;';
-        return m;
-      });
-    }
-
-    renderCart();
+  // Checkout
+  if cart && cart.length
+    .section-card
+      .section-head
+        h2
+          i.fa-solid.fa-receipt.me-2(style="color: var(--gold);")
+          | Checkout
+      form(method="POST" action="/sales/checkout")
+        .row.g-3
+          .col-md-6
+            label.form-label Payment Method
+            select.form-select(name="paymentMethod" required)
+              option Cash
+              option Mobile Money
+              option Credit
+              option Deposit Scheme
+          .col-md-6.align-self-end
+            button.btn-success.w-100(type="submit") Complete Sale

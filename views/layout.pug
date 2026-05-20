@@ -35,9 +35,9 @@ html(lang="en")
           a.nav-link-item(href="/inventory")
             span.nicon: i.fa-solid.fa-boxes-stacked
             | Inventory
-          a.nav-link-item(href="/transport")
-            span.nicon: i.fa-solid.fa-truck
-            | Transport
+          //- a.nav-link-item(href="/transport")
+          //-   span.nicon: i.fa-solid.fa-truck
+          //-   | Transport
         if user && (user.role === 'sales' || user.role === 'attendant')
           a.nav-link-item(href="/sales")
             span.nicon: i.fa-solid.fa-cash-register
@@ -78,7 +78,7 @@ html(lang="en")
             .user-role= user ? user.role : 'Not logged in'
         if user 
           .mt-3(style="border-top: 1px solid rgba(255,255,255,0.1); padding-top:0.75rem;") 
-            a(href='auth/logout' style="color: var(--gold); text-decoration: none; display: block; text-align: center;")
+            a(href='/auth/logout' style="color: var(--gold); text-decoration: none; display: block; text-align: center;")
               i.fa-solid.fa-sign-out-alt.me-1 
               | Logout
   .main-wrap

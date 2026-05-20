@@ -224,7 +224,7 @@ body::before {
 .section-head h2 {
   font-size: 1.2rem;
   font-weight: 700;
-  color: var(--gold);
+  color: var(--dark-green);
 }
 
 .form-card { padding: 24px; }
@@ -287,7 +287,7 @@ body::before {
 .data-table th {
   text-align: left;
   font-weight: 700;
-  color: var(--gold);
+  color: var(--dark-green);
 }
 
 .status-pill {

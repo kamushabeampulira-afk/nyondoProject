@@ -44,7 +44,10 @@ router.post("/", async (req, res) => {
     } = req.body;
 
     const existing = await User.findOne({ $or: [{ email }, { nin }] });
-    if (existing) throw new Error("Email or NIN already registered");
+    if (existing) {
+      req.flash('error_msg','Email or NIN already registered');
+      return res.redirect('/users')
+    }
 
     // Convert role to lowercase for consistency
     let userRole = (role || "sales").toLowerCase();

@@ -1,8 +1,7 @@
 extends layout
 
 block head
-  link(rel="stylesheet" href="/css/dashboard.css")
-  script(src="https://cdn.jsdelivr.net/npm/chart.js")
+  //- link(rel="stylesheet" href="/css/dashboard.css")
 
 block title
   | Dashboard – NYONDO Hardware
@@ -25,6 +24,7 @@ block content
         | Sales Dashboard
       p.text-muted Quick actions and today's performance
 
+  // ========= KPI CARDS (common for all roles) =========
   .row.g-4.mb-5
     .col-md-3.col-sm-6
       .section-card.metric-card.p-3.text-center
@@ -73,102 +73,150 @@ block content
           h3.text-warning= pendingInvoices || 0
           small.text-danger Awaiting payment
 
-  if user.role === 'admin' || user.role === 'manager'
-    .section-card.mb-4
-      .section-head
-        h2
-          i.fa-solid.fa-chart-line.me-2(style="color: var(--gold);")
-          | Sales Trend (Last 7 Days)
-      .p-3
-        canvas#salesChart(height='250')
-
+  // ========= SALES ATTENDANT SPECIFIC SECTIONS =========
   if user.role === 'sales' || user.role === 'attendant'
+    // Big "Start New Sale" button
     .row.g-4.mb-4
-      .col-md-6
-        .section-card
+      .col-12
+        .section-card.text-center
           .section-head
             h2
               i.fa-solid.fa-cart-plus.me-2(style="color: var(--gold);")
-              | Quick Sale
-          .p-3.text-center
-            p Start a new transaction in seconds
-            a.btn-primary(href="/sales")
-              i.fa-solid.fa-cash-register.me-2
-              | New Sale
-      .col-md-6
-        .section-card
-          .section-head
-            h2
-              i.fa-solid.fa-users.me-2(style="color: var(--gold);")
-              | Customer Management
-          .p-3.text-center
-            p Add or edit customer details
-            a.btn-outline(href="/customers")
-              i.fa-solid.fa-user-plus.me-2
-              | Manage Customers
+              | Quick Action
+          .p-3
+            a.btn-primary.btn-lg(href="/sales")
+              i.fa-solid.fa-arrow-right.me-2
+              | Start New Sale
 
-  if user.role === 'manager'
-    .row.g-4.mb-4
-      .col-md-6
-        .section-card
-          .section-head
-            h2
-              i.fa-solid.fa-boxes-stacked.me-2(style="color: var(--gold);")
-              | Stock Management
-          .p-3.text-center
-            p Monitor inventory, add new stock
-            a.btn-primary(href="/inventory")
-              i.fa-solid.fa-warehouse.me-2
-              | Go to Inventory
-      .col-md-6
-        .section-card
-          .section-head
-            h2
-              i.fa-solid.fa-truck.me-2(style="color: var(--gold);")
-              | Delivery Calculator
-          .p-3.text-center
-            p Estimate delivery fees
-            a.btn-outline(href="/transport")
-              i.fa-solid.fa-calculator.me-2
-              | Transport
+    // Products in stock table
+    .section-card.mb-4
+      .section-head
+        h2
+          i.fa-solid.fa-boxes-stacked.me-2(style="color: var(--gold);")
+          | Products in Stock
+      .table-responsive
+        table.data-table
+          thead
+            tr
+              th Product
+              th Stock
+              th Unit Price (UGX)
+          tbody
+            if productsInStock && productsInStock.length
+              each prod in productsInStock
+                tr
+                  td #{prod.productName}
+                  td #{prod.currentStock}
+                  td #{prod.unitPrice.toLocaleString()}
+            else
+              tr
+                td(colspan='3').text-center No products in stock.
 
-  if user.role === 'admin'
-    .row.g-4.mb-4
-      .col-md-4
-        .section-card
-          .section-head
-            h2
-              i.fa-solid.fa-credit-card.me-2(style="color: var(--gold);")
-              | Supplier Credit
-          .p-3.text-center
-            p Record credit purchases and payments
-            a.btn-primary(href="/supplier-credit")
-              i.fa-solid.fa-hand-holding-dollar.me-2
-              | Supplier Credit
-      .col-md-4
-        .section-card
-          .section-head
-            h2
-              i.fa-solid.fa-piggy-bank.me-2(style="color: var(--gold);")
-              | Deposit Scheme
-          .p-3.text-center
-            p Manage members, deposits, pickups
-            a.btn-outline(href="/deposit-scheme")
-              i.fa-solid.fa-receipt.me-2
-              | Deposit Scheme
-      .col-md-4
-        .section-card
-          .section-head
-            h2
-              i.fa-solid.fa-chart-bar.me-2(style="color: var(--gold);")
-              | Reports
-          .p-3.text-center
-            p View analytics and export data
-            a.btn-outline(href="/reports")
-              i.fa-solid.fa-chart-line.me-2
-              | Reports
+    // Recent sales by this attendant
+    .section-card
+      .section-head
+        h2
+          i.fa-solid.fa-clock-rotate-left.me-2(style="color: var(--gold);")
+          | Your Recent Sales
+      .table-responsive
+        table.data-table
+          thead
+            tr
+              th Invoice #
+              th Customer
+              th Total (UGX)
+              th Date
+          tbody
+            if recentSalesAttendant && recentSalesAttendant.length
+              each sale in recentSalesAttendant
+                tr
+                  td #{sale.invoiceNumber}
+                  td #{sale.customerName || 'Walk-in'}
+                  td #{sale.grandTotal.toLocaleString()}
+                  td #{sale.createdAt.toLocaleDateString()}
+            else
+              tr
+                td(colspan='4').text-center No sales yet.
 
+  // ========= ADMIN/MANAGER SPECIFIC SECTIONS =========
   if user.role === 'admin' || user.role === 'manager'
+    // Daily Sales Table (replaces chart)
+    .section-card.mb-4
+      .section-head
+        h2
+          i.fa-solid.fa-chart-simple.me-2(style="color: var(--gold);")
+          | Daily Sales (Last 7 Days)
+      .table-responsive
+        table.table.table-bordered
+          thead
+            tr
+              th Date
+              th Sales (UGX)
+          tbody
+            each day in dailySales
+              tr
+                td= day.date
+                td= day.total.toLocaleString()
+
+    .row.g-4.mb-4
+      if user.role === 'manager'
+        .col-md-6
+          .section-card
+            .section-head
+              h2
+                i.fa-solid.fa-boxes-stacked.me-2(style="color: var(--gold);")
+                | Stock Management
+            .p-3.text-center
+              p Monitor inventory, add new stock
+              a.btn-primary(href="/inventory")
+                i.fa-solid.fa-warehouse.me-2
+                | Go to Inventory
+        .col-md-6
+          .section-card
+            .section-head
+              h2
+                i.fa-solid.fa-truck.me-2(style="color: var(--gold);")
+                | Delivery Calculator
+            .p-3.text-center
+              p Estimate delivery fees
+              a.btn-outline(href="/transport")
+                i.fa-solid.fa-calculator.me-2
+                | Transport
+      if user.role === 'admin'
+        .col-md-4
+          .section-card
+            .section-head
+              h2
+                i.fa-solid.fa-credit-card.me-2(style="color: var(--gold);")
+                | Supplier Credit
+            .p-3.text-center
+              p Record credit purchases and payments
+              a.btn-primary(href="/supplier-credit")
+                i.fa-solid.fa-hand-holding-dollar.me-2
+                | Supplier Credit
+        .col-md-4
+          .section-card
+            .section-head
+              h2
+                i.fa-solid.fa-piggy-bank.me-2(style="color: var(--gold);")
+                | Deposit Scheme
+            .p-3.text-center
+              p Manage members, deposits, pickups
+              a.btn-outline(href="/deposit-scheme")
+                i.fa-solid.fa-receipt.me-2
+                | Deposit Scheme
+        .col-md-4
+          .section-card
+            .section-head
+              h2
+                i.fa-solid.fa-chart-bar.me-2(style="color: var(--gold);")
+                | Reports
+            .p-3.text-center
+              p View analytics and export data
+              a.btn-outline(href="/reports")
+                i.fa-solid.fa-chart-line.me-2
+                | Reports
+
     .row.g-4
       if recentSales && recentSales.length
         .col-md-6
@@ -249,33 +297,3 @@ block content
                         else
                           | - #{Math.abs(tx.amount).toLocaleString()}
                       td= tx.createdAt ? tx.createdAt.toLocaleDateString() : '—'
-
-  script.
-    const ctx = document.getElementById('salesChart')?.getContext('2d');
-    if (ctx) {
-      new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: !{JSON.stringify(chartLabels || [])},
-          datasets: [{
-            label: 'Sales (UGX)',
-            data: !{JSON.stringify(chartSales || [])},
-            borderColor: '#f7b32b',
-            backgroundColor: 'rgba(247,179,43,0.1)',
-            fill: true,
-            tension: 0.3,
-            pointBackgroundColor: '#f7b32b',
-            pointRadius: 4
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            tooltip: { callbacks: { label: (ctx) => `${ctx.raw.toLocaleString()} UGX` } }
-          },
-          scales: {
-            y: { ticks: { callback: (v) => v.toLocaleString() + ' UGX' } }
-          }
-        }
-      });
-    }

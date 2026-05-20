@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Product = require("../models/Product");
 const StockTransaction = require("../models/StockTransaction");
-const { isManager } = require("../middleware/auth");
+const { isManagerOrAdmin } = require("../middleware/auth");
 
 function getCategoryFromProductType(productType) {
   if (productType.includes("Cement")) return "Cement";
@@ -15,21 +15,18 @@ function getCategoryFromProductType(productType) {
   return "Other";
 }
 
-// GET /inventory – main page (now '/')
-router.get("/", isManager, async (req, res) => {
+// ========= MAIN INVENTORY PAGE =========
+router.get("/", isManagerOrAdmin, async (req, res) => {
   try {
-    const products = await Product.find().sort({ createdAt: -1 });
+    const products = await Product.find().sort({ createdAt: -1 }).populate('createdBy', 'fullName');
     const totalSkus = products.length;
-    const lowStockCount = products.filter(p => p.currentStock <= (p.reorderLevel || 15) && p.currentStock > 0).length;
     const outOfStockCount = products.filter(p => p.currentStock === 0).length;
+    const lowStockCount = products.filter(p => p.currentStock < 15 && p.currentStock > 0).length;
     const totalStockValue = products.reduce((sum, p) => sum + p.currentStock * p.unitCost, 0);
     const lowStockItems = products
-      .filter(p => p.currentStock <= (p.reorderLevel || 15) && p.currentStock > 0)
-      .map(p => ({ name: p.productName, quantity: p.currentStock, reorderLevel: p.reorderLevel || 15 }));
-    const stockTransactions = await StockTransaction.find()
-      .populate("productId", "productName")
-      .sort({ createdAt: -1 })
-      .limit(20);
+      .filter(p => p.currentStock < 15 && p.currentStock > 0)
+      .map(p => ({ name: p.productName, quantity: p.currentStock, reorderLevel: 15 }));
+
     res.render("inventory", {
       products,
       totalSkus,
@@ -37,7 +34,6 @@ router.get("/", isManager, async (req, res) => {
       outOfStockCount,
       totalStockValue,
       lowStockItems,
-      stockTransactions,
       user: req.user,
       success_msg: req.flash("success_msg"),
       error_msg: req.flash("error_msg"),
@@ -48,8 +44,13 @@ router.get("/", isManager, async (req, res) => {
   }
 });
 
-// POST /inventory – add new product
-router.post("/", isManager, async (req, res) => {
+// ========= ADD NEW PRODUCT (form page) =========
+router.get("/new", isManagerOrAdmin, (req, res) => {
+  res.render("inventory-new", { user: req.user });
+});
+
+// POST create product
+router.post("/", isManagerOrAdmin, async (req, res) => {
   try {
     const { productType, unitCost, unitPrice, currentStock, reorderLevel, supplier, sku, description } = req.body;
     if (!productType || !unitCost || !unitPrice) throw new Error("Product type, cost, and price are required.");
@@ -66,6 +67,7 @@ router.post("/", isManager, async (req, res) => {
       supplier: supplier || "",
       sku: sku || "",
       description: description || "",
+      createdBy: req.user._id,
     });
     await product.save();
     if (currentStock > 0) {
@@ -85,12 +87,18 @@ router.post("/", isManager, async (req, res) => {
     res.redirect("/inventory");
   } catch (err) {
     req.flash("error_msg", err.message);
-    res.redirect("/inventory");
+    res.redirect("/inventory/new");
   }
 });
 
-// POST /inventory/add-stock – add stock to product
-router.post("/add-stock", isManager, async (req, res) => {
+// ========= ADD STOCK TO PRODUCT (form page) =========
+router.get("/add-stock", isManagerOrAdmin, async (req, res) => {
+  const products = await Product.find().sort({ productName: 1 });
+  res.render("inventory-add-stock", { products, user: req.user });
+});
+
+// POST add stock
+router.post("/add-stock", isManagerOrAdmin, async (req, res) => {
   try {
     const { productId, quantityAdded, unitCost, unitPrice, supplierName, supplierPhone, factoryName, paymentStatus } = req.body;
     if (!productId || !quantityAdded || quantityAdded <= 0) throw new Error("Invalid product or quantity");
@@ -118,12 +126,23 @@ router.post("/add-stock", isManager, async (req, res) => {
     res.redirect("/inventory");
   } catch (err) {
     req.flash("error_msg", err.message);
+    res.redirect("/inventory/add-stock");
+  }
+});
+
+// ========= STOCK TRANSACTIONS PAGE =========
+router.get("/transactions", isManagerOrAdmin, async (req, res) => {
+  try {
+    const transactions = await StockTransaction.find().sort({ createdAt: -1 }).limit(100);
+    res.render("inventory-transactions", { transactions, user: req.user });
+  } catch (err) {
+    req.flash("error_msg", err.message);
     res.redirect("/inventory");
   }
 });
 
-// GET /inventory/:id/edit
-router.get("/:id/edit", isManager, async (req, res) => {
+// ========= EDIT PRODUCT =========
+router.get("/:id/edit", isManagerOrAdmin, async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
     if (!product) throw new Error("Product not found");
@@ -134,8 +153,7 @@ router.get("/:id/edit", isManager, async (req, res) => {
   }
 });
 
-// POST /inventory/:id – update
-router.post("/:id", isManager, async (req, res) => {
+router.post("/:id", isManagerOrAdmin, async (req, res) => {
   try {
     const { productType, unitCost, unitPrice, currentStock, reorderLevel, supplier, sku, description } = req.body;
     if (unitPrice <= unitCost) throw new Error("Selling price must be greater than unit cost.");
@@ -164,8 +182,8 @@ router.post("/:id", isManager, async (req, res) => {
   }
 });
 
-// POST /inventory/:id/delete
-router.post("/:id/delete", isManager, async (req, res) => {
+// ========= DELETE PRODUCT =========
+router.post("/:id/delete", isManagerOrAdmin, async (req, res) => {
   try {
     const product = await Product.findByIdAndDelete(req.params.id);
     if (!product) throw new Error("Product not found");

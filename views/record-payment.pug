@@ -25,35 +25,21 @@ block content
       if selectedSupplier && outstandingInvoices && outstandingInvoices.length
         .mb-3
           label.form-label Select Invoice
-          select.form-select(name='invoiceId' required onchange='updateInvoiceSummary()')
+          select.form-select(name='invoiceId' required)
             option(value='') -- Select Invoice --
             each inv in outstandingInvoices
-              option(value=inv._id data-amount=inv.totalAmount data-outstanding=inv.outstanding data-duedate=inv.dueDate)
-                = `${inv.invoiceNumber} - ${inv.outstanding.toLocaleString()} UGX outstanding (Due ${inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : '—'})`
-
-        #invoiceSummary.invoice-summary.mb-3(style='display:none')
-          .summary-line
-            span Invoice Amount:
-            strong#invoiceAmount 0 UGX
-          .summary-line
-            span Outstanding Balance:
-            strong#outstandingBalance 0 UGX
-          .summary-line
-            span Due Date:
-            span#dueDate —
+              option(value=inv._id) #{inv.invoiceNumber} - #{inv.outstanding.toLocaleString()} UGX outstanding (Due #{inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : '—'})
 
         .mb-3
           label.form-label Payment Amount (UGX) *
-          input#paymentAmount.form-control(type='number' name='amount' min='1' step='1000' required)
-          small#amountError.text-danger(style='display:none')
+          input.form-control(type='number' name='amount' min='1' step='1000' required)
 
         .mb-3
           label.form-label Payment Method
-          .payment-method-group
-            .payment-method-option(data-method='Cash') Cash
-            .payment-method-option(data-method='Bank Transfer') Bank Transfer
-            .payment-method-option(data-method='Mobile Money') Mobile Money
-          input#selectedMethod(type='hidden' name='paymentMethod' value='Cash')
+          select.form-select(name='paymentMethod' required)
+            option Cash
+            option Bank Transfer
+            option Mobile Money
 
         .mb-3
           label.form-label Payment Date
@@ -69,43 +55,3 @@ block content
 
       else if selectedSupplier && (!outstandingInvoices || outstandingInvoices.length === 0)
         .alert.alert-info No outstanding invoices for this supplier.
-
-  script.
-    function updateInvoiceSummary() {
-      const select = document.querySelector('select[name="invoiceId"]');
-      const selected = select.options[select.selectedIndex];
-      const summary = document.getElementById('invoiceSummary');
-      if (!selected || !selected.value) {
-        summary.style.display = 'none';
-        return;
-      }
-      document.getElementById('invoiceAmount').innerHTML = parseFloat(selected.dataset.amount).toLocaleString() + ' UGX';
-      document.getElementById('outstandingBalance').innerHTML = parseFloat(selected.dataset.outstanding).toLocaleString() + ' UGX';
-      const due = selected.dataset.duedate ? new Date(selected.dataset.duedate).toLocaleDateString() : '—';
-      document.getElementById('dueDate').innerHTML = due;
-      summary.style.display = 'block';
-      const max = parseFloat(selected.dataset.outstanding);
-      document.getElementById('paymentAmount').max = max;
-      validateAmount();
-    }
-    function validateAmount() {
-      const amount = parseFloat(document.getElementById('paymentAmount').value);
-      const max = parseFloat(document.getElementById('paymentAmount').max);
-      const error = document.getElementById('amountError');
-      if (isNaN(amount) || amount <= 0) {
-        error.style.display = 'block'; error.textContent = 'Enter a valid amount.'; return false;
-      }
-      if (amount > max) {
-        error.style.display = 'block'; error.textContent = `Max ${max.toLocaleString()} UGX`; return false;
-      }
-      error.style.display = 'none'; return true;
-    }
-    document.getElementById('paymentAmount')?.addEventListener('input', validateAmount);
-    document.querySelectorAll('.payment-method-option').forEach(opt => {
-      opt.addEventListener('click', function() {
-        document.querySelectorAll('.payment-method-option').forEach(o => o.classList.remove('selected'));
-        this.classList.add('selected');
-        document.getElementById('selectedMethod').value = this.dataset.method;
-      });
-    });
-    if (document.querySelector('select[name="invoiceId"]')) updateInvoiceSummary();
