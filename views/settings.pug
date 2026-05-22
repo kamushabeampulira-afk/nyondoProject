@@ -9,98 +9,126 @@ block title
 block content
   .page-heading-center.mb-4
     h1
-      i.fa-solid.fa-gear
-      |  System Settings
+      i.fa-solid.fa-gear.me-2
+      | System Settings
     p.text-muted Configure company information, delivery rules, and security preferences
 
   form(method="POST" action="/settings")
-    .settings-section
-      h3
-        i.fa-solid.fa-building.me-2(style="color: var(--gold);")
-        | Company Information
-      .row.g-3
-        .col-md-6
-          label.form-label Company Name
-          input.form-control(type='text' name='company.name' value=(settings.company ? settings.company.name : ''))
-        .col-md-6
-          label.form-label Phone Number
-          input.form-control(type='tel' name='company.phone' value=(settings.company ? settings.company.phone : ''))
-        .col-md-6
-          label.form-label Email Address
-          input.form-control(type='email' name='company.email' value=(settings.company ? settings.company.email : ''))
-        .col-md-6
-          label.form-label Physical Address
-          input.form-control(type='text' name='company.address' value=(settings.company ? settings.company.address : ''))
-        .col-md-6
-          label.form-label Tax Identification Number (TIN)
-          input.form-control(type='text' name='company.tin' value=(settings.company ? settings.company.tin : ''))
 
-    .settings-section
-      h3
-        i.fa-solid.fa-calculator.me-2(style="color: var(--gold);")
-        | Financial Defaults
-      .row.g-3
-        .col-md-4
-          label.form-label Tax Rate (%)
-          input.form-control(type='number' name='financial.taxRate' step='0.5' value=(settings.financial ? settings.financial.taxRate : 18))
-        .col-md-4
-          label.form-label Currency
-          select.form-select(name='financial.currency')
-            option(value='UGX' selected=(settings.financial && settings.financial.currency === 'UGX')) UGX - Ugandan Shilling
-            option(value='USD' selected=(settings.financial && settings.financial.currency === 'USD')) USD - US Dollar
-        .col-md-4
-          label.form-label Low Stock Threshold
-          input.form-control(type='number' name='financial.lowStockThreshold' value=(settings.financial ? settings.financial.lowStockThreshold : 15))
-        .col-md-4
-          label.form-label Default Payment Terms
-          select.form-select(name='financial.defaultPaymentTerms')
-            option(value='Net 30' selected=(settings.financial && settings.financial.defaultPaymentTerms === 'Net 30')) Net 30
-            option(value='Net 15' selected=(settings.financial && settings.financial.defaultPaymentTerms === 'Net 15')) Net 15
-            option(value='Cash on Delivery' selected=(settings.financial && settings.financial.defaultPaymentTerms === 'Cash on Delivery')) Cash on Delivery
+    // ========= COMPANY INFORMATION =========
+    .section-card.mb-4
+      .section-head
+        h2
+          i.fa-solid.fa-building.me-2(style="color: var(--gold);")
+          | Company Information
+      .p-3
+        .row.g-3
+          .col-md-6
+            label.form-label Company Name
+            input.form-control(type='text' name='company.name' value=(settings.company ? settings.company.name : ''))
+          .col-md-6
+            label.form-label Phone Number
+            input.form-control(type='tel' name='company.phone' value=(settings.company ? settings.company.phone : ''))
+          .col-md-6
+            label.form-label Email Address
+            input.form-control(type='email' name='company.email' value=(settings.company ? settings.company.email : ''))
+          .col-md-6
+            label.form-label Physical Address
+            input.form-control(type='text' name='company.address' value=(settings.company ? settings.company.address : ''))
+          .col-md-6
+            label.form-label Tax Identification Number (TIN)
+            input.form-control(type='text' name='company.tin' value=(settings.company ? settings.company.tin : ''))
 
-    .settings-section
-      h3
-        i.fa-solid.fa-truck.me-2(style="color: var(--gold);")
-        | Delivery Settings
-      .row.g-3
-        .col-md-6
-          label.form-label Free Delivery Threshold (UGX)
-          input.form-control(type='number' name='delivery.freeThreshold' value=(settings.delivery ? settings.delivery.freeThreshold : 500000))
-        .col-md-6
-          label.form-label Base Delivery Fee (UGX)
-          input.form-control(type='number' name='delivery.baseFee' value=(settings.delivery ? settings.delivery.baseFee : 30000))
-        .col-md-6
-          label.form-label Maximum Free Distance (km)
-          input.form-control(type='number' name='delivery.freeDistance' value=(settings.delivery ? settings.delivery.freeDistance : 10))
+    // ========= FINANCIAL DEFAULTS =========
+    .section-card.mb-4
+      .section-head
+        h2
+          i.fa-solid.fa-calculator.me-2(style="color: var(--gold);")
+          | Financial Defaults
+      .p-3
+        .row.g-3
+          .col-md-4
+            label.form-label Tax Rate (%)
+            input.form-control(type='number' name='financial.taxRate' step='0.5' value=(settings.financial ? settings.financial.taxRate : 18))
+          .col-md-4
+            label.form-label Currency
+            select.form-select(name='financial.currency')
+              option(value='UGX' selected=(settings.financial && settings.financial.currency === 'UGX')) UGX - Ugandan Shilling
+              option(value='USD' selected=(settings.financial && settings.financial.currency === 'USD')) USD - US Dollar
+          .col-md-4
+            label.form-label Low Stock Threshold
+            input.form-control(type='number' name='financial.lowStockThreshold' value=(settings.financial ? settings.financial.lowStockThreshold : 15))
+          .col-md-4
+            label.form-label Default Payment Terms
+            select.form-select(name='financial.defaultPaymentTerms')
+              option(value='Net 30' selected=(settings.financial && settings.financial.defaultPaymentTerms === 'Net 30')) Net 30
+              option(value='Net 15' selected=(settings.financial && settings.financial.defaultPaymentTerms === 'Net 15')) Net 15
+              option(value='Cash on Delivery' selected=(settings.financial && settings.financial.defaultPaymentTerms === 'Cash on Delivery')) Cash on Delivery
 
-    .settings-section
-      h3
-        i.fa-solid.fa-shield.me-2(style="color: var(--gold);")
-        | Security
-      .toggle-switch.mb-3
-        span.toggle-label Two-Factor Authentication (2FA)
-        label.switch
-          input(type='checkbox' name='security.twoFactor' checked=(settings.security && settings.security.twoFactor))
-          span.slider.round
-      .row.g-3
-        .col-md-6
-          label.form-label Session Timeout (minutes)
-          input.form-control(type='number' name='security.sessionTimeout' value=(settings.security ? settings.security.sessionTimeout : 30))
-        .col-md-6
-          label.form-label Minimum Password Length
-          input.form-control(type='number' name='security.minPasswordLength' value=(settings.security ? settings.security.minPasswordLength : 8))
+    // ========= DELIVERY SETTINGS =========
+    .section-card.mb-4
+      .section-head
+        h2
+          i.fa-solid.fa-truck.me-2(style="color: var(--gold);")
+          | Delivery Settings
+      .p-3
+        .row.g-3
+          .col-md-4
+            label.form-label Free Delivery Threshold (UGX)
+            input.form-control(type='number' name='delivery.freeThreshold' value=(settings.delivery ? settings.delivery.freeThreshold : 500000))
+          .col-md-4
+            label.form-label Base Delivery Fee (UGX)
+            input.form-control(type='number' name='delivery.baseFee' value=(settings.delivery ? settings.delivery.baseFee : 30000))
+          .col-md-4
+            label.form-label Maximum Free Distance (km)
+            input.form-control(type='number' name='delivery.freeDistance' value=(settings.delivery ? settings.delivery.freeDistance : 10))
 
-    .settings-section
-      h3
-        i.fa-solid.fa-database.me-2(style="color: var(--gold);")
-        | Backup &amp; Data
-      .d-flex.gap-3.flex-wrap.mb-3
-        button.btn-outline(type='button' onclick="alert('Export data demo')") Export Data
-        button.btn-outline(type='button' onclick="alert('Import data demo')") Import Data
-        button.btn-outline(type='button' onclick="alert('Backup demo')") Backup Now
-      p.text-muted.small.mb-0 Last backup: 20 April 2026, 23:00
+    // ========= SECURITY =========
+    .section-card.mb-4
+      .section-head
+        h2
+          i.fa-solid.fa-shield.me-2(style="color: var(--gold);")
+          | Security
+      .p-3
+        .d-flex.align-items-center.justify-content-between.mb-4(style="border-bottom: 1px solid var(--border-light); padding-bottom: 1rem;")
+          div
+            p.fw-600.mb-0 Two-Factor Authentication (2FA)
+            small.text-muted Adds an extra layer of security to your account
+          label.switch
+            input(type='checkbox' name='security.twoFactor' checked=(settings.security && settings.security.twoFactor))
+            span.slider.round
+        .row.g-3
+          .col-md-6
+            label.form-label Session Timeout (minutes)
+            input.form-control(type='number' name='security.sessionTimeout' value=(settings.security ? settings.security.sessionTimeout : 30))
+          .col-md-6
+            label.form-label Minimum Password Length
+            input.form-control(type='number' name='security.minPasswordLength' value=(settings.security ? settings.security.minPasswordLength : 8))
 
-    .d-flex.justify-content-end.mt-3
+    // ========= BACKUP & DATA =========
+    .section-card.mb-4
+      .section-head
+        h2
+          i.fa-solid.fa-database.me-2(style="color: var(--gold);")
+          | Backup & Data
+      .p-3
+        p.text-muted.mb-3 Manage your data exports, imports, and scheduled backups.
+        .d-flex.gap-3.flex-wrap.mb-3
+          button.btn-outline(type='button' onclick="alert('Export data demo')")
+            i.fa-solid.fa-file-export.me-2
+            | Export Data
+          button.btn-outline(type='button' onclick="alert('Import data demo')")
+            i.fa-solid.fa-file-import.me-2
+            | Import Data
+          button.btn-outline(type='button' onclick="alert('Backup demo')")
+            i.fa-solid.fa-cloud-arrow-up.me-2
+            | Backup Now
+        p.text-muted.small.mb-0
+          i.fa-regular.fa-clock.me-1
+          | Last backup: 20 April 2026, 23:00
+
+    // ========= SAVE BUTTON =========
+    .d-flex.justify-content-end.mt-2.mb-4
       button.btn-primary.px-5.py-2(type='submit')
         i.fa-solid.fa-save.me-2
         | Save All Settings

@@ -1,57 +1,32 @@
 const express = require("express");
 const router = express.Router();
-const mongoose = require("mongoose");
 const Product = require("../models/Product");
 const Customer = require("../models/Customer");
 const Sale = require("../models/Sale");
 const DepositMember = require("../models/DepositMember");
 const DepositTransaction = require("../models/DepositTransaction");
-const { isSalesOrAdmin } = require("../middleware/auth");
+const { allowRoles } = require("../middleware/auth");
 
-// Helper to calculate delivery fee
 function calcDeliveryFee(subtotal, distance) {
   if (subtotal >= 500000 && distance <= 10) return 0;
   return 30000;
 }
-// GET /sales – with optional product search
-router.get("/", isSalesOrAdmin, async (req, res) => {
-  try {
-    const { search } = req.query;
-    let productQuery = { currentStock: { $gt: 0 } };
-    if (search) {
-      productQuery.productName = { $regex: search, $options: "i" };
-    }
-    const products = await Product.find(productQuery).sort({ productName: 1 });
 
+router.get("/", allowRoles(["manager", "attendant"]), async (req, res) => {
+  try {
+    const products = await Product.find({ currentStock: { $gt: 0 } });
     const customers = await Customer.find().select("_id fullName phone");
     const cart = req.session.cart || [];
     const selectedCustomerId = req.session.selectedCustomerId || null;
-    const selectedCustomer = selectedCustomerId
-      ? await Customer.findById(selectedCustomerId)
-      : null;
-    const customerBalance = selectedCustomer
-      ? selectedCustomer.totalPurchases
-      : null; // or any balance field
-
+    const selectedCustomer = selectedCustomerId ? await Customer.findById(selectedCustomerId) : null;
     const distance = req.session.deliveryDistance || 5;
     let subtotal = 0;
     for (let item of cart) subtotal += item.price * item.qty;
     const deliveryFee = calcDeliveryFee(subtotal, distance);
     const grandTotal = subtotal + deliveryFee;
-
     res.render("sales", {
-      products,
-      customers,
-      selectedCustomer,
-      selectedCustomerId,
-      customerBalance,
-      deliveryDistance: distance,
-      cart,
-      subtotal,
-      deliveryFee,
-      grandTotal,
-      searchQuery: search || "",
-      user: req.user,
+      products, customers, selectedCustomer, selectedCustomerId,
+      deliveryDistance: distance, cart, subtotal, deliveryFee, grandTotal, user: req.user,
     });
   } catch (err) {
     req.flash("error_msg", err.message);
@@ -59,162 +34,93 @@ router.get("/", isSalesOrAdmin, async (req, res) => {
   }
 });
 
-// ========= SELECT CUSTOMER & DISTANCE =========
-router.post("/update-customer", isSalesOrAdmin, async (req, res) => {
-  const { customerId, distance } = req.body;
-  req.session.selectedCustomerId = customerId || null;
-  req.session.deliveryDistance = parseFloat(distance) || 0;
+router.post("/update-customer", allowRoles(["manager", "attendant"]), (req, res) => {
+  req.session.selectedCustomerId = req.body.customerId || null;
+  req.session.deliveryDistance = parseFloat(req.body.distance) || 0;
   res.redirect("/sales");
 });
 
-// ========= ADD ITEM TO CART =========
-router.post("/add-item", isSalesOrAdmin, async (req, res) => {
-  const { productId, quantity } = req.body;
-  const qty = parseInt(quantity);
-  if (qty <= 0) {
-    req.flash("error_msg", "Invalid quantity");
-    return res.redirect("/sales");
-  }
-  const product = await Product.findById(productId);
-  if (!product) {
-    req.flash("error_msg", "Product not found");
-    return res.redirect("/sales");
-  }
-  if (product.currentStock < qty) {
-    req.flash(
-      "error_msg",
-      `Only ${product.currentStock} units of ${product.productName} left`,
-    );
-    return res.redirect("/sales");
-  }
+router.post("/add-item", allowRoles(["manager", "attendant"]), async (req, res) => {
+  const qty = parseInt(req.body.quantity);
+  if (qty <= 0) { req.flash("error_msg", "Invalid quantity"); return res.redirect("/sales"); }
+  const product = await Product.findById(req.body.productId);
+  if (!product) { req.flash("error_msg", "Product not found"); return res.redirect("/sales"); }
+  if (product.currentStock < qty) { req.flash("error_msg", `Only ${product.currentStock} units left`); return res.redirect("/sales"); }
   const cart = req.session.cart || [];
-  const existing = cart.find((i) => i.productId == productId);
+  const existing = cart.find((i) => i.productId == req.body.productId);
   if (existing) existing.qty += qty;
-  else
-    cart.push({
-      productId,
-      name: product.productName,
-      price: product.unitPrice,
-      qty,
-    });
+  else cart.push({ productId: product._id, name: product.productName, price: product.unitPrice, qty });
   req.session.cart = cart;
+  req.flash("success_msg", `${qty} x ${product.productName} added`);
   res.redirect("/sales");
 });
 
-// ========= REMOVE ITEM FROM CART =========
-router.post("/remove-item", isSalesOrAdmin, (req, res) => {
-  const { index } = req.body;
+router.post("/remove-item", allowRoles(["manager", "attendant"]), (req, res) => {
   const cart = req.session.cart || [];
-  cart.splice(parseInt(index), 1);
+  cart.splice(parseInt(req.body.index), 1);
   req.session.cart = cart;
   res.redirect("/sales");
 });
 
-// ========= CLEAR CART =========
-router.post("/clear-cart", isSalesOrAdmin, (req, res) => {
+router.post("/clear-cart", allowRoles(["manager", "attendant"]), (req, res) => {
   req.session.cart = [];
   res.redirect("/sales");
 });
 
-// ========= CHECKOUT (process sale) =========
-router.post("/checkout", isSalesOrAdmin, async (req, res) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
+router.post("/checkout", allowRoles(["manager", "attendant"]), async (req, res) => {
   try {
-    const cart = req.session.cart || [];
-    if (cart.length === 0) throw new Error("Cart is empty");
-    const { paymentMethod } = req.body;
-    const customerId = req.session.selectedCustomerId;
-    const customerName = customerId
-      ? (await Customer.findById(customerId)).fullName
-      : "Walk-in Customer";
-    const distance = req.session.deliveryDistance || 5;
+    const { items, customerName, paymentMethod, deliveryFee, distance } = req.body;
+    if (!items || items.length === 0) throw new Error("Cart empty");
     let subtotal = 0;
     const saleItems = [];
-    for (let item of cart) {
-      const product = await Product.findById(item.productId).session(session);
+    for (let item of items) {
+      const product = await Product.findById(item.productId);
       if (!product) throw new Error(`Product ${item.name} not found`);
-      if (product.currentStock < item.qty)
-        throw new Error(`Insufficient stock for ${product.productName}`);
+      if (product.currentStock < item.qty) throw new Error(`Insufficient stock for ${product.productName}`);
       product.currentStock -= item.qty;
-      await product.save({ session });
+      await product.save();
       const total = product.unitPrice * item.qty;
       subtotal += total;
-      saleItems.push({
-        productId: product._id,
-        productName: product.productName,
-        quantity: item.qty,
-        unitPrice: product.unitPrice,
-        total,
-      });
+      saleItems.push({ productId: product._id, productName: product.productName, quantity: item.qty, unitPrice: product.unitPrice, total });
     }
-    const deliveryFee = calcDeliveryFee(subtotal, distance);
-    const grandTotal = subtotal + deliveryFee;
-    // Deposit Scheme payment handling (if applicable)
+    const delivery = parseFloat(deliveryFee) || 0;
+    const grandTotal = subtotal + delivery;
     if (paymentMethod === "Deposit Scheme") {
-      const member = await DepositMember.findOne({
-        fullName: customerName,
-      }).session(session);
-      if (!member || member.balance < grandTotal)
-        throw new Error("Insufficient deposit balance");
+      const member = await DepositMember.findOne({ fullName: customerName });
+      if (!member || member.balance < grandTotal) throw new Error("Insufficient deposit balance");
       member.balance -= grandTotal;
-      await member.save({ session });
-      await DepositTransaction.create(
-        [
-          {
-            memberId: member._id,
-            type: "pickup",
-            amount: -grandTotal,
-            description: `Sale items`,
-            balanceAfter: member.balance,
-          },
-        ],
-        { session },
-      );
+      await member.save();
+      await DepositTransaction.create({ memberId: member._id, type: "pickup", amount: -grandTotal, description: `Sale items - ${items.length} product(s)`, balanceAfter: member.balance });
     }
     const invoiceNumber = "INV-" + Date.now();
-    const sale = new Sale({
-      invoiceNumber,
-      customerName,
-      items: saleItems,
-      subtotal,
-      deliveryFee,
-      tax: 0,
-      grandTotal,
-      paymentMethod,
-      status: "Paid",
-      attendant: req.user._id,
-    });
-    await sale.save({ session });
-    await session.commitTransaction();
-    // Clear cart after successful sale
+    const sale = new Sale({ invoiceNumber, customerName, items: saleItems, subtotal, deliveryFee: delivery, tax: 0, grandTotal, paymentMethod, status: "Paid", attendant: req.user._id });
+    await sale.save();
     req.session.cart = [];
     req.session.selectedCustomerId = null;
-    req.flash("success_msg", `Sale completed! Invoice ${invoiceNumber}`);
-    res.redirect(`/invoice/${sale._id}`);
+    return res.json({ success: true, saleId: sale._id });
   } catch (err) {
-    await session.abortTransaction();
-    req.flash("error_msg", err.message);
-    res.redirect("/sales");
-  } finally {
-    session.endSession();
+    console.error(err);
+    return res.status(500).json({ error: err.message });
   }
 });
 
-// ========= NEW CUSTOMER FORM (optional separate page) =========
-router.get("/new-customer", isSalesOrAdmin, (req, res) => {
+router.get("/invoice/:id", allowRoles(["manager", "attendant", "admin"]), async (req, res) => {
+  const sale = await Sale.findById(req.params.id).populate("attendant", "fullName");
+  if (!sale) { req.flash("error_msg", "Sale not found"); return res.redirect("/sales"); }
+  res.render("receipt", { sale, user: req.user });
+});
+
+router.get("/new-customer", allowRoles(["manager", "attendant"]), (req, res) => {
   res.render("new-customer", { user: req.user });
 });
 
-router.post("/new-customer", isSalesOrAdmin, async (req, res) => {
+router.post("/new-customer", allowRoles(["manager", "attendant"]), async (req, res) => {
   try {
     const { fullName, phone, nin, email } = req.body;
-    const customer = new Customer({ fullName, phone, nin, email });
-    await customer.save();
-    req.flash(
-      "success_msg",
-      `Customer ${fullName} added. Please select them from the list.`,
-    );
+    const existing = await Customer.findOne({ phone });
+    if (existing) { req.flash("error_msg", "Customer with this phone already exists."); return res.redirect("/sales/new-customer"); }
+    await Customer.create({ fullName, phone, nin, email });
+    req.flash("success_msg", `Customer ${fullName} added. Please select them from the list.`);
     res.redirect("/sales");
   } catch (err) {
     req.flash("error_msg", err.message);

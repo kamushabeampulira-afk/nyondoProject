@@ -2,148 +2,66 @@ extends login-layout
 
 block head
   style.
-    body {
-      margin: 0;
-      overflow: hidden;
-    }
+    body { margin: 0; overflow: hidden; }
     .login-wrapper {
-      height: 100vh;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 2rem;
+      background: linear-gradient(135deg, #f5faf8 0%, #e8f4f0 100%);
     }
     .login-card {
       background: white;
       border-radius: 1.5rem;
-      box-shadow: 0 20px 35px -10px #003300;
+      box-shadow: 0 20px 35px -10px rgba(0,51,0,0.25);
       overflow: hidden;
       max-width: 480px;
       width: 100%;
       transition: transform 0.2s;
     }
-    .login-card:hover {
-      transform: translateY(-3px);
-    }
+    .login-card:hover { transform: translateY(-3px); }
     .login-header {
-      background: var(--dark-bg, #003300);
+      background: var(--dark-green, #003300);
       padding: 2rem 1.5rem;
       text-align: center;
-      position: relative;
     }
     .login-header .brand-icon {
-      width: 70px;
-      height: 70px;
+      width: 70px; height: 70px;
       background: var(--gold, #f7b32b);
       border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
       margin: 0 auto 1rem;
       font-size: 2rem;
-      color: var(--dark-bg, #003300);
+      color: var(--dark-green, #003300);
       box-shadow: 0 5px 15px rgba(0,0,0,0.2);
     }
-    .login-header h3 {
-      color: white;
-      font-weight: 600;
-      margin-bottom: 0.25rem;
-    }
-    .login-header p {
-      color: rgba(255,255,255,0.8);
-      font-size: 0.9rem;
-    }
-    .login-body {
-      padding: 2rem;
-    }
-    .form-group {
-      margin-bottom: 1.5rem;
-    }
-    .form-group label {
-      font-weight: 500;
-      color: #003300;
-      margin-bottom: 0.5rem;
-      display: block;
-    }
-    .input-icon {
-      position: relative;
-    }
-    .input-icon i {
-      position: absolute;
-      left: 1rem;
-      top: 50%;
-      transform: translateY(-50%);
-      color: #aaa;
-      font-size: 1rem;
-    }
+    .login-header h3 { color: white; font-weight: 600; margin-bottom: 0.25rem; }
+    .login-header p { color: rgba(255,255,255,0.8); font-size: 0.9rem; }
+    .login-body { padding: 2rem; }
+    .form-group { margin-bottom: 1.5rem; }
+    .form-group label { font-weight: 500; color: #003300; margin-bottom: 0.5rem; display: block; }
+    .input-icon { position: relative; }
+    .input-icon i { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #aaa; }
     .input-icon input {
-      width: 100%;
-      padding: 0.8rem 1rem 0.8rem 2.5rem;
-      border: 1px solid #e2e8f0;
-      border-radius: 0.75rem;
-      font-size: 1rem;
-      transition: 0.2s;
+      width: 100%; padding: 0.8rem 1rem 0.8rem 2.5rem;
+      border: 1px solid #e2e8f0; border-radius: 0.75rem; font-size: 1rem; transition: 0.2s;
     }
-    .input-icon input:focus {
-      border-color: var(--gold);
-      outline: none;
-      box-shadow: 0 0 0 3px #003300;
-    }
+    .input-icon input:focus { border-color: var(--gold); outline: none; box-shadow: 0 0 0 3px rgba(247,179,43,0.2); }
     .btn-login {
-      background: var(--dark-bg, #003300);
-      color: white;
-      border: none;
-      border-radius: 0.75rem;
-      padding: 0.8rem;
-      font-weight: 600;
-      width: 100%;
-      transition: 0.2s;
-      font-size: 1rem;
+      background: var(--dark-green, #003300); color: white; border: none;
+      border-radius: 0.75rem; padding: 0.8rem; font-weight: 600;
+      width: 100%; transition: 0.2s; font-size: 1rem; cursor: pointer;
     }
-    .btn-login:hover {
-      background: var(--gold);
-      color: var(--dark-bg, #003300);
+    .btn-login:hover { background: var(--gold, #f7b32b); color: var(--dark-green, #003300); }
+    .flash-box {
+      padding: 0.75rem 1rem; border-radius: 0.5rem; margin-bottom: 1.25rem; font-size: 0.9rem; font-weight: 500;
     }
-    .login-footer {
-      text-align: center;
-      padding: 1rem 2rem 1.5rem;
-      border-top: 1px solid #edf2f7;
-      background: #fafbfc;
-    }
-    .login-footer a {
-      color: var(--gold);
-      text-decoration: none;
-      font-weight: 500;
-    }
-    .login-footer a:hover {
-      text-decoration: underline;
-    }
-    .alert-custom {
-      background: #fee2e2;
-      border-left: 4px solid #ef4444;
-      padding: 0.75rem 1rem;
-      border-radius: 0.5rem;
-      margin-bottom: 1.5rem;
-      font-size: 0.9rem;
-    }
-    .main-wrap, .page-content {
-      height: 100%;
-      margin: 0;
-      padding: 0;
-    }
-
-    .login-wrapper {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-  link(rel="stylesheet" href="/css/login.css")
+    .flash-error { background: #fee2e2; border-left: 4px solid #ef4444; color: #b91c1c; }
+    .flash-success { background: #ecfdf5; border-left: 4px solid #22c55e; color: #15803d; }
+    .main-wrap, .page-content { height: 100%; margin: 0; padding: 0; }
 
 block title
   | Login – NYONDO Hardware
@@ -157,20 +75,32 @@ block content
         h3 Welcome Back
         p Sign in to continue to the portal
       .login-body
+        if success_msg && success_msg.length
+          each msg in success_msg
+            .flash-box.flash-success
+              i.fa-solid.fa-circle-check.me-2
+              = msg
+        if error_msg && error_msg.length
+          each msg in error_msg
+            .flash-box.flash-error
+              i.fa-solid.fa-circle-xmark.me-2
+              = msg
+        if error && error.length
+          each msg in error
+            .flash-box.flash-error
+              i.fa-solid.fa-circle-xmark.me-2
+              = msg
         form(method="POST" action="/auth/login")
           .form-group
             label Email Address
             .input-icon
               i.fa-solid.fa-envelope
-              input(type="email" name="email" placeholder="admin@nyondo.com" required)
+              input(type="email" name="email" placeholder="admin@nyondo.com" required autocomplete="email")
           .form-group
             label Password
             .input-icon
               i.fa-solid.fa-lock
-              input(type="password" name="password" placeholder="••••••••" required)
+              input(type="password" name="password" placeholder="••••••••" required autocomplete="current-password")
           button.btn-login(type="submit")
             i.fa-solid.fa-arrow-right-to-bracket.me-2
             | Login
-      //- .login-footer
-      //-   | Don't have an account? 
-      //-   a(href="/signup") Create one

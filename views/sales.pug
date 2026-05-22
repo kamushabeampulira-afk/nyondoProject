@@ -1,119 +1,293 @@
 extends layout
 
+block head
+  link(rel="stylesheet" href="/css/sales.css")
+
 block title
-  | Sales – NYONDO Hardware
+  | Sales Counter – NYONDO Hardware
 
 block content
   .page-heading-center.mb-4
     h1
-      i.fa-solid.fa-cart-shopping
-      |  Sales Counter
-    p.text-muted Select customer, add items, then checkout
+      i.fa-solid.fa-cart-shopping.me-2
+      | Sales Counter
+    p.text-muted Select customer, add items, then complete the sale
 
-  // Customer & distance form
+  // Customer & Delivery
   .section-card.mb-4
     .section-head
       h2
         i.fa-solid.fa-user.me-2(style="color: var(--gold);")
         | Customer & Delivery
-    form(method="POST" action="/sales/update-customer")
+    .card-body.p-3
       .row.g-3
         .col-md-5
           label.form-label Select Customer
-          select.form-select(name="customerId")
+          select#customerSelect.form-select
             option(value="") Walk-in Customer
             each cust in customers
-              option(value=cust._id selected=(selectedCustomerId == cust._id)) #{cust.fullName} (#{cust.phone})
+              option(value=cust._id data-name=cust.fullName) #{cust.fullName} (#{cust.phone})
           .mt-2
-            a.btn-link(href="/sales/new-customer") + New Customer
+            button.btn-primary(type='button' onclick='showNewCustomerForm()')
+              i.fa-solid.fa-user-plus.me-1
+              | New Customer
+          #newCustomerForm(style='display:none; margin-top:0.75rem;')
+            .section-card.p-3
+              .row.g-2
+                .col-6
+                  input.form-control.form-control-sm(type='text' id='newCustName' placeholder='Full Name')
+                .col-6
+                  input.form-control.form-control-sm(type='tel' id='newCustPhone' placeholder='Phone')
+                .col-6
+                  input.form-control.form-control-sm(type='text' id='newCustNin' placeholder='NIN')
+                .col-6
+                  input.form-control.form-control-sm(type='email' id='newCustEmail' placeholder='Email')
+                .col-12
+                  button.btn-primary.btn-sm(type='button' onclick='registerCustomer()')
+                    i.fa-solid.fa-save.me-1
+                    | Register & Use
         .col-md-4
           label.form-label Distance from Nansana (km)
-          input.form-control(type="number" name="distance" value=deliveryDistance step="1")
-        .col-md-3.align-self-end
-          button.btn-primary(type="submit") Update
-    if selectedCustomer
-      .mt-2.text-success Selected: #{selectedCustomer.fullName}
+          input#distance.form-control(type='number' value='5' step='1')
+          .form-check.mt-2
+            input#requireTransport.form-check-input(type='checkbox' checked)
+            label.form-check-label(for='requireTransport') Require transport
+          small.text-muted Free delivery if total ≥ 500,000 UGX and distance ≤ 10km
+        .col-md-3
+          label.form-label Payment Method
+          select#paymentMethod.form-select
+            option Cash
+            option Mobile Money
+            option Credit
+            option Deposit Scheme
 
-  // Add item form
+  // Add Items
   .section-card.mb-4
     .section-head
       h2
         i.fa-solid.fa-cart-plus.me-2(style="color: var(--gold);")
-        | Add Item to Cart
-    form(method="POST" action="/sales/add-item")
+        | Add Items to Cart
+    .card-body.p-3
       .row.g-3
         .col-md-6
           label.form-label Product
-          select.form-select(name="productId" required)
-            option(value="") -- Select Product --
+          select#productSelect.form-select
+            option(value='') -- Select Product --
             each prod in products
-              option(value=prod._id) #{prod.productName} - #{prod.unitPrice.toLocaleString()} UGX (Stock: #{prod.currentStock})
+              option(value=prod._id data-price=prod.unitPrice data-stock=prod.currentStock data-name=prod.productName) #{prod.productName} - #{prod.unitPrice.toLocaleString()} UGX (Stock: #{prod.currentStock})
         .col-md-3
           label.form-label Quantity
-          input.form-control(type="number" name="quantity" value="1" min="1")
-        .col-md-3.align-self-end
-          button.btn-primary(type="submit") Add to Cart
+          input#productQty.form-control(type='number' value='1' min='1')
+        .col-md-3.d-flex.align-items-end
+          button.btn-primary.w-100(type='button' onclick='addToCart()')
+            i.fa-solid.fa-plus.me-1
+            | Add Item
 
-  // Cart display
+  // Shopping Cart
   .section-card.mb-4
     .section-head
       h2
         i.fa-solid.fa-cart-shopping.me-2(style="color: var(--gold);")
         | Shopping Cart
-      form(method="POST" action="/sales/clear-cart" onsubmit="return confirm('Clear entire cart?')")
-        button.btn-outline.btn-sm(type="submit") Clear Cart
-    if cart && cart.length
-      .table-responsive
-        table.table.table-bordered
-          thead
-            tr
-              th Item
-              th Qty
-              th Unit Price (UGX)
-              th Total (UGX)
-              th
-          tbody
+      button.btn-primary(type='button' onclick='clearCart()')
+        i.fa-solid.fa-trash-can.me-1
+        | Clear Cart
+    .table-responsive
+      table.data-table.cart-table
+        thead
+          tr
+            th Item
+            th Qty
+            th Unit Price (UGX)
+            th Total (UGX)
+            th
+        tbody#cartBody
+          if cart && cart.length
             each item, idx in cart
               tr
-                td #{item.name}
-                td #{item.qty}
-                td #{item.price.toLocaleString()}
-                td #{(item.price * item.qty).toLocaleString()}
                 td
-                  form(method="POST" action="/sales/remove-item" style="display:inline")
-                    input(type="hidden" name="index" value=idx)
-                    button.btn-danger.btn-sm(type="submit") Remove
-          tfoot
+                  i.fa-solid.fa-cube.me-2(style="color: var(--gold);")
+                  = item.name
+                td
+                  input.quantity-input.form-control(type='number' value=item.qty min='1' onchange=`updateQty(${idx}, this.value)`)
+                td= item.price.toLocaleString()
+                td.fw-bold= (item.price * item.qty).toLocaleString()
+                td
+                  i.fa-regular.fa-trash-can.remove-item(onclick=`removeItem(${idx})`)
+          else
             tr
-              td(colspan="3").text-end.fw-bold Subtotal
-              td #{subtotal.toLocaleString()} UGX
-              td
-            tr
-              td(colspan="3").text-end.fw-bold Delivery Fee
-              td #{deliveryFee.toLocaleString()} UGX
-              td
-            tr.table-success
-              td(colspan="3").text-end.fw-bold Grand Total
-              td #{grandTotal.toLocaleString()} UGX
-              td
-    else
-      p.text-muted Cart is empty.
+              td(colspan='5').text-center.py-4.text-muted Cart is empty. Add products to continue.
+        tfoot#cartFooter(style='display: none')
+          tr
+            td.text-end.fw-bold(colspan='3') Subtotal:
+            td#subtotal 0 UGX
+            td
+          tr
+            td.text-end.fw-bold(colspan='3') Delivery Fee:
+            td#deliveryFee 0 UGX
+            td
+          tr(style="background: rgba(0,51,0,0.05);")
+            td.text-end.fw-bold.fs-5(colspan='3') Grand Total:
+            td#grandTotal.total-amount.fw-bold 0 UGX
+            td
 
   // Checkout
-  if cart && cart.length
-    .section-card
-      .section-head
-        h2
-          i.fa-solid.fa-receipt.me-2(style="color: var(--gold);")
-          | Checkout
-      form(method="POST" action="/sales/checkout")
-        .row.g-3
-          .col-md-6
-            label.form-label Payment Method
-            select.form-select(name="paymentMethod" required)
-              option Cash
-              option Mobile Money
-              option Credit
-              option Deposit Scheme
-          .col-md-6.align-self-end
-            button.btn-success.w-100(type="submit") Complete Sale
+  .section-card
+    .p-3.text-center
+      button.btn-primary.btn-lg.px-5.py-2(type='button' onclick='checkout()')
+        i.fa-solid.fa-check-circle.me-2
+        | Complete Sale
+
+  script.
+    let cart = !{JSON.stringify(cart || [])};
+    let products = !{JSON.stringify(products)};
+
+    function renderCart() {
+      const tbody = document.getElementById('cartBody');
+      const footer = document.getElementById('cartFooter');
+      if (!cart.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">Cart is empty. Add products to continue.</td></tr>';
+        footer.style.display = 'none';
+        return;
+      }
+      footer.style.display = 'table-footer-group';
+      let subtotal = 0;
+      tbody.innerHTML = '';
+      cart.forEach((item, idx) => {
+        const total = item.price * item.qty;
+        subtotal += total;
+        tbody.innerHTML += `
+          <tr>
+            <td><i class="fa-solid fa-cube me-2" style="color: var(--gold);"></i>${escapeHtml(item.name)}</td>
+            <td><input type="number" class="quantity-input form-control" value="${item.qty}" min="1" onchange="updateQty(${idx}, this.value)"></td>
+            <td>${item.price.toLocaleString()}</td>
+            <td class="fw-bold">${total.toLocaleString()}</td>
+            <td><i class="fa-regular fa-trash-can remove-item" onclick="removeItem(${idx})"></i></td>
+          </tr>
+        `;
+      });
+      document.getElementById('subtotal').innerHTML = subtotal.toLocaleString() + ' UGX';
+      calculateDelivery(subtotal);
+    }
+
+    function addToCart() {
+      const select = document.getElementById('productSelect');
+      const productId = select.value;
+      if (!productId) return alert('Select a product');
+      const selected = select.options[select.selectedIndex];
+      const name = selected.getAttribute('data-name');
+      const price = parseFloat(selected.getAttribute('data-price'));
+      const qty = parseInt(document.getElementById('productQty').value);
+      if (qty < 1) { alert('Please enter a valid quantity'); return; }
+      const existing = cart.find(i => i.productId === productId);
+      if (existing) existing.qty += qty;
+      else cart.push({ productId, name, price, qty });
+      renderCart();
+      document.getElementById('productQty').value = 1;
+    }
+
+    function updateQty(idx, newQty) {
+      let qty = parseInt(newQty);
+      if (isNaN(qty) || qty < 1) qty = 1;
+      cart[idx].qty = qty;
+      renderCart();
+    }
+
+    function removeItem(idx) {
+      cart.splice(idx, 1);
+      renderCart();
+    }
+
+    function clearCart() {
+      if (cart.length && confirm('Clear entire cart?')) {
+        cart = [];
+        renderCart();
+      }
+    }
+
+    function calculateDelivery(subtotal) {
+      const requireTransport = document.getElementById('requireTransport').checked;
+      if (!requireTransport) {
+        document.getElementById('deliveryFee').innerHTML = '0 UGX';
+        document.getElementById('grandTotal').innerHTML = subtotal.toLocaleString() + ' UGX';
+        return;
+      }
+      const distance = parseFloat(document.getElementById('distance').value) || 0;
+      let fee = 0;
+      if (!(subtotal >= 500000 && distance <= 10)) fee = 30000;
+      document.getElementById('deliveryFee').innerHTML = fee.toLocaleString() + ' UGX';
+      document.getElementById('grandTotal').innerHTML = (subtotal + fee).toLocaleString() + ' UGX';
+    }
+
+    document.getElementById('distance').addEventListener('input', () => {
+      const sub = cart.reduce((s, i) => s + i.price * i.qty, 0);
+      calculateDelivery(sub);
+    });
+
+    document.getElementById('requireTransport').addEventListener('change', () => {
+      const sub = cart.reduce((s, i) => s + i.price * i.qty, 0);
+      calculateDelivery(sub);
+    });
+
+    async function checkout() {
+      if (!cart.length) return alert('Cart is empty');
+      const customerSelect = document.getElementById('customerSelect');
+      const customerName = customerSelect.options[customerSelect.selectedIndex]?.getAttribute('data-name') || 'Walk-in Customer';
+      const paymentMethod = document.getElementById('paymentMethod').value;
+      const distance = parseFloat(document.getElementById('distance').value) || 0;
+      const requireTransport = document.getElementById('requireTransport').checked;
+      const fee = parseFloat(document.getElementById('deliveryFee').innerHTML.replace(/[^0-9]/g, '')) || 0;
+      const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+      const total = subtotal + fee;
+      if (!confirm(`Confirm sale:\nCustomer: ${customerName}\nItems: ${cart.length}\nTotal: ${total.toLocaleString()} UGX`)) return;
+      const response = await fetch('/sales/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: cart, customerName, paymentMethod, deliveryFee: fee, distance, requireTransport })
+      });
+      const data = await response.json();
+      if (data.error) alert(data.error);
+      else {
+        cart = [];
+        renderCart();
+        window.location.href = `/sales/invoice/${data.saleId}`;
+      }
+    }
+
+    function showNewCustomerForm() {
+      document.getElementById('newCustomerForm').style.display = 'block';
+    }
+
+    async function registerCustomer() {
+      const name = document.getElementById('newCustName').value.trim();
+      const phone = document.getElementById('newCustPhone').value.trim();
+      if (!name || !phone) return alert('Name and phone are required');
+      const formData = new URLSearchParams();
+      formData.append('fullName', name);
+      formData.append('phone', phone);
+      formData.append('nin', document.getElementById('newCustNin').value);
+      formData.append('email', document.getElementById('newCustEmail').value);
+      const response = await fetch('/sales/new-customer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: formData
+      });
+      if (response.redirected) {
+        alert('Customer registered');
+        location.reload();
+      } else {
+        alert('Error registering customer');
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+      });
+    }
+
+    renderCart();

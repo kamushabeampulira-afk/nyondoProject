@@ -3,22 +3,86 @@ html(lang="en")
   head
     meta(charset="UTF-8")
     meta(name="viewport" content="width=device-width, initial-scale=1.0")
-    title Nyondo Hardware – 
+    title Nyondo Hardware –
       block title
         | Dashboard
     link(href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet")
     link(rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css")
     link(rel="stylesheet" href="/css/main.css")
-    link(rel="stylesheet" href="/css/customers.css")
     style.
       body { overflow-y: auto !important; height: 100%; }
       .sidebar { overflow-y: visible !important; height: 100vh; }
       .main-wrap { overflow-y: visible !important; }
       #nav-toggle:checked ~ .sidebar-overlay { display: block; }
+      .flash-container {
+        position: fixed;
+        top: 70px;
+        right: 20px;
+        z-index: 9999;
+        min-width: 300px;
+        max-width: 420px;
+      }
+      .flash-alert {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 18px;
+        border-radius: 12px;
+        font-weight: 500;
+        font-size: 0.9rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+        margin-bottom: 10px;
+        animation: slideIn 0.3s ease;
+      }
+      @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to   { transform: translateX(0);   opacity: 1; }
+      }
+      .flash-success {
+        background: #ecfdf5;
+        border-left: 4px solid #22c55e;
+        color: #15803d;
+      }
+      .flash-error {
+        background: #fef2f2;
+        border-left: 4px solid #ef4444;
+        color: #b91c1c;
+      }
+      .flash-close {
+        margin-left: auto;
+        background: none;
+        border: none;
+        font-size: 1rem;
+        cursor: pointer;
+        opacity: 0.6;
+        color: inherit;
+      }
+      .flash-close:hover { opacity: 1; }
     block head
   body
     input(type="checkbox" id="nav-toggle" style="display: none")
     label.sidebar-overlay(for="nav-toggle" style="position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); z-index:1029; display: none;")
+
+    .flash-container
+      if success_msg && success_msg.length
+        each msg in success_msg
+          .flash-alert.flash-success
+            i.fa-solid.fa-circle-check
+            span= msg
+            button.flash-close(onclick="this.parentElement.remove()") ✕
+      if error_msg && error_msg.length
+        each msg in error_msg
+          .flash-alert.flash-error
+            i.fa-solid.fa-circle-xmark
+            span= msg
+            button.flash-close(onclick="this.parentElement.remove()") ✕
+      if error && error.length
+        each msg in error
+          .flash-alert.flash-error
+            i.fa-solid.fa-circle-xmark
+            span= msg
+            button.flash-close(onclick="this.parentElement.remove()") ✕
+
     aside.sidebar
       .sidebar-brand
         .brand-logo: i.fa-solid.fa-tools
@@ -28,20 +92,15 @@ html(lang="en")
         a.nav-link-item(href="/dashboard")
           span.nicon: i.fa-solid.fa-grid-2
           | Dashboard
-        if user && (user.role === 'admin' || user.role === 'manager')
+        if user && (user.role === 'manager' || user.role === 'attendant')
           a.nav-link-item(href="/sales")
             span.nicon: i.fa-solid.fa-cash-register
             | Sales
+        if user && (user.role === 'manager' || user.role === 'admin')
           a.nav-link-item(href="/inventory")
             span.nicon: i.fa-solid.fa-boxes-stacked
             | Inventory
-          //- a.nav-link-item(href="/transport")
-          //-   span.nicon: i.fa-solid.fa-truck
-          //-   | Transport
-        if user && (user.role === 'sales' || user.role === 'attendant')
-          a.nav-link-item(href="/sales")
-            span.nicon: i.fa-solid.fa-cash-register
-            | Sales Counter
+        if user && (user.role === 'attendant' || user.role === 'admin')
           a.nav-link-item(href="/customers")
             span.nicon: i.fa-solid.fa-users
             | Customers
@@ -57,9 +116,6 @@ html(lang="en")
             span.nicon: i.fa-solid.fa-chart-bar
             | Reports
           .nav-sec-label Management
-          a.nav-link-item(href="/customers")
-            span.nicon: i.fa-solid.fa-users
-            | Customers
           a.nav-link-item(href="/suppliers")
             span.nicon: i.fa-solid.fa-truck-field
             | Suppliers
@@ -76,21 +132,31 @@ html(lang="en")
           div
             .user-name= user ? user.fullName : 'Guest'
             .user-role= user ? user.role : 'Not logged in'
-        if user 
-          .mt-3(style="border-top: 1px solid rgba(255,255,255,0.1); padding-top:0.75rem;") 
+        if user
+          .mt-3(style="border-top: 1px solid rgba(255,255,255,0.1); padding-top:0.75rem;")
             a(href='/auth/logout' style="color: var(--gold); text-decoration: none; display: block; text-align: center;")
-              i.fa-solid.fa-sign-out-alt.me-1 
+              i.fa-solid.fa-sign-out-alt.me-1
               | Logout
-  .main-wrap
-    header.topbar
-      label.hamburger(for="nav-toggle")
-        i.fa-solid.fa-bars
-      .store-name-t NYONDO <span>Hardware</span>
-      .topbar-right
-        .profile-pill
-          .pill-av= user ? user.fullName[0].toUpperCase() : 'U'
-          span= user ? user.fullName : 'Guest'
-    main.page-content
-      block content
+
+    .main-wrap
+      header.topbar
+        label.hamburger(for="nav-toggle")
+          i.fa-solid.fa-bars
+        .store-name-t NYONDO
+          span  Hardware
+        .topbar-right
+          .profile-pill
+            .pill-av= user ? user.fullName[0].toUpperCase() : 'U'
+            span= user ? user.fullName : 'Guest'
+      main.page-content
+        block content
 
     script(src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js")
+    script.
+      setTimeout(() => {
+        document.querySelectorAll('.flash-alert').forEach(el => {
+          el.style.transition = 'opacity 0.5s';
+          el.style.opacity = '0';
+          setTimeout(() => el.remove(), 500);
+        });
+      }, 5000);

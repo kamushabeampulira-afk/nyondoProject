@@ -6,3 +6,17 @@ credentials.txt
 dump.js
 output.txt
 full_project.txt
+css_dump.txt
+current_state.txt
+public/css/customers.backup
+public/css/deposit-scheme.backup
+public/css/index.backup
+public/css/inventory.backup
+public/css/invoice.backup
+public/css/member-statement.backup
+public/css/record-payment.backup
+public/css/reports.backup
+public/css/sales.backup
+public/css/supplier-credit.backup
+public/css/suppliers.backup
+public/css/users.backup
