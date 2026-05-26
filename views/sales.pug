@@ -102,21 +102,6 @@ block content
             th Total (UGX)
             th
         tbody#cartBody
-          if cart && cart.length
-            each item, idx in cart
-              tr
-                td
-                  i.fa-solid.fa-cube.me-2(style="color: var(--gold);")
-                  = item.name
-                td
-                  input.quantity-input.form-control(type='number' value=item.qty min='1' onchange=`updateQty(${idx}, this.value)`)
-                td= item.price.toLocaleString()
-                td.fw-bold= (item.price * item.qty).toLocaleString()
-                td
-                  i.fa-regular.fa-trash-can.remove-item(onclick=`removeItem(${idx})`)
-          else
-            tr
-              td(colspan='5').text-center.py-4.text-muted Cart is empty. Add products to continue.
         tfoot#cartFooter(style='display: none')
           tr
             td.text-end.fw-bold(colspan='3') Subtotal:
@@ -213,8 +198,7 @@ block content
         return;
       }
       const distance = parseFloat(document.getElementById('distance').value) || 0;
-      let fee = 0;
-      if (!(subtotal >= 500000 && distance <= 10)) fee = 30000;
+      const fee = (subtotal >= 500000 && distance <= 10) ? 0 : 30000;
       document.getElementById('deliveryFee').innerHTML = fee.toLocaleString() + ' UGX';
       document.getElementById('grandTotal').innerHTML = (subtotal + fee).toLocaleString() + ' UGX';
     }
@@ -282,12 +266,7 @@ block content
 
     function escapeHtml(str) {
       if (!str) return '';
-      return str.replace(/[&<>]/g, function(m) {
-        if (m === '&') return '&amp;';
-        if (m === '<') return '&lt;';
-        if (m === '>') return '&gt;';
-        return m;
-      });
+      return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
     }
 
     renderCart();

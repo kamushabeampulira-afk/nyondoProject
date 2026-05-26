@@ -57,34 +57,33 @@ block content
   script.
     function togglePaymentFields() {
       const status = document.querySelector('select[name="paymentStatus"]').value;
-      const amountField = document.getElementById('amountPaidField');
       const balanceField = document.getElementById('balanceDueField');
       if (status === 'credit') {
-        amountField.style.display = 'block';
         balanceField.style.display = 'block';
       } else {
-        amountField.style.display = 'block';
         balanceField.style.display = 'none';
         document.querySelector('input[name="amountPaid"]').value = '';
       }
     }
+
     function calculateTotalCost() {
       const qty = parseFloat(document.querySelector('input[name="quantityAdded"]').value) || 0;
       const cost = parseFloat(document.querySelector('input[name="unitCost"]').value) || 0;
       return qty * cost;
     }
+
     document.querySelector('input[name="amountPaid"]').addEventListener('input', function() {
       const total = calculateTotalCost();
       const paid = parseFloat(this.value) || 0;
-      const balance = total - paid;
       const balanceInput = document.querySelector('input[name="balanceDue"]');
-      if (balanceInput) balanceInput.value = balance > 0 ? balance : 0;
+      if (balanceInput) balanceInput.value = Math.max(total - paid, 0);
     });
+
     document.querySelectorAll('input[name="quantityAdded"], input[name="unitCost"]').forEach(field => {
       field.addEventListener('input', () => {
         const amountPaid = document.querySelector('input[name="amountPaid"]');
         if (amountPaid && amountPaid.value) amountPaid.dispatchEvent(new Event('input'));
       });
     });
-    window.togglePaymentFields = togglePaymentFields;
+
     togglePaymentFields();

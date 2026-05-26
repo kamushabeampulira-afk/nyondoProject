@@ -4,9 +4,10 @@ html(lang="en")
     meta(charset="UTF-8")
     meta(name="viewport" content="width=device-width, initial-scale=1.0")
     title Deposit Receipt | Nyondo Hardware
-    link(href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet")
-    link(rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css")
+    link(href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet")
+    link(rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css")
     style.
+      :root { --dark-green: #003300; --gold: #f7b32b; }
       @media print {
         .no-print { display: none !important; }
         body { background: white; padding: 1rem; }
@@ -14,115 +15,149 @@ html(lang="en")
       }
       body {
         background: #f4f6f9;
-        font-family: 'Segoe UI', Roboto, sans-serif;
+        font-family: 'Segoe UI', sans-serif;
         padding: 2rem 1rem;
       }
       .receipt-card {
-        max-width: 500px;
+        max-width: 480px;
         margin: 0 auto;
         background: white;
         border-radius: 24px;
-        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         overflow: hidden;
       }
       .receipt-header {
-        background: #2c3e2b;
+        background: var(--dark-green);
         color: white;
         padding: 1.5rem;
         text-align: center;
       }
-      .brand-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
-      .brand-text h1 { font-size: 1.6rem; font-weight: 700; }
-      .brand-text span { font-weight: 400; }
-      .receipt-meta {
-        background: #f8f9fa;
-        padding: 0.75rem;
-        border-radius: 16px;
-        margin-top: 0.5rem;
-      }
+      .receipt-header h1 { font-size: 1.4rem; font-weight: 700; margin: 0.5rem 0 0; }
+      .receipt-header p { color: rgba(255,255,255,0.7); font-size: 0.85rem; margin: 0; }
+      .brand-icon { font-size: 2.5rem; color: var(--gold); margin-bottom: 0.5rem; }
       .receipt-body { padding: 1.5rem; }
-      hr { margin: 1rem 0; }
-      .total-row { font-weight: 700; font-size: 1.2rem; }
-      .thankyou { text-align: center; margin-top: 1.5rem; }
+      .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 0;
+        border-bottom: 1px solid #f0f2f7;
+        font-size: 0.88rem;
+      }
+      .info-row:last-child { border-bottom: none; }
+      .info-row span:first-child { color: #6c757d; }
+      .info-row strong { color: #1e2a2f; }
+      .progress-wrap { margin: 1rem 0; }
+      .progress { height: 10px; border-radius: 5px; background: #e9ecef; }
+      .progress-bar { background: var(--dark-green); border-radius: 5px; transition: width 0.5s; }
+      .goal-reached {
+        background: #ecfdf5;
+        border: 1px solid #22c55e;
+        border-radius: 10px;
+        padding: 10px;
+        text-align: center;
+        color: #15803d;
+        font-weight: 700;
+        margin-top: 1rem;
+      }
       .footer-note {
-        font-size: 0.7rem;
+        font-size: 0.72rem;
         color: #6c757d;
         text-align: center;
         margin-top: 1rem;
         padding-top: 1rem;
         border-top: 1px dashed #dee2e6;
       }
+      .divider { border-top: 1px dashed #dee2e6; margin: 1rem 0; }
   body
     .receipt-card
       .receipt-header
-        .brand-icon: i.fas.fa-piggy-bank
-        .brand-text
-          h1 NYONDO <span>HARDWARE</span>
-          p.mb-0 Deposit Scheme Receipt
+        .brand-icon
+          i.fa-solid.fa-piggy-bank
+        h1 NYONDO HARDWARE
+        p Deposit Scheme Receipt
+
       .receipt-body
-        .receipt-meta
-          .d-flex.justify-content-between.mb-2
+        // Member info
+        .info-row
+          span
+            i.fa-solid.fa-user.me-1
+            | Member
+          strong= receipt.memberId ? receipt.memberId.fullName : '—'
+        .info-row
+          span
+            i.fa-solid.fa-phone.me-1
+            | Phone
+          strong= receipt.memberId ? receipt.memberId.phone : '—'
+        .info-row
+          span
+            i.fa-regular.fa-calendar.me-1
+            | Date
+          strong= new Date(receipt.createdAt).toLocaleString()
+        .info-row
+          span
+            i.fa-solid.fa-hashtag.me-1
+            | Receipt ID
+          strong= receipt._id.toString().slice(-8).toUpperCase()
+
+        .divider
+
+        // Goal info
+        .info-row
+          span
+            i.fa-solid.fa-bullseye.me-1
+            | Product Goal
+          strong= receipt.productName
+        .info-row
+          span Quantity
+          strong= receipt.quantity
+        .info-row
+          span Amount Deposited
+          strong.text-success= '+ ' + receipt.amountDeposited.toLocaleString() + ' UGX'
+        .info-row
+          span Payment Method
+          strong= receipt.paymentMethod
+        if receipt.requiresDelivery
+          .info-row
             span
-              i.fas.fa-user
-              |  Member:
-            strong #{transaction.member.fullName}
-          .d-flex.justify-content-between.mb-2
-            span
-              i.fas.fa-id-card
-              |  NIN:
-            span #{transaction.member.nin || '—'}
-          .d-flex.justify-content-between.mb-2
-            span
-              i.fas.fa-phone
-              |  Phone:
-            span #{transaction.member.phone}
-          .d-flex.justify-content-between.mb-2
-            span
-              i.fas.fa-exchange-alt
-              |  Type:
-            span(class=transaction.type === 'deposit' ? 'text-success' : 'text-warning') #{transaction.type === 'deposit' ? 'DEPOSIT' : 'PICKUP'}
-          .d-flex.justify-content-between.mb-2
-            span
-              i.far.fa-calendar-alt
-              |  Date:
-            span #{new Date(transaction.createdAt).toLocaleString()}
-          .d-flex.justify-content-between
-            span
-              i.fas.fa-receipt
-              |  Transaction ID:
-            span #{transaction._id.toString().slice(-6).toUpperCase()}
-        hr
-        if transaction.type === 'deposit'
-          .d-flex.justify-content-between.mb-2
-            span Amount Deposited
-            span.text-success.fw-bold + #{transaction.amount.toLocaleString()} UGX
-        else
-          .d-flex.justify-content-between.mb-2
-            span Product
-            span #{transaction.productDetails.productName}
-          .d-flex.justify-content-between.mb-2
-            span Quantity
-            span #{transaction.productDetails.quantity}
-          .d-flex.justify-content-between.mb-2
-            span Unit Price
-            span #{transaction.productDetails.unitPrice.toLocaleString()} UGX
-          .d-flex.justify-content-between.mb-2
-            span Total Value
-            span.text-warning.fw-bold #{Math.abs(transaction.amount).toLocaleString()} UGX
-        hr
-        .d-flex.justify-content-between.fw-bold.total-row
-          span New Balance
-          span #{transaction.balanceAfter.toLocaleString()} UGX
-        .thankyou
-          p.mb-0.small Recorded by: #{transaction.recordedBy ? transaction.recordedBy.fullName : 'System'}
-          p.mb-0 Thank you for trusting Nyondo!
+              i.fa-solid.fa-truck.me-1
+              | Delivery Fee
+            strong= receipt.deliveryFee.toLocaleString() + ' UGX'
+
+        .divider
+
+        // Progress
+        .progress-wrap
+          .d-flex.justify-content-between.mb-1
+            small.text-muted Savings Progress
+            small.fw-bold
+              = Math.min(Math.round((receipt.savedAmount / receipt.targetAmount) * 100), 100) + '%'
+          .progress
+            .progress-bar(style=`width: ${Math.min(Math.round((receipt.savedAmount / receipt.targetAmount) * 100), 100)}%`)
+          .d-flex.justify-content-between.mt-2
+            small.text-muted Saved: #{receipt.savedAmount.toLocaleString()} UGX
+            small.text-muted Target: #{receipt.targetAmount.toLocaleString()} UGX
+
+        .info-row
+          span Remaining
+          strong.text-warning= receipt.remainingAmount.toLocaleString() + ' UGX'
+
+        if receipt.remainingAmount === 0
+          .goal-reached
+            i.fa-solid.fa-circle-check.me-2
+            | 🎉 Goal Reached! Ready for Pickup.
+
         .footer-note
-          i.fas.fa-print
-          |  Keep this receipt for your records
-      .text-center.p-3.bg-light.no-print
-        button.btn.btn-primary.me-2(onclick="window.print()")
-          i.fas.fa-print.me-1
-          | Print Receipt
-        a.btn.btn-outline-secondary(href="/deposit-scheme")
-          i.fas.fa-arrow-left.me-1
-          | Back to Deposit Scheme
+          p.mb-1 Recorded by: #{receipt.recordedBy ? receipt.recordedBy.fullName : 'System'}
+          p.mb-0
+            i.fa-solid.fa-print.me-1
+            | Keep this receipt for your records. Thank you!
+
+    .text-center.mt-3.no-print
+      button.btn.btn-success.me-2(onclick="window.print()")
+        i.fa-solid.fa-print.me-1
+        | Print Receipt
+      a.btn.btn-outline-secondary(href="/deposit-scheme")
+        i.fa-solid.fa-arrow-left.me-1
+        | Back to Deposit Scheme
+
+    script(src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js")

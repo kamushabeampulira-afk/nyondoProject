@@ -6,13 +6,16 @@ block title
 block content
   .page-heading-center.mb-4
     h1
-      i.fa-solid.fa-user-plus
-      |  Register New Deposit Member
-    p.text-muted Enter the member's details
+      i.fa-solid.fa-user-plus.me-2
+      | Register New Deposit Member
+    p.text-muted Enter the member's details and first savings goal
 
   .form-card
     form(method="POST" action="/deposit-scheme/register")
-      .row.g-3
+      h5.mb-3(style="color: var(--dark-green); border-left: 4px solid var(--gold); padding-left: 10px;")
+        i.fa-solid.fa-user.me-2
+        | Personal Details
+      .row.g-3.mb-4
         .col-md-6
           label.form-label Full Name *
           input.form-control(type="text" name="fullName" required)
@@ -28,6 +31,60 @@ block content
         .col-md-12
           label.form-label Employer / Workplace
           input.form-control(type="text" name="employer")
+
+      h5.mb-3.mt-2(style="color: var(--dark-green); border-left: 4px solid var(--gold); padding-left: 10px;")
+        i.fa-solid.fa-bullseye.me-2
+        | First Savings Goal
+      .row.g-3
+        .col-md-6
+          label.form-label Product *
+          select.form-select(name="productId" required onchange="updateTarget(this)")
+            option(value="") -- Select Product --
+            each prod in products
+              option(value=prod._id data-price=prod.unitPrice) #{prod.productName} — #{prod.unitPrice.toLocaleString()} UGX each
+        .col-md-6
+          label.form-label Quantity *
+          input.form-control(type="number" name="quantity" min="1" value="1" required oninput="updateTarget()")
+        .col-md-6
+          label.form-label Distance from Nansana (km)
+          input.form-control(type="number" name="distance" min="0" value="5" oninput="updateTarget()")
+        .col-md-6
+          label.form-label Product Target (UGX)
+          input.form-control(type="text" id="targetDisplay" readonly style="background:#f8f9fa; font-weight:700; color: var(--dark-green);")
+        .col-md-6
+          .form-check.mt-2
+            input#requiresDelivery.form-check-input(type="checkbox" name="requiresDelivery" checked onchange="updateTarget()")
+            label.form-check-label(for="requiresDelivery") Requires Delivery
+          small.text-muted Free if total ≥ 500,000 UGX and distance ≤ 10km
+        .col-md-6
+          label.form-label Delivery Fee (UGX)
+          input.form-control(type="text" id="deliveryDisplay" readonly style="background:#f8f9fa;")
+        .col-12
+          label.form-label(style="font-size:1rem; font-weight:700; color: var(--dark-green);") Total Target Amount (UGX)
+          input.form-control(type="text" id="totalDisplay" readonly style="background: rgba(0,51,0,0.06); font-weight:800; font-size:1.1rem; color: var(--dark-green);")
+
       .d-flex.gap-3.mt-4
-        button.btn-primary(type="submit") Save Member
+        button.btn-primary(type="submit")
+          i.fa-solid.fa-save.me-2
+          | Register Member
         a.btn-outline(href="/deposit-scheme") Cancel
+
+  script.
+    function updateTarget() {
+      const select = document.querySelector('select[name="productId"]');
+      const selected = select.options[select.selectedIndex];
+      const price = parseFloat(selected?.getAttribute('data-price')) || 0;
+      const qty = parseInt(document.querySelector('input[name="quantity"]').value) || 1;
+      const distance = parseFloat(document.querySelector('input[name="distance"]').value) || 5;
+      const needsDelivery = document.getElementById('requiresDelivery').checked;
+      const productTotal = price * qty;
+      let delivery = 0;
+      if (needsDelivery) {
+        delivery = (productTotal >= 500000 && distance <= 10) ? 0 : 30000;
+      }
+      const total = productTotal + delivery;
+      document.getElementById('targetDisplay').value = productTotal.toLocaleString() + ' UGX';
+      document.getElementById('deliveryDisplay').value = delivery.toLocaleString() + ' UGX';
+      document.getElementById('totalDisplay').value = total.toLocaleString() + ' UGX';
+    }
+    updateTarget();

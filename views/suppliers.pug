@@ -13,7 +13,6 @@ block content
       |  Supplier Management
     p.text-muted Manage your hardware suppliers, track credit, and record purchases
 
-  // Stats Cards – dynamic from backend
   .row.g-4.mb-4
     .col-md-3.col-sm-6
       .section-card.metric-card.p-3.text-center
@@ -36,7 +35,6 @@ block content
         h6.text-muted Active Orders
         h3= activeOrders || 0
 
-  // Collapsible Add Supplier Form – POST to backend
   .supplier-form-container#supplierFormContainer
     .form-card
       .d-flex.justify-content-between.align-items-center.mb-3
@@ -79,7 +77,6 @@ block content
             |  Save Supplier
           button.btn-outline(type='button' onclick='hideSupplierForm()') Cancel
 
-  // Suppliers Table – dynamic rows from database
   .section-card
     .section-head
       h2
@@ -126,27 +123,20 @@ block content
               td(colspan='7').text-center No suppliers found.
     .table-footer.p-3.border-top.d-flex.justify-content-between.flex-wrap.gap-2
       span.text-muted
-        | Total Outstanding: 
-        strong.text-dark= (totalOutstanding || 0).toLocaleString() + ' UGX'
-      button.btn-outline.btn-sm(onclick='exportSuppliers()')
-        i.fa-solid.fa-download
-        |  Export
+        | Total Outstanding:
+        strong.text-dark= ' ' + (totalOutstanding || 0).toLocaleString() + ' UGX'
 
   script.
-    const formContainer = document.getElementById("supplierFormContainer");
-    const showBtn = document.getElementById("showSupplierFormBtn");
+    const formContainer = document.getElementById('supplierFormContainer');
+    const showBtn = document.getElementById('showSupplierFormBtn');
+
     function showSupplierForm() {
-      formContainer.classList.add("show");
-      if (showBtn) showBtn.style.display = "none";
-      formContainer.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      formContainer.classList.add('show');
+      showBtn.style.display = 'none';
+      formContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
+
     function hideSupplierForm() {
-      formContainer.classList.remove("show");
-      if (showBtn) showBtn.style.display = "inline-flex";
+      formContainer.classList.remove('show');
+      showBtn.style.display = 'inline-flex';
     }
-    function exportSuppliers() {
-      alert("📁 Export suppliers list - feature coming soon.");
-    }
-    window.showSupplierForm = showSupplierForm;
-    window.hideSupplierForm = hideSupplierForm;
-    window.exportSuppliers = exportSuppliers;

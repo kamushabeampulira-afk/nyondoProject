@@ -6,12 +6,11 @@ block title
 block content
   .page-heading-center.mb-4
     h1
-      i.fa-solid.fa-piggy-bank
-      |  Salary Earner Deposit Scheme
-    p.text-muted Manage members, deposits, and pickups
+      i.fa-solid.fa-piggy-bank.me-2
+      | Salary Earner Deposit Scheme
+    p.text-muted Manage members, goals, deposits, and pickups
 
-  // Stats Cards (unchanged)
-  .row.g-4.mb-5
+  .row.g-4.mb-4
     .col-md-3.col-sm-6
       .section-card.metric-card.p-3.text-center
         i.fa-solid.fa-users.fa-2x.mb-2(style="color: var(--gold);")
@@ -33,57 +32,233 @@ block content
         h6.text-muted Current Balance
         h3= (currentBalance || 0).toLocaleString() + ' UGX'
 
-  // Action Buttons (instead of cards)
-  .d-flex.flex-wrap.gap-3.mb-5
-    a.btn-primary.px-4.py-2(href="/deposit-scheme/members")
+  .d-flex.flex-wrap.gap-3.mb-4
+    a.btn-primary(href="/deposit-scheme/members")
       i.fa-solid.fa-users.me-2
       | Members List
-    a.btn-primary.px-4.py-2(href="/deposit-scheme/register")
+    a.btn-primary(href="/deposit-scheme/register")
       i.fa-solid.fa-user-plus.me-2
       | Register Member
-    a.btn-primary.px-4.py-2(href="/deposit-scheme/transactions")
+    a.btn-primary(href="/deposit-scheme/transactions")
       i.fa-solid.fa-clock-rotate-left.me-2
       | View Transactions
 
-  // Quick Deposit and Pickup Forms (unchanged)
   .row.g-4
     .col-md-6
-      .form-card
-        h4 Make Deposit
-        form(method="POST" action="/deposit-scheme/deposit")
-          .mb-3
-            label.form-label Select Member
-            select.form-select(name="memberId" required)
-              option(value="") -- Select Member --
-              each member in members
-                option(value=member._id) #{member.fullName} (Balance: #{member.balance.toLocaleString()} UGX)
-          .mb-3
-            label.form-label Amount (UGX)
-            input.form-control(type="number" name="amount" min="1000" step="1000" required)
-          .mb-3
-            label.form-label Payment Method
-            select.form-select(name="paymentMethod")
-              option Cash
-              option Mobile Money
-              option Bank Transfer
-          button.btn-primary.w-100(type="submit") Record Deposit
+      .section-card
+        .section-head
+          h2
+            i.fa-solid.fa-arrow-up.me-2(style="color: var(--gold);")
+            | Make Deposit
+        .p-3
+          form(method="POST" action="/deposit-scheme/deposit")
+            .mb-3
+              label.form-label Select Member
+              select.form-select(name="memberId" required onchange="loadGoals(this)")
+                option(value="") -- Select Member --
+                each member in members
+                  option(value=member._id) #{member.fullName} (#{member.phone})
+            .mb-3
+              label.form-label Select Savings Goal
+              select.form-select(name="goalId" required id="goalSelect")
+                option(value="") -- Select member first --
+            .mb-3#goalInfo(style="display:none;")
+              .section-card.p-3(style="background: rgba(0,51,0,0.04);")
+                .d-flex.justify-content-between.mb-2
+                  small.text-muted Product
+                  strong#goalProduct —
+                .d-flex.justify-content-between.mb-2
+                  small.text-muted Target
+                  strong#goalTarget —
+                .d-flex.justify-content-between.mb-2
+                  small.text-muted Saved
+                  strong#goalSaved —
+                .d-flex.justify-content-between.mb-2
+                  small.text-muted Remaining
+                  strong#goalRemaining —
+                .progress.mt-2(style="height: 8px;")
+                  .progress-bar#goalProgress(style="background: var(--dark-green); width: 0%;")
+                .div.mt-2#goalReachedBadge(style="display:none;")
+                  span.status-pill.sp-paid
+                    i.fa-solid.fa-circle-check.me-1
+                    | Goal Reached ✓
+            .mb-3
+              label.form-label Amount (UGX)
+              input.form-control(type="number" name="amount" min="1000" step="1000" required)
+            .mb-3
+              label.form-label Payment Method
+              select.form-select(name="paymentMethod")
+                option Cash
+                option Mobile Money
+                option Bank Transfer
+            button.btn-primary.w-100(type="submit")
+              i.fa-solid.fa-save.me-2
+              | Record Deposit & Print Receipt
+
     .col-md-6
-      .form-card
-        h4 Pick Goods
-        form(method="POST" action="/deposit-scheme/pickup")
-          .mb-3
-            label.form-label Select Member
-            select.form-select(name="memberId" required)
-              option(value="") -- Select Member --
-              each member in members
-                option(value=member._id) #{member.fullName} (Balance: #{member.balance.toLocaleString()} UGX)
-          .mb-3
-            label.form-label Product
-            select.form-select(name="productId" required)
-              option(value="") -- Select Product --
-              each prod in products
-                option(value=prod._id) #{prod.productName} - #{prod.unitPrice.toLocaleString()} UGX (Stock: #{prod.currentStock})
-          .mb-3
-            label.form-label Quantity
-            input.form-control(type="number" name="quantity" min="1" required)
-          button.btn-primary.w-100(type="submit") Pick Goods
+      .section-card
+        .section-head
+          h2
+            i.fa-solid.fa-arrow-down.me-2(style="color: var(--gold);")
+            | Pick Up Goods
+        .p-3
+          form(method="POST" action="/deposit-scheme/pickup")
+            .mb-3
+              label.form-label Select Member
+              select.form-select(name="memberId" required onchange="loadPickupGoals(this)")
+                option(value="") -- Select Member --
+                each member in members
+                  option(value=member._id) #{member.fullName} (#{member.phone})
+            .mb-3
+              label.form-label Select Completed Goal
+              select.form-select(name="goalId" required id="pickupGoalSelect")
+                option(value="") -- Select member first --
+            .mb-3#pickupInfo(style="display:none;")
+              .section-card.p-3(style="background: rgba(0,51,0,0.04);")
+                p.mb-1
+                  i.fa-solid.fa-circle-check.text-success.me-2
+                  | Goal is fully funded and ready for pickup
+                p.mb-0.small.text-muted Stock will be automatically reduced on pickup
+            button.btn-primary.w-100(type="submit")
+              i.fa-solid.fa-box-open.me-2
+              | Release Goods & Reduce Stock
+
+    .col-12
+      .section-card
+        .section-head
+          h2
+            i.fa-solid.fa-plus-circle.me-2(style="color: var(--gold);")
+            | Add New Savings Goal to Existing Member
+        .p-3
+          form(method="POST" action="/deposit-scheme/add-goal")
+            .row.g-3
+              .col-md-3
+                label.form-label Member *
+                select.form-select(name="memberId" required)
+                  option(value="") -- Select Member --
+                  each member in members
+                    option(value=member._id) #{member.fullName}
+              .col-md-3
+                label.form-label Product *
+                select.form-select(name="productId" required onchange="updateGoalTarget(this)")
+                  option(value="") -- Select Product --
+                  each prod in products
+                    option(value=prod._id data-price=prod.unitPrice) #{prod.productName} — #{prod.unitPrice.toLocaleString()} UGX
+              .col-md-2
+                label.form-label Quantity *
+                input.form-control(type="number" name="quantity" min="1" value="1" required oninput="updateGoalTarget()")
+              .col-md-2
+                label.form-label Distance (km)
+                input.form-control(type="number" name="distance" min="0" value="5" oninput="updateGoalTarget()")
+              .col-md-2
+                label.form-label Total Target
+                input.form-control(type="text" id="newGoalTotal" readonly style="background:#f8f9fa; font-weight:700;")
+              .col-md-3
+                .form-check.mt-4
+                  input#newGoalDelivery.form-check-input(type="checkbox" name="requiresDelivery" checked onchange="updateGoalTarget()")
+                  label.form-check-label(for="newGoalDelivery") Requires Delivery
+              .col-12
+                button.btn-primary(type="submit")
+                  i.fa-solid.fa-plus.me-2
+                  | Add Goal
+
+  .section-card.mt-4
+    .section-head
+      h2
+        i.fa-solid.fa-bullseye.me-2(style="color: var(--gold);")
+        | Members & Goals Overview
+    .table-responsive
+      table.data-table
+        thead
+          tr
+            th Member
+            th Product Goal
+            th Qty
+            th Saved (UGX)
+            th Target (UGX)
+            th Progress
+            th Delivery
+            th Status
+        tbody
+          each member in members
+            each goal in member.goals
+              tr
+                td= member.fullName
+                td= goal.productName
+                td= goal.quantity
+                td= goal.savedAmount.toLocaleString()
+                td= goal.targetAmount.toLocaleString()
+                td(style="min-width: 120px;")
+                  - const pct = Math.min(Math.round((goal.savedAmount / goal.targetAmount) * 100), 100)
+                  .progress(style="height:8px;")
+                    .progress-bar(style=`background: var(--dark-green); width: ${pct}%;`)
+                  small #{pct}%
+                td
+                  if goal.requiresDelivery
+                    span.status-pill.sp-pending
+                      i.fa-solid.fa-truck.me-1
+                      | Yes (#{goal.deliveryFee.toLocaleString()} UGX)
+                  else
+                    span.text-muted No
+                td
+                  if goal.status === 'Goal Reached'
+                    span.status-pill.sp-paid
+                      i.fa-solid.fa-circle-check.me-1
+                      | Goal Reached ✓
+                  else if goal.status === 'Picked Up'
+                    span.status-pill(style="background:rgba(59,130,246,0.1); color:#2563eb;")
+                      i.fa-solid.fa-box-open.me-1
+                      | Picked Up
+                  else
+                    span.status-pill.sp-pending Saving
+            else
+              tr
+                td(colspan='8').text-center No members yet
+
+  -
+    var membersJson = JSON.stringify(members.map(function(m) {
+      return {
+        _id: m._id,
+        goals: m.goals.map(function(g) {
+          return {
+            _id: g._id,
+            productName: g.productName,
+            quantity: g.quantity,
+            targetAmount: g.targetAmount,
+            savedAmount: g.savedAmount,
+            status: g.status,
+            deliveryFee: g.deliveryFee,
+            requiresDelivery: g.requiresDelivery
+          };
+        })
+      };
+    }))
+
+  script.
+    const membersData = !{membersJson};
+
+    function loadGoals(select) {
+      const memberId = select.value;
+      const goalSelect = document.getElementById('goalSelect');
+      const info = document.getElementById('goalInfo');
+      goalSelect.innerHTML = '<option value="">-- Select Goal --</option>';
+      info.style.display = 'none';
+      if (!memberId) return;
+      const member = membersData.find(m => m._id === memberId);
+      if (!member) return;
+      const savingGoals = member.goals.filter(g => g.status === 'Saving' || g.status === 'Goal Reached');
+      savingGoals.forEach(g => {
+        const opt = document.createElement('option');
+        opt.value = g._id;
+        opt.textContent = `${g.productName} x${g.quantity} — ${g.savedAmount.toLocaleString()} / ${g.targetAmount.toLocaleString()} UGX`;
+        opt.setAttribute('data-goal', JSON.stringify(g));
+        goalSelect.appendChild(opt);
+      });
+      goalSelect.onchange = function() {
+        const selected = this.options[this.selectedIndex];
+        const g = JSON.parse(selected.getAttribute('data-goal') || 'null');
+        if (!g) { info.style.display = 'none'; return; }
+        info.style.display = 'block';
+        document.getElementById('goalProduct').textContent = `${g.productName} x${g.quantity}`;
+        document.getElementById('goalTarget').textContent = g.targetAmount.toLocaleString() + ' UGX';
+        document.getElementById('goalSaved').textContent = g.savedAmount.toLocaleString() + ' UGX';

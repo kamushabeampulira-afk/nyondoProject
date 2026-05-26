@@ -13,7 +13,7 @@ router.get('/', ensureAuthenticated, async (req, res) => {
     const todayStart = new Date(); todayStart.setHours(0,0,0,0);
     const todayEnd = new Date(); todayEnd.setHours(23,59,59,999);
 
-    // ========= KPIs =========
+    // KPIs
     const todaySalesAgg = await Sale.aggregate([
       { $match: { createdAt: { $gte: todayStart, $lte: todayEnd } } },
       { $group: { _id: null, total: { $sum: '$grandTotal' } } }
@@ -33,7 +33,7 @@ router.get('/', ensureAuthenticated, async (req, res) => {
     const transactionsToday = await Sale.countDocuments({ createdAt: { $gte: todayStart, $lte: todayEnd } });
     const pendingInvoices = await CreditInvoice.countDocuments({ outstanding: { $gt: 0 } });
 
-    // ========= Daily sales for last 7 days (table, not chart) =========
+    // Daily sales for last 7 days (table, not chart)
     const dailySales = [];
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
@@ -51,7 +51,7 @@ router.get('/', ensureAuthenticated, async (req, res) => {
       });
     }
 
-    // ========= Sales attendant specific data =========
+    // Sales attendant specific data
     let productsInStock = [];
     let recentSalesAttendant = [];
     if (req.user.role === 'sales' || req.user.role === 'attendant') {
@@ -63,7 +63,7 @@ router.get('/', ensureAuthenticated, async (req, res) => {
         .limit(5);
     }
 
-    // ========= Admin/manager recent data =========
+    // Admin/manager recent data
     let recentSales = [];
     let recentStock = [];
     let recentDeposits = [];

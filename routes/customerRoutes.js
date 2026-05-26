@@ -26,7 +26,10 @@ router.post("/", isSalesOrAdmin, async (req, res) => {
   try {
     const customer = new Customer(req.body);
     await customer.save();
-    req.flash("success_msg", `Customer ${customer.fullName} added successfully!`);
+    req.flash(
+      "success_msg",
+      `Customer ${customer.fullName} added successfully!`,
+    );
     res.redirect("/customers");
   } catch (err) {
     req.flash("error_msg", err.message);
@@ -72,7 +75,10 @@ router.post("/:id", isSalesOrAdmin, async (req, res) => {
       runValidators: true,
     });
     if (!customer) throw new Error("Customer not found");
-    req.flash("success_msg", `Customer ${customer.fullName} updated successfully!`);
+    req.flash(
+      "success_msg",
+      `Customer ${customer.fullName} updated successfully!`,
+    );
     res.redirect("/customers");
   } catch (err) {
     req.flash("error_msg", err.message);

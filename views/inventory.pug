@@ -75,11 +75,11 @@ block content
               - let statusText = 'In Stock'
               - let statusClass = 'sp-paid'
               if out
-                statusText = 'Out of Stock'
-                statusClass = 'sp-credit'
+                -statusText = 'Out of Stock'
+                -statusClass = 'sp-credit'
               else if isLow
-                statusText = 'Low Stock'
-                statusClass = 'sp-pending'
+                -statusText = 'Low Stock'
+                -statusClass = 'sp-pending'
               tr
                 td
                   i.fa-solid.fa-cube.me-2(style="color: var(--gold);")

@@ -15,7 +15,7 @@ function getCategoryFromProductType(productType) {
   return "Other";
 }
 
-// ========= MAIN INVENTORY PAGE =========
+// MAIN INVENTORY PAGE
 router.get("/", isManagerOrAdmin, async (req, res) => {
   try {
     const products = await Product.find().sort({ createdAt: -1 }).populate('createdBy', 'fullName');
@@ -44,7 +44,7 @@ router.get("/", isManagerOrAdmin, async (req, res) => {
   }
 });
 
-// ========= ADD NEW PRODUCT (form page) =========
+// ADD NEW PRODUCT (form page)
 router.get("/new", isManagerOrAdmin, (req, res) => {
   res.render("inventory-new", { user: req.user });
 });
@@ -91,7 +91,7 @@ router.post("/", isManagerOrAdmin, async (req, res) => {
   }
 });
 
-// ========= ADD STOCK TO PRODUCT (form page) =========
+// ADD STOCK TO PRODUCT (form page)
 router.get("/add-stock", isManagerOrAdmin, async (req, res) => {
   const products = await Product.find().sort({ productName: 1 });
   res.render("inventory-add-stock", { products, user: req.user });
@@ -130,7 +130,7 @@ router.post("/add-stock", isManagerOrAdmin, async (req, res) => {
   }
 });
 
-// ========= STOCK TRANSACTIONS PAGE =========
+// STOCK TRANSACTIONS PAGE
 router.get("/transactions", isManagerOrAdmin, async (req, res) => {
   try {
     const transactions = await StockTransaction.find().sort({ createdAt: -1 }).limit(100);
@@ -141,7 +141,7 @@ router.get("/transactions", isManagerOrAdmin, async (req, res) => {
   }
 });
 
-// ========= EDIT PRODUCT =========
+// EDIT PRODUCT 
 router.get("/:id/edit", isManagerOrAdmin, async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
@@ -182,7 +182,7 @@ router.post("/:id", isManagerOrAdmin, async (req, res) => {
   }
 });
 
-// ========= DELETE PRODUCT =========
+// DELETE PRODUCT 
 router.post("/:id/delete", isManagerOrAdmin, async (req, res) => {
   try {
     const product = await Product.findByIdAndDelete(req.params.id);

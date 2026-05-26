@@ -45,7 +45,6 @@ block content
         .col-md-3
           label.form-label Initial Stock *
           input.form-control(type='number' name='currentStock' min='0' required)
-        // New supplier & payment fields
         .col-md-6
           label.form-label Supplier Name *
           input.form-control(type='text' name='supplierName' required)
@@ -75,34 +74,33 @@ block content
   script.
     function togglePaymentFields() {
       const status = document.querySelector('select[name="paymentStatus"]').value;
-      const amountField = document.getElementById('amountPaidField');
       const balanceField = document.getElementById('balanceDueField');
       if (status === 'credit') {
-        amountField.style.display = 'block';
         balanceField.style.display = 'block';
       } else {
-        amountField.style.display = 'block';
         balanceField.style.display = 'none';
         document.querySelector('input[name="amountPaid"]').value = '';
       }
     }
+
     function calculateTotalCost() {
       const qty = parseFloat(document.querySelector('input[name="currentStock"]').value) || 0;
       const cost = parseFloat(document.querySelector('input[name="unitCost"]').value) || 0;
       return qty * cost;
     }
+
     document.querySelector('input[name="amountPaid"]').addEventListener('input', function() {
       const total = calculateTotalCost();
       const paid = parseFloat(this.value) || 0;
-      const balance = total - paid;
       const balanceInput = document.querySelector('input[name="balanceDue"]');
-      if (balanceInput) balanceInput.value = balance > 0 ? balance : 0;
+      if (balanceInput) balanceInput.value = Math.max(total - paid, 0);
     });
+
     document.querySelectorAll('input[name="currentStock"], input[name="unitCost"]').forEach(field => {
       field.addEventListener('input', function() {
         const amountPaid = document.querySelector('input[name="amountPaid"]');
         if (amountPaid && amountPaid.value) amountPaid.dispatchEvent(new Event('input'));
       });
     });
-    window.togglePaymentFields = togglePaymentFields;
+
     togglePaymentFields();
