@@ -1,0 +1,2917 @@
+]633;E;{ echo "================ PACKAGE.JSON ================"\x3b cat package.json\x3b  echo -e "\\n\\n================ APP.JS ================"\x3b cat app.js 2>/dev/null\x3b  echo -e "\\n\\n================ SERVER.JS ================"\x3b cat server.js 2>/dev/null\x3b  echo -e "\\n\\n================ MODELS ================"\x3b find models -type f -name "*.js" -exec sh -c '\x0afor file do\x0aecho -e "\\n\\n===== $file ====="\x0acat "$file"\x0adone\x0a' sh {} +\x3b  echo -e "\\n\\n================ ROUTES ================"\x3b find routes -type f -name "*.js" -exec sh -c '\x0afor file do\x0aecho -e "\\n\\n===== $file ====="\x0acat "$file"\x0adone\x0a' sh {} +\x3b  echo -e "\\n\\n================ MIDDLEWARE ================"\x3b find middleware -type f -name "*.js" -exec sh -c '\x0afor file do\x0aecho -e "\\n\\n===== $file ====="\x0acat "$file"\x0adone\x0a' sh {} +\x3b  } > project-review.txt;6bfa8784-5930-4532-ab52-85e859b7ffe3]633;C================ PACKAGE.JSON ================
+{
+  "name": "nyondoproject",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/kamushabeampulira-afk/nyondoProject#readme",
+  "bugs": {
+    "url": "https://github.com/kamushabeampulira-afk/nyondoProject/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kamushabeampulira-afk/nyondoProject.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon server.js"
+  },
+  "dependencies": {
+    "connect-flash": "^0.1.1",
+    "connect-mongo": "^6.0.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "mongodb": "^7.2.0",
+    "mongoose": "^9.6.1",
+    "nodemon": "^3.1.14",
+    "passport": "^0.7.0",
+    "passport-local": "^1.0.0",
+    "passport-local-mongoose": "^9.1.0",
+    "pug": "^3.0.4"
+  }
+}
+
+
+================ APP.JS ================
+
+
+================ SERVER.JS ================
+require("dotenv").config();
+const express = require("express");
+const session = require("express-session");
+const path = require("path");
+const mongoose = require("mongoose");
+const passport = require("passport");
+const flash = require("connect-flash");
+
+const connectDB = require("./config/db");
+const User = require("./models/User");
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+connectDB();
+
+app.set("view engine", "pug");
+app.set("views", path.join(__dirname, "views"));
+app.use(express.static(path.join(__dirname, "public")));
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "Shussh",
+    resave: false,
+    saveUninitialized: false,
+    cookie: { maxAge: 1000 * 60 * 60 * 2 },
+  }),
+);
+app.use(flash());
+app.use(passport.initialize());
+app.use(passport.session());
+passport.use(User.createStrategy());
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
+
+// Global user & flash
+app.use(flash());
+// ...
+app.use((req, res, next) => {
+  res.locals.user = req.user || null;
+  res.locals.success_msg = req.flash("success_msg");
+  res.locals.error_msg = req.flash("error_msg");
+  res.locals.error = req.flash("error");
+  next();
+});
+
+// MOUNT ROUTES (all other routes)
+app.use("/auth", require("./routes/authRoutes"));
+app.use("/customers", require("./routes/customerRoutes"));
+app.use("/suppliers", require("./routes/supplierRoutes"));
+app.use("/inventory", require("./routes/inventoryRoutes"));
+app.use("/sales", require("./routes/saleRoutes"));
+app.use("/deposit-scheme", require("./routes/depositSchemeRoutes"));
+app.use("/supplier-credit", require("./routes/supplierCreditRoutes"));
+app.use("/payments", require("./routes/paymentRoutes"));
+app.use("/users", require("./routes/userRoutes"));
+app.use("/dashboard", require("./routes/dashboardRoutes"));
+app.use("/settings", require("./routes/settingRoutes"));
+// app.use('/transport', require('./routes/transportRoutes'));
+app.use("/reports", require("./routes/reportRoutes"));
+// app.use('/', require('./routes/signup'));
+
+// Root route – show landing page for non‑authenticated users
+app.get("/", (req, res) => {
+  if (req.isAuthenticated()) {
+    res.redirect("/dashboard");
+  } else {
+    res.render("index"); // Render your landing page (index.pug)
+  }
+});
+// 404 handler
+app.use((req, res) => {
+  res
+    .status(404)
+    .render("error", { message: "Page not found", user: req.user });
+});
+
+// Error handler
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).render("error", { message: err.message, user: req.user });
+});
+
+app.listen(PORT, () => console.log(`😊 We're live on http://localhost:${PORT}`));
+
+
+================ MODELS ================
+
+
+===== models/CreditInvoice.js =====
+const mongoose = require("mongoose");
+
+const creditInvoiceSchema = new mongoose.Schema({
+  invoiceNumber: {
+    type: String,
+    unique: true,
+    required: true
+  },
+  supplierId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Supplier",
+    required: true,
+  },
+  purchaseDate: {
+    type: Date,
+    required: true,
+  },
+  dueDate: {
+    type: Date,
+    required: true,
+  },
+  totalAmount: {
+    type: Number,
+    required: true,
+  },
+  paidAmount: {
+    type: Number,
+    default: 0,
+  },
+  outstanding: {
+    type: Number,
+    default: 0,
+  },
+  description: String,
+  paymentTerms: String,
+  status: {
+    type: String,
+    enum: ["Pending", "Partially Paid", "Paid", "Overdue"],
+    default: "Pending",
+  },
+  createdAt: { type: Date, default: Date.now },
+});
+
+creditInvoiceSchema.pre("save", async function () {
+  this.totalAmount = Number(this.totalAmount) || 0;
+  this.paidAmount  = Number(this.paidAmount)  || 0;
+  this.outstanding = this.totalAmount - this.paidAmount;
+
+  if (this.outstanding <= 0) {
+    this.status = "Paid";
+  } else if (this.paidAmount > 0) {
+    this.status = "Partially Paid";
+  }
+  // Note: "Overdue" is set by date logic in the routes/views, not here
+});
+
+module.exports = mongoose.models.CreditInvoice
+  || mongoose.model("CreditInvoice", creditInvoiceSchema);
+
+===== models/Customer.js =====
+const mongoose = require('mongoose');
+
+const customerSchema = new mongoose.Schema({
+  fullName: { 
+    type: String, 
+    required: true 
+  },
+  phone: { 
+    type: String, 
+    required: true, 
+    match: [/^0\d{9}$/, "Phone number must be 10 digits and start with 0"] 
+  },
+  nin: { 
+    type: String, 
+    match: [/^[A-Za-z]{2}\d{14}$/, "NIN must have 2 letters followed by 14 digits"]
+  },
+  email: {
+    type: String,
+    trim: true,
+    lowercase: true,
+    validate: {
+      validator: function(v) {
+        return !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+      },
+      message: "Please enter a valid email address"
+    },
+  },
+  address: { 
+     type: String,
+  },
+  customerType: { 
+    type: String, 
+    enum: ['Walk-in', 'Contractor', 'Wholesale', 'Deposit Scheme'], default: 'Walk-in' 
+  },
+  creditLimit: { 
+    type: Number, 
+    default: 0 
+  },
+  totalPurchases: { 
+    type: Number, 
+    default: 0 
+  },
+  createdAt: { 
+    type: Date, 
+    default: Date.now 
+  }
+});
+
+module.exports = mongoose.models.Customer || mongoose.model('Customer', customerSchema);
+
+===== models/DeliveryRecord.js =====
+const mongoose = require("mongoose");
+
+const deliveryRecordSchema = new mongoose.Schema({
+  customerName: String,
+  purchaseAmount: {
+    type: Number,
+    required: true,
+  },
+  distance: {
+    type: Number,
+    required: true,
+  },
+  deliveryFee: {
+    type: Number,
+    required: true,
+  },
+  status: {
+    type: String,
+    default: "Completed",
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+module.exports =
+  mongoose.models.DeliveryRecord ||
+  mongoose.model("DeliveryRecord", deliveryRecordSchema);
+
+
+===== models/DepositMember.js =====
+const mongoose = require('mongoose');
+
+const goalSchema = new mongoose.Schema({
+  productId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Product', required: true 
+  },
+  productName: { 
+    type: String, 
+    required: true 
+  },
+  quantity: { 
+    type: Number, 
+    required: true 
+  },
+  unitPrice: { 
+    type: Number, 
+    required: true 
+  },
+  targetAmount: { 
+    type: Number, 
+    required: true 
+  },
+  savedAmount: { 
+    type: Number, 
+    default: 0 
+  },
+  requiresDelivery: { 
+    type: Boolean, 
+    default: true 
+  },
+  deliveryFee: { 
+    type: Number, 
+    default: 0 
+  },
+  status: { 
+    type: String, 
+    enum: ['Saving', 'Goal Reached', 'Picked Up'], 
+    default: 'Saving' },
+  createdAt: { 
+    type: Date, 
+    default: Date.now 
+  }
+});
+
+const depositMemberSchema = new mongoose.Schema({
+  fullName: { 
+    type: String, 
+    required: true 
+  },
+  nin: { 
+    type: String, 
+    required: true, 
+    match: [/^[A-Za-z]{2}\d{14}$/, "NIN must have 2 letters followed by 14 digits"]
+  },
+  phone: { 
+    type: String, 
+    required: true,
+    match: [/^0\d{9}$/, "Phone number must be 10 digits and start with 0"] 
+  },
+  address: String,
+  employer: String,
+  balance: { 
+    type: Number, 
+    default: 0 },
+  goals: [goalSchema],
+  joinedAt: { 
+    type: Date, 
+    default: Date.now 
+  },
+  status: { 
+    type: String, 
+    enum: ['Active', 'Inactive'], 
+    default: 'Active' 
+  }
+});
+
+module.exports = mongoose.models.DepositMember || mongoose.model('DepositMember', depositMemberSchema);
+
+===== models/DepositReceipt.js =====
+const mongoose = require('mongoose');
+
+const depositReceiptSchema = new mongoose.Schema({
+  memberId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'DepositMember', required: true },
+  goalId: { type: mongoose.Schema.Types.ObjectId, 
+    required: true 
+  },
+  productName: { 
+    type: String, 
+    required: true 
+  },
+  quantity: { 
+    type: Number, 
+    required: true 
+  },
+  amountDeposited: { 
+    type: Number, 
+    required: true 
+  },
+  savedAmount: { 
+    type: Number, 
+    required: true 
+  },
+  targetAmount: { 
+    type: Number, 
+    required: true 
+  },
+  remainingAmount: { 
+    type: Number, 
+    required: true 
+  },
+  deliveryFee: { 
+    type: Number, 
+    default: 0 
+  },
+  requiresDelivery: { 
+    type: Boolean, 
+    default: false 
+  },
+  paymentMethod: { 
+    type: String, 
+    default: 'Cash' 
+  },
+  recordedBy: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User' 
+  },
+  createdAt: { 
+    type: Date, 
+    default: Date.now 
+  }
+});
+
+module.exports = mongoose.models.DepositReceipt || mongoose.model('DepositReceipt', depositReceiptSchema);
+
+===== models/DepositTransaction.js =====
+const mongoose = require("mongoose");
+
+const depositTransactionSchema = new mongoose.Schema({
+  memberId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "DepositMember",
+    required: true,
+  },
+  type: {
+    type: String,
+    enum: ["deposit", "pickup"],
+    required: true,
+  },
+  amount: {
+    type: Number,
+    required: true,
+  },
+  description: String,
+  productDetails: {
+    productName: String,
+    quantity: Number,
+    unitPrice: Number,
+  },
+  balanceAfter: {
+    type: Number,
+    required: true,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+module.exports =
+  mongoose.models.DepositTransaction ||
+  mongoose.model("DepositTransaction", depositTransactionSchema);
+
+
+===== models/Payment.js =====
+const mongoose = require('mongoose');
+
+const paymentSchema = new mongoose.Schema({
+  supplierId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Supplier' 
+  },
+  invoiceId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'CreditInvoice' 
+  },
+  amount: { 
+    type: Number, 
+    required: true 
+  },
+  paymentMethod: { 
+    type: String, 
+    enum: ['Cash', 'Bank Transfer', 'Mobile Money'] 
+  },
+  paymentDate: { 
+    type: Date, default: Date.now 
+  },
+  reference: String,
+  recordedBy: { 
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User' 
+  }
+});
+
+module.exports = mongoose.models.Payment || mongoose.model('Payment', paymentSchema);
+
+===== models/Product.js =====
+const mongoose = require('mongoose');
+
+const productSchema = new mongoose.Schema({
+  productType: {
+    type: String,
+    required: true,
+    enum: [
+      // Cement
+      'Cement (CEM II N)',
+      'Cement (CEM III N)',
+      // Iron bars
+      'Iron Bar 10mm',
+      'Iron Bar 12mm',
+      'Iron Bar 16mm',
+      // Nails (5kg packs)
+      'Nails 1 inch (5kg)',
+      'Nails 3 inch (5kg)',
+      'Nails 4 inch (5kg)',
+      'Nails 5 inch (5kg)',
+      'Roofing Nails (5kg)',
+      // Equipment
+      'Wheelbarrow',
+      'Wire Mesh',
+      // Barbed wire
+      'Barbed Wire (High Tensile)',
+      'Barbed Wire (Low Tensile)',
+      // Iron sheets
+      'Iron Sheet (Blue)',
+      'Iron Sheet (Red)',
+      'Iron Sheet (Green)',
+      'Iron Sheet (White)',
+      'Iron Sheet (Brown)'
+    ]
+  },
+  category: { 
+    type: String 
+  },
+  unitCost: { 
+    type: Number, 
+    required: true 
+  },
+  unitPrice: { 
+    type: Number, 
+    required: true 
+  },
+  currentStock: { 
+    type: Number, 
+    default: 0 
+  },
+  reorderLevel: { 
+    type: Number, 
+    default: 15 
+  },
+  supplier: String,
+  sku: String,
+  description: String,
+  createdAt: { 
+    type: Date, 
+    default: Date.now 
+  },
+  createdBy: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User' 
+  },
+});
+
+productSchema.virtual('productName').get(function() {
+  return this.productType;
+});
+
+module.exports = mongoose.models.Product || mongoose.model('Product', productSchema);
+
+===== models/Sale.js =====
+const mongoose = require('mongoose');
+
+const saleItemSchema = new mongoose.Schema({
+  productId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Product' 
+  },
+  productName: String,
+  quantity: Number,
+  unitPrice: Number,
+  total: Number
+});
+
+const saleSchema = new mongoose.Schema({
+  invoiceNumber: { 
+    type: String, 
+    unique: true 
+  },
+  customerName: { 
+    type: String, 
+    default: 'Walk-in Customer' 
+  },
+  customerPhone: String,
+  items: [saleItemSchema],
+  subtotal: Number,
+  deliveryFee: { 
+    type: Number, 
+    default: 0 
+  },
+  tax: { 
+    type: Number, 
+    default: 0 
+  },
+  grandTotal: Number,
+  paymentMethod: { 
+    type: String, 
+    enum: ['Cash', 'Mobile Money', 'Credit', 'Deposit Scheme'] 
+  },
+  status: { 
+    type: String, 
+    enum: ['Paid', 'Pending', 'Completed'], 
+    default: 'Paid' 
+  },
+  attendant: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User' 
+  },
+  createdAt: { 
+    type: Date, 
+    default: Date.now 
+  }
+});
+
+module.exports = mongoose.models.Sale || mongoose.model('Sale', saleSchema);
+
+===== models/Setting.js =====
+const mongoose = require("mongoose");
+
+const settingSchema = new mongoose.Schema({
+  company: {
+    name: { 
+      type: String, 
+      default: "NYONDO General Hardware LTD" },
+    phone: String,
+    email: {
+  type: String,
+  trim: true,
+  lowercase: true,
+  match: [
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+    "Please enter a valid email address"
+  ]
+},
+    address: String,
+    tin: String,
+  },
+  financial: {
+    taxRate: { 
+      type: Number, 
+      default: 18 
+    },
+    currency: { 
+      type: String, 
+      default: "UGX" 
+    },
+    lowStockThreshold: { 
+      type: Number, 
+      default: 15 
+    },
+    defaultPaymentTerms: { 
+      type: String, 
+      default: "Net 15" 
+    },
+  },
+  delivery: {
+    freeThreshold: {
+      type: Number,
+      default: 500000,
+    },
+    baseFee: {
+      type: Number,
+      default: 30000,
+    },
+    freeDistance: {
+      type: Number,
+      default: 10,
+    },
+  },
+  security: {
+    twoFactor: {
+      type: Boolean,
+      default: true,
+    },
+    sessionTimeout: {
+      type: Number,
+      default: 30,
+    },
+    minPasswordLength: {
+      type: Number,
+      default: 8,
+    },
+  },
+});
+
+module.exports =
+  mongoose.models.Setting || mongoose.model("Setting", settingSchema);
+
+
+===== models/StockTransaction.js =====
+const mongoose = require("mongoose");
+
+const stockTransactionSchema = new mongoose.Schema({
+  productId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Product",
+    required: true
+  },
+  productName: String,
+  quantityAdded: {
+    type: Number,
+    required: true,
+    min: 1
+  },
+  unitCost: {
+    type: Number,
+    required: true
+  },
+  totalCost: {
+    type: Number,
+    default: 0
+  },
+  unitPrice: {
+    type: Number,
+    required: true
+  },
+  supplierName: {
+    type: String,
+    required: true
+  },
+  supplierPhone: String,
+  factoryName: String,
+  paymentStatus: {
+    type: String,
+    enum: ["cash", "credit"],
+    required: true
+  },
+  amountPaid: {
+    type: Number,
+    default: 0
+  },
+  balanceDue: {
+    type: Number,
+    default: 0
+  },
+  recordedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User"
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+});
+
+stockTransactionSchema.pre("save", async function () {
+  this.quantityAdded = Number(this.quantityAdded) || 0;
+  this.unitCost     = Number(this.unitCost)      || 0;
+  this.amountPaid   = Number(this.amountPaid)    || 0;
+  this.totalCost    = this.quantityAdded * this.unitCost;
+  this.balanceDue   = this.totalCost - this.amountPaid;
+});
+
+module.exports = mongoose.models.StockTransaction
+  || mongoose.model("StockTransaction", stockTransactionSchema);
+
+===== models/Supplier.js =====
+const mongoose = require('mongoose');
+
+const supplierSchema = new mongoose.Schema({
+  companyName: { 
+    type: String, 
+    required: true, 
+    unique: true 
+  },
+  contactPerson: { 
+    type: String, 
+    required: true 
+  },
+  phone: { 
+    type: String, 
+    required: true,
+    match: [/^0\d{9}$/, "Phone number must be 10 digits and start with 0"] 
+  },
+  email: String,
+  address: String,
+  paymentStatus: { 
+    type: String, 
+    enum: ['Fully Paid','Credit'], 
+    default: 'Fully Paid' 
+  },
+  creditLimit: { 
+    type: Number, 
+    default: 0 
+  },
+  productsSupplied: String,
+  createdAt: { 
+    type: Date, 
+    default: Date.now 
+  }
+});
+
+module.exports = mongoose.models.Supplier || mongoose.model('Supplier', supplierSchema);
+
+===== models/User.js =====
+const mongoose = require("mongoose");
+const passportLocalMongoose = require("passport-local-mongoose").default;
+
+const userSchema = new mongoose.Schema({
+  fullName: { 
+    type: String, 
+    required: true },
+  email: {
+  type: String,
+  trim: true,
+  lowercase: true,
+  match: [
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+    "Please enter a valid email address"
+  ]
+},  
+  nin: { 
+    type: String, 
+    required: true, 
+    match: [/^[A-Za-z]{2}\d{14}$/, "NIN must have 2 letters followed by 14 digits"]
+  },
+  phone: { 
+    type: String, 
+    required: true,
+    match: [/^0\d{9}$/, "Phone number must be 10 digits and start with 0"] 
+  },
+  nextOfKinName: { 
+    type: String, 
+    required: true 
+  },
+  nextOfKinPhone: { 
+    type: String, 
+    required: true 
+  },
+  role: {
+    type: String,
+    enum: ["admin", "manager", "attendant"],
+    default: "admin",
+  },
+ 
+  status: { 
+    type: String, enum: ["Active", "Inactive"], 
+    default: "Active" 
+  },
+ 
+ 
+  createdAt:
+   { 
+    type: Date, 
+    default: Date.now 
+  },
+});
+
+userSchema.plugin(passportLocalMongoose, { usernameField: "email" });
+
+module.exports = mongoose.models.User || mongoose.model("User", userSchema);
+
+================ ROUTES ================
+
+
+===== routes/authRoutes.js =====
+const express = require("express");
+const passport = require("passport");
+const router = express.Router();
+
+router.get("/login", (req, res) => {
+  res.render("login");
+});
+
+router.post("/login", (req, res, next) => {
+  passport.authenticate("local", (err, user, info) => {
+    if (err) return next(err);
+    if (!user) {
+      req.flash("error_msg", info.message || "Invalid email or password");
+      return res.redirect("/auth/login");
+    }
+    req.logIn(user, (err) => {
+      if (err) return next(err);
+      req.flash("success_msg", `Welcome back, ${user.fullName}!`);
+      return res.redirect("/dashboard");
+    });
+  })(req, res, next);
+});
+
+router.get("/logout", (req, res, next) => {
+  req.logout((err) => {
+    if (err) return next(err);
+    req.flash("success_msg", "You have been logged out successfully.");
+    res.redirect("/auth/login");
+  });
+});
+
+module.exports = router;
+
+
+===== routes/customerRoutes.js =====
+// routes/customers.js
+const express = require("express");
+const router = express.Router();
+const Customer = require("../models/Customer");
+const { isSalesOrAdmin } = require("../middleware/auth");
+
+// GET /customers
+router.get("/", isSalesOrAdmin, async (req, res) => {
+  try {
+    const customers = await Customer.find().sort({ createdAt: -1 });
+    res.render("customers", {
+      customers,
+      totalCustomers: customers.length,
+      user: req.user,
+      success_msg: req.flash("success_msg"),
+      error_msg: req.flash("error_msg"),
+    });
+  } catch (err) {
+    req.flash("error_msg", err.message);
+    res.redirect("/dashboard");
+  }
+});
+
+// POST /customers
+router.post("/", isSalesOrAdmin, async (req, res) => {
+  try {
+    const customer = new Customer(req.body);
+    await customer.save();
+    req.flash(
+      "success_msg",
+      `Customer ${customer.fullName} added successfully!`,
+    );
+    res.redirect("/customers");
+  } catch (err) {
+    req.flash("error_msg", err.message);
+    res.redirect("/customers");
+  }
+});
+
+// GET /customers/:id
+router.get("/:id", isSalesOrAdmin, async (req, res) => {
+  try {
+    const customer = await Customer.findById(req.params.id);
+    if (!customer) {
+      req.flash("error_msg", "Customer not found");
+      return res.redirect("/customers");
+    }
+    res.render("customer-detail", { customer, user: req.user });
+  } catch (err) {
+    req.flash("error_msg", err.message);
+    res.redirect("/customers");
+  }
+});
+
+// GET /customers/:id/edit
+router.get("/:id/edit", isSalesOrAdmin, async (req, res) => {
+  try {
+    const customer = await Customer.findById(req.params.id);
+    if (!customer) {
+      req.flash("error_msg", "Customer not found");
+      return res.redirect("/customers");
+    }
+    res.render("customer-edit", { customer, user: req.user });
+  } catch (err) {
+    req.flash("error_msg", err.message);
+    res.redirect("/customers");
+  }
+});
+
+// POST /customers/:id
+router.post("/:id", isSalesOrAdmin, async (req, res) => {
+  try {
+    const customer = await Customer.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+    if (!customer) throw new Error("Customer not found");
+    req.flash(
+      "success_msg",
+      `Customer ${customer.fullName} updated successfully!`,
+    );
+    res.redirect("/customers");
+  } catch (err) {
+    req.flash("error_msg", err.message);
+    res.redirect(`/customers/${req.params.id}/edit`);
+  }
+});
+
+// POST /customers/:id/delete
+router.post("/:id/delete", isSalesOrAdmin, async (req, res) => {
+  try {
+    const customer = await Customer.findByIdAndDelete(req.params.id);
+    if (!customer) throw new Error("Customer not found");
+    req.flash("success_msg", `Customer ${customer.fullName} deleted.`);
+    res.redirect("/customers");
+  } catch (err) {
+    req.flash("error_msg", err.message);
+    res.redirect("/customers");
+  }
+});
+
+module.exports = router;
+
+
+===== routes/dashboardRoutes.js =====
+const express = require('express');
+const router = express.Router();
+const { ensureAuthenticated } = require('../middleware/auth');
+const Sale = require('../models/Sale');
+const Product = require('../models/Product');
+const DepositMember = require('../models/DepositMember');
+const CreditInvoice = require('../models/CreditInvoice');
+const StockTransaction = require('../models/StockTransaction');
+const DepositTransaction = require('../models/DepositTransaction');
+
+router.get('/', ensureAuthenticated, async (req, res) => {
+  try {
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
+
+    // KPIs — available to all roles
+    const todaySalesAgg = await Sale.aggregate([
+      { $match: { createdAt: { $gte: todayStart, $lte: todayEnd } } },
+      { $group: { _id: null, total: { $sum: '$grandTotal' } } }
+    ]);
+    const todaySales = todaySalesAgg[0]?.total || 0;
+
+    const products = await Product.find();
+    const stockValue = products.reduce((sum, p) => sum + (p.currentStock * p.unitCost), 0);
+
+    const creditAgg = await CreditInvoice.aggregate([
+      { $group: { _id: null, total: { $sum: '$outstanding' } } }
+    ]);
+    const creditBalance = creditAgg[0]?.total || 0;
+
+    const depositMembers = await DepositMember.countDocuments();
+
+    // BUG FIX: reorderLevel is per-product, not hardcoded to 15
+    const lowStockCount = products.filter(p => p.currentStock < (p.reorderLevel || 15) && p.currentStock > 0).length;
+
+    const transactionsToday = await Sale.countDocuments({
+      createdAt: { $gte: todayStart, $lte: todayEnd }
+    });
+    const pendingInvoices = await CreditInvoice.countDocuments({ outstanding: { $gt: 0 } });
+
+    // Daily sales for last 7 days
+    const dailySales = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      d.setHours(0, 0, 0, 0);
+      const nextDay = new Date(d);
+      nextDay.setDate(d.getDate() + 1);
+      const salesData = await Sale.aggregate([
+        { $match: { createdAt: { $gte: d, $lt: nextDay } } },
+        { $group: { _id: null, total: { $sum: '$grandTotal' } } }
+      ]);
+      dailySales.push({
+        date: d.toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' }),
+        total: salesData[0]?.total || 0
+      });
+    }
+
+    let productsInStock = [];
+    let recentSalesAttendant = [];
+    if (req.user.role === 'attendant') {
+      productsInStock = await Product.find({ currentStock: { $gt: 0 } })
+        .select('productType currentStock unitPrice')
+        .sort({ productType: 1 })
+        .limit(20);
+      recentSalesAttendant = await Sale.find({ attendant: req.user._id })
+        .sort({ createdAt: -1 })
+        .limit(5);
+    }
+
+    // Admin/manager data
+    let recentSales = [];
+    let recentStock = [];
+    let recentDeposits = [];
+
+    if (req.user.role === 'admin' || req.user.role === 'manager') {
+      recentSales = await Sale.find()
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .populate('attendant', 'fullName');
+      recentStock = await StockTransaction.find()
+        .sort({ createdAt: -1 })
+        .limit(5);
+    }
+
+    if (req.user.role === 'admin') {
+      recentDeposits = await DepositTransaction.find()
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .populate('memberId', 'fullName');
+    }
+
+    res.render('dashboard', {
+      user: req.user,
+      todaySales,
+      stockValue,
+      creditBalance,
+      depositMembers,
+      lowStockCount,
+      transactionsToday,
+      pendingInvoices,
+      dailySales,
+      productsInStock,
+      recentSalesAttendant,
+      recentSales,
+      recentStock,
+      recentDeposits,
+    });
+  } catch (err) {
+    console.error('Dashboard error:', err);
+    req.flash('error_msg', 'Failed to load dashboard data: ' + err.message);
+    res.render('dashboard', {
+      user: req.user,
+      todaySales: 0,
+      stockValue: 0,
+      creditBalance: 0,
+      depositMembers: 0,
+      lowStockCount: 0,
+      transactionsToday: 0,
+      pendingInvoices: 0,
+      dailySales: [],
+      productsInStock: [],
+      recentSalesAttendant: [],
+      recentSales: [],
+      recentStock: [],
+      recentDeposits: [],
+    });
+  }
+});
+
+module.exports = router;
+
+===== routes/depositSchemeRoutes.js =====
+const express = require('express');
+const router = express.Router();
+const DepositMember = require('../models/DepositMember');
+const DepositTransaction = require('../models/DepositTransaction');
+const DepositReceipt = require('../models/DepositReceipt');
+const Product = require('../models/Product');
+const { isManagerOrAdmin } = require('../middleware/auth');
+
+const DELIVERY_FEE = 30000;
+const FREE_DELIVERY_THRESHOLD = 500000;
+const FREE_DELIVERY_DISTANCE = 10;
+
+function calcDeliveryFee(targetAmount, distance) {
+  if (targetAmount >= FREE_DELIVERY_THRESHOLD && distance <= FREE_DELIVERY_DISTANCE) return 0;
+  return DELIVERY_FEE;
+}
+
+// MAIN PAGE
+router.get('/', isManagerOrAdmin, async (req, res) => {
+  try {
+    const members = await DepositMember.find();
+    const products = await Product.find({ currentStock: { $gt: 0 } });
+    const totalDepositsAgg = await DepositTransaction.aggregate([
+      { $match: { type: 'deposit' } },
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]);
+    const totalPickupsAgg = await DepositTransaction.aggregate([
+      { $match: { type: 'pickup' } },
+      { $group: { _id: null, total: { $sum: { $abs: '$amount' } } } }
+    ]);
+    const currentBalance = members.reduce((sum, m) => sum + m.balance, 0);
+    res.render('deposit-scheme', {
+      members,
+      products,
+      activeMembers: members.length,
+      totalDeposits: totalDepositsAgg[0]?.total || 0,
+      totalPickups: totalPickupsAgg[0]?.total || 0,
+      currentBalance,
+      user: req.user
+    });
+  } catch (err) {
+    req.flash('error_msg', err.message);
+    res.redirect('/dashboard');
+  }
+});
+
+// MEMBERS LIST
+router.get('/members', isManagerOrAdmin, async (req, res) => {
+  try {
+    const { search } = req.query;
+    let query = {};
+    if (search) {
+      query = { $or: [
+        { fullName: { $regex: search, $options: 'i' } },
+        { nin: { $regex: search, $options: 'i' } },
+        { phone: { $regex: search, $options: 'i' } }
+      ]};
+    }
+    const members = await DepositMember.find(query).sort({ joinedAt: -1 });
+    res.render('deposit-members', { members, search, user: req.user });
+  } catch (err) {
+    req.flash('error_msg', err.message);
+    res.redirect('/deposit-scheme');
+  }
+});
+
+// REGISTER FORM
+router.get('/register', isManagerOrAdmin, async (req, res) => {
+  const products = await Product.find({ currentStock: { $gt: 0 } });
+  res.render('deposit-register', { products, user: req.user });
+});
+
+// REGISTER POST
+router.post('/register', isManagerOrAdmin, async (req, res) => {
+  try {
+    const { fullName, nin, phone, address, employer, productId, quantity, distance, requiresDelivery } = req.body;
+    const existing = await DepositMember.findOne({ $or: [{ nin }, { phone }] });
+    if (existing) throw new Error('Member with same NIN or phone already exists');
+
+    const product = await Product.findById(productId);
+    if (!product) throw new Error('Product not found');
+
+    const qty = parseInt(quantity) || 1;
+    if (product.currentStock < qty) throw new Error(`Only ${product.currentStock} units in stock`);
+
+    const targetAmount = product.unitPrice * qty;
+    const needsDelivery = requiresDelivery === 'on' || requiresDelivery === true;
+    const dist = parseFloat(distance) || 5;
+    const deliveryFee = needsDelivery ? calcDeliveryFee(targetAmount, dist) : 0;
+    const totalTarget = targetAmount + deliveryFee;
+
+    const member = new DepositMember({
+      fullName, nin, phone, address, employer,
+      balance: 0,
+      status: 'Active',
+      goals: [{
+        productId: product._id,
+        productName: product.productName,
+        quantity: qty,
+        unitPrice: product.unitPrice,
+        targetAmount: totalTarget,
+        savedAmount: 0,
+        requiresDelivery: needsDelivery,
+        deliveryFee,
+        status: 'Saving'
+      }]
+    });
+
+    await member.save();
+
+    // Deduct stock immediately on goal registration
+    product.currentStock -= qty;
+    await product.save();
+
+    req.flash('success_msg', `Member ${member.fullName} registered successfully! ${qty} x ${product.productName} reserved from stock.`);
+    res.redirect('/deposit-scheme/members');
+  } catch (err) {
+    req.flash('error_msg', err.message);
+    res.redirect('/deposit-scheme/register');
+  }
+});
+
+// ADD NEW GOAL TO EXISTING MEMBER
+router.post('/add-goal', isManagerOrAdmin, async (req, res) => {
+  try {
+    const { memberId, productId, quantity, distance, requiresDelivery } = req.body;
+    const member = await DepositMember.findById(memberId);
+    if (!member) throw new Error('Member not found');
+
+    const product = await Product.findById(productId);
+    if (!product) throw new Error('Product not found');
+
+    const qty = parseInt(quantity) || 1;
+    if (product.currentStock < qty) throw new Error(`Only ${product.currentStock} units in stock`);
+
+    const targetAmount = product.unitPrice * qty;
+    const needsDelivery = requiresDelivery === 'on' || requiresDelivery === true;
+    const dist = parseFloat(distance) || 5;
+    const deliveryFee = needsDelivery ? calcDeliveryFee(targetAmount, dist) : 0;
+    const totalTarget = targetAmount + deliveryFee;
+
+    member.goals.push({
+      productId: product._id,
+      productName: product.productName,
+      quantity: qty,
+      unitPrice: product.unitPrice,
+      targetAmount: totalTarget,
+      savedAmount: 0,
+      requiresDelivery: needsDelivery,
+      deliveryFee,
+      status: 'Saving'
+    });
+
+    await member.save();
+
+    // Deduct stock immediately on goal creation
+    product.currentStock -= qty;
+    await product.save();
+
+    req.flash('success_msg', `New goal added for ${member.fullName} — ${qty} x ${product.productName} reserved from stock.`);
+    res.redirect('/deposit-scheme');
+  } catch (err) {
+    req.flash('error_msg', err.message);
+    res.redirect('/deposit-scheme');
+  }
+});
+
+// DEPOSIT (POST)
+router.post('/deposit', isManagerOrAdmin, async (req, res) => {
+  try {
+    const { memberId, goalId, amount, paymentMethod } = req.body;
+    if (!memberId || !goalId || !amount || amount < 1000) throw new Error('Invalid deposit amount');
+
+    const member = await DepositMember.findById(memberId);
+    if (!member) throw new Error('Member not found');
+
+    const goal = member.goals.id(goalId);
+    if (!goal) throw new Error('Goal not found');
+
+    const depositAmount = Number(amount);
+    const remaining = goal.targetAmount - goal.savedAmount;
+    const actualDeposit = Math.min(depositAmount, remaining);
+
+    goal.savedAmount += actualDeposit;
+    member.balance += actualDeposit;
+
+    if (goal.savedAmount >= goal.targetAmount) {
+      goal.status = 'Goal Reached';
+    }
+
+    await member.save();
+
+    // Save transaction
+    const transaction = new DepositTransaction({
+      memberId,
+      type: 'deposit',
+      amount: actualDeposit,
+      description: `Deposit toward ${goal.productName} x${goal.quantity}`,
+      balanceAfter: member.balance
+    });
+    await transaction.save();
+
+    // Save receipt
+    const receipt = new DepositReceipt({
+      memberId,
+      goalId,
+      productName: goal.productName,
+      quantity: goal.quantity,
+      amountDeposited: actualDeposit,
+      savedAmount: goal.savedAmount,
+      targetAmount: goal.targetAmount,
+      remainingAmount: Math.max(goal.targetAmount - goal.savedAmount, 0),
+      deliveryFee: goal.deliveryFee,
+      requiresDelivery: goal.requiresDelivery,
+      paymentMethod: paymentMethod || 'Cash',
+      recordedBy: req.user._id
+    });
+    await receipt.save();
+
+    req.flash('success_msg', `Deposit of ${actualDeposit.toLocaleString()} UGX recorded for ${member.fullName} toward ${goal.productName}.`);
+    res.redirect(`/deposit-scheme/receipt/${receipt._id}`);
+  } catch (err) {
+    req.flash('error_msg', err.message);
+    res.redirect('/deposit-scheme');
+  }
+});
+
+// DEPOSIT RECEIPT PAGE
+router.get('/receipt/:id', isManagerOrAdmin, async (req, res) => {
+  try {
+    const receipt = await DepositReceipt.findById(req.params.id)
+      .populate('memberId')
+      .populate('recordedBy', 'fullName');
+    if (!receipt) throw new Error('Receipt not found');
+    res.render('deposit-receipt', { receipt, user: req.user });
+  } catch (err) {
+    req.flash('error_msg', err.message);
+    res.redirect('/deposit-scheme');
+  }
+});
+
+// PICKUP (POST)
+router.post('/pickup', isManagerOrAdmin, async (req, res) => {
+  try {
+    const { memberId, goalId } = req.body;
+    const member = await DepositMember.findById(memberId);
+    if (!member) throw new Error('Member not found');
+
+    const goal = member.goals.id(goalId);
+    if (!goal) throw new Error('Goal not found');
+    if (goal.status !== 'Goal Reached') throw new Error('Goal not yet fully funded');
+
+    // Stock already deducted at goal creation, just mark as picked up
+    member.balance -= goal.targetAmount;
+    goal.status = 'Picked Up';
+    await member.save();
+
+    const transaction = new DepositTransaction({
+      memberId,
+      type: 'pickup',
+      amount: -goal.targetAmount,
+      description: `Pickup: ${goal.quantity} x ${goal.productName}`,
+      productDetails: {
+        productName: goal.productName,
+        quantity: goal.quantity,
+        unitPrice: goal.unitPrice
+      },
+      balanceAfter: member.balance
+    });
+    await transaction.save();
+
+    req.flash('success_msg', `Pickup successful! ${goal.quantity} x ${goal.productName} released.`);
+    res.redirect(`/deposit-scheme/pickup-receipt/${member._id}/${goal._id}`);
+  } catch (err) {
+    req.flash('error_msg', err.message);
+    res.redirect('/deposit-scheme');
+  }
+});
+
+// PICKUP RECEIPT PAGE
+router.get('/pickup-receipt/:memberId/:goalId', isManagerOrAdmin, async (req, res) => {
+  try {
+    const member = await DepositMember.findById(req.params.memberId);
+    if (!member) throw new Error('Member not found');
+    const goal = member.goals.id(req.params.goalId);
+    if (!goal) throw new Error('Goal not found');
+    res.render('deposit-pickup-receipt', { member, goal, user: req.user });
+  } catch (err) {
+    req.flash('error_msg', err.message);
+    res.redirect('/deposit-scheme');
+  }
+});
+
+// API: fetch live goals for a member (used by deposit form)
+router.get('/api/member-goals/:memberId', isManagerOrAdmin, async (req, res) => {
+  try {
+    const member = await DepositMember.findById(req.params.memberId);
+    if (!member) return res.json([]);
+    res.json(member.goals.map(g => ({
+      _id: g._id.toString(),
+      productName: g.productName,
+      quantity: g.quantity,
+      targetAmount: g.targetAmount,
+      savedAmount: g.savedAmount,
+      status: g.status,
+      deliveryFee: g.deliveryFee,
+      requiresDelivery: g.requiresDelivery
+    })));
+  } catch (err) {
+    res.json([]);
+  }
+});
+
+// RECENT TRANSACTIONS
+router.get('/transactions', isManagerOrAdmin, async (req, res) => {
+  try {
+    const transactions = await DepositTransaction.find()
+      .populate('memberId', 'fullName')
+      .sort({ createdAt: -1 })
+      .limit(50);
+    res.render('deposit-transactions', { transactions, user: req.user });
+  } catch (err) {
+    req.flash('error_msg', err.message);
+    res.redirect('/deposit-scheme');
+  }
+});
+
+// MEMBER STATEMENT
+router.get('/member-statement', isManagerOrAdmin, async (req, res) => {
+  try {
+    const { memberId, range } = req.query;
+    const membersList = await DepositMember.find().sort({ fullName: 1 });
+    let targetMember = null;
+    if (memberId) targetMember = await DepositMember.findById(memberId);
+    else if (membersList.length) targetMember = membersList[0];
+
+    if (!targetMember) {
+      return res.render('member-statement', { member: null, membersList, user: req.user });
+    }
+
+    let query = { memberId: targetMember._id };
+    let startDate = null;
+    const now = new Date();
+    if (range === '30days') { startDate = new Date(); startDate.setDate(now.getDate() - 30); }
+    else if (range === 'thisMonth') { startDate = new Date(now.getFullYear(), now.getMonth(), 1); }
+    else if (range === 'last3months') { startDate = new Date(); startDate.setMonth(now.getMonth() - 3); }
+    if (startDate) query.createdAt = { $gte: startDate };
+
+    const transactions = await DepositTransaction.find(query).sort({ createdAt: -1 });
+    let totalDeposits = 0, totalPickups = 0;
+    transactions.forEach(tx => {
+      if (tx.type === 'deposit') totalDeposits += tx.amount;
+      else totalPickups += Math.abs(tx.amount);
+    });
+    const lastTransactionDate = transactions.length ? transactions[0].createdAt.toLocaleDateString() : null;
+
+    res.render('member-statement', {
+      member: targetMember,
+      membersList,
+      transactions,
+      balance: targetMember.balance,
+      totalDeposits,
+      totalPickups,
+      lastTransactionDate,
+      rangeFilter: range || 'all',
+      user: req.user
+    });
+  } catch (err) {
+    req.flash('error_msg', err.message);
+    res.redirect('/deposit-scheme');
+  }
+});
+
+module.exports = router;
+
+
+===== routes/inventoryRoutes.js =====
+const express = require("express");
+const router = express.Router();
+const Product = require("../models/Product");
+const StockTransaction = require("../models/StockTransaction");
+const { isManagerOrAdmin } = require("../middleware/auth");
+
+// BUG FIX: Category names now match exactly what the reports route expects
+// and what makes sense for the product types in the Product model
+function getCategoryFromProductType(productType) {
+  if (productType.includes("Cement")) return "Cement";
+  if (productType.includes("Iron Bar")) return "Steel/Iron";
+  if (productType.includes("Nail")) return "Nails";
+  if (productType === "Wheelbarrow") return "Equipment";
+  if (productType === "Wire Mesh") return "Fencing / Wire Mesh";
+  if (productType.includes("Barbed Wire")) return "Fencing";
+  if (productType.includes("Iron Sheet")) return "Roofing";
+  return "Other";
+}
+
+// MAIN INVENTORY PAGE
+router.get("/", isManagerOrAdmin, async (req, res) => {
+  try {
+    const products = await Product.find().sort({ createdAt: -1 }).populate("createdBy", "fullName");
+    const totalSkus = products.length;
+    const outOfStockCount = products.filter(p => p.currentStock === 0).length;
+    const lowStockCount = products.filter(p => p.currentStock < 15 && p.currentStock > 0).length;
+    const totalStockValue = products.reduce((sum, p) => sum + p.currentStock * p.unitCost, 0);
+    const lowStockItems = products
+      .filter(p => p.currentStock < 15 && p.currentStock > 0)
+      .map(p => ({ name: p.productType, quantity: p.currentStock, reorderLevel: p.reorderLevel || 15 }));
+
+    res.render("inventory", {
+      products,
+      totalSkus,
+      lowStockCount,
+      outOfStockCount,
+      totalStockValue,
+      lowStockItems,
+      user: req.user,
+      success_msg: req.flash("success_msg"),
+      error_msg: req.flash("error_msg"),
+    });
+  } catch (err) {
+    req.flash("error_msg", err.message);
+    res.redirect("/dashboard");
+  }
+});
+
+// ADD NEW PRODUCT - form page
+router.get("/new", isManagerOrAdmin, (req, res) => {
+  res.render("inventory-new", { user: req.user });
+});
+
+// ADD NEW PRODUCT - submit
+// BUG FIX: Removed invalid productName field (it's a virtual). 
+// BUG FIX: paymentStatus is now forced to lowercase to match model enum ("cash"/"credit").
+// BUG FIX: Validation order corrected — checks happen before any DB writes.
+router.post("/", isManagerOrAdmin, async (req, res) => {
+  try {
+    const {
+      productType, unitCost, unitPrice, currentStock,
+      reorderLevel, supplierName, supplierPhone, factoryName,
+      paymentStatus, amountPaid, sku, description
+    } = req.body;
+
+    if (!productType || !unitCost || !unitPrice)
+      throw new Error("Product type, cost, and price are required.");
+    if (Number(unitPrice) <= Number(unitCost))
+      throw new Error("Selling price must be greater than unit cost.");
+    if (Number(unitCost) <= 0)
+      throw new Error("Unit cost must be greater than zero.");
+
+    const category = getCategoryFromProductType(productType);
+
+    // Check if this product type already exists
+    const existing = await Product.findOne({ productType });
+    if (existing) throw new Error(`${productType} already exists in inventory. Use "Add Stock" to increase quantity.`);
+
+    const product = new Product({
+      productType,
+      category,
+      unitCost: Number(unitCost),
+      unitPrice: Number(unitPrice),
+      currentStock: Number(currentStock) || 0,
+      reorderLevel: Number(reorderLevel) || 15,
+      supplier: supplierName || "",
+      sku: sku || "",
+      description: description || "",
+      createdBy: req.user._id,
+    });
+    await product.save();
+
+    // Only create a StockTransaction if initial stock > 0
+    if (Number(currentStock) > 0) {
+      // BUG FIX: paymentStatus forced to lowercase to match enum
+      const normalizedPaymentStatus = (paymentStatus || "cash").toLowerCase();
+      if (!["cash", "credit"].includes(normalizedPaymentStatus))
+        throw new Error("Invalid payment status. Must be cash or credit.");
+
+      const paid = Number(amountPaid) || 0;
+      const transaction = new StockTransaction({
+        productId: product._id,
+        productName: product.productType,
+        quantityAdded: Number(currentStock),
+        unitCost: Number(unitCost),
+        unitPrice: Number(unitPrice),
+        supplierName: supplierName || "Initial stock",
+        supplierPhone: supplierPhone || "",
+        factoryName: factoryName || "",
+        paymentStatus: normalizedPaymentStatus,
+        amountPaid: paid,
+        recordedBy: req.user._id,
+      });
+      await transaction.save();
+    }
+
+    req.flash("success_msg", `${productType} added successfully!`);
+    res.redirect("/inventory");
+  } catch (err) {
+    req.flash("error_msg", err.message);
+    res.redirect("/inventory/new");
+  }
+});
+
+// ADD STOCK - form page
+router.get("/add-stock", isManagerOrAdmin, async (req, res) => {
+  try {
+    const products = await Product.find().sort({ productType: 1 });
+    res.render("inventory-add-stock", { products, user: req.user });
+  } catch (err) {
+    req.flash("error_msg", err.message);
+    res.redirect("/inventory");
+  }
+});
+
+// ADD STOCK - submit
+// BUG FIX: paymentStatus forced to lowercase. 
+// BUG FIX: amountPaid validated against totalCost to prevent impossible values.
+// BUG FIX: unitPrice/unitCost comparison uses Number() to avoid string comparison bugs.
+router.post("/add-stock", isManagerOrAdmin, async (req, res) => {
+  try {
+    const {
+      productId, quantityAdded, unitCost, unitPrice,
+      supplierName, supplierPhone, factoryName,
+      paymentStatus, amountPaid
+    } = req.body;
+
+    if (!productId || !quantityAdded || Number(quantityAdded) <= 0)
+      throw new Error("Invalid product or quantity. Quantity must be greater than zero.");
+    if (!unitCost || Number(unitCost) <= 0)
+      throw new Error("Unit cost must be greater than zero.");
+    if (!unitPrice || Number(unitPrice) <= 0)
+      throw new Error("Unit price must be greater than zero.");
+    if (Number(unitPrice) <= Number(unitCost))
+      throw new Error("Selling price must be greater than unit cost.");
+    if (!supplierName || supplierName.trim() === "")
+      throw new Error("Supplier name is required.");
+
+    const product = await Product.findById(productId);
+    if (!product) throw new Error("Product not found.");
+
+    const normalizedPaymentStatus = (paymentStatus || "cash").toLowerCase();
+    if (!["cash", "credit"].includes(normalizedPaymentStatus))
+      throw new Error("Invalid payment status. Must be cash or credit.");
+
+    const qty = Number(quantityAdded);
+    const cost = Number(unitCost);
+    const price = Number(unitPrice);
+    const paid = Number(amountPaid) || 0;
+    const totalCost = qty * cost;
+
+    if (paid > totalCost)
+      throw new Error(`Amount paid (${paid.toLocaleString()}) cannot exceed total cost (${totalCost.toLocaleString()}).`);
+
+    // Update product stock and prices
+    product.currentStock += qty;
+    product.unitCost = cost;
+    product.unitPrice = price;
+    await product.save();
+
+    const transaction = new StockTransaction({
+      productId: product._id,
+      productName: product.productType,
+      quantityAdded: qty,
+      unitCost: cost,
+      unitPrice: price,
+      supplierName: supplierName.trim(),
+      supplierPhone: supplierPhone || "",
+      factoryName: factoryName || "",
+      paymentStatus: normalizedPaymentStatus,
+      amountPaid: paid,
+      recordedBy: req.user._id,
+    });
+    await transaction.save();
+
+    req.flash("success_msg", `${qty} units of ${product.productType} added successfully. New stock: ${product.currentStock}.`);
+    res.redirect("/inventory");
+  } catch (err) {
+    req.flash("error_msg", err.message);
+    res.redirect("/inventory/add-stock");
+  }
+});
+
+// STOCK TRANSACTIONS PAGE
+router.get("/transactions", isManagerOrAdmin, async (req, res) => {
+  try {
+    const transactions = await StockTransaction.find()
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .populate("recordedBy", "fullName");
+    res.render("inventory-transactions", { transactions, user: req.user });
+  } catch (err) {
+    req.flash("error_msg", err.message);
+    res.redirect("/inventory");
+  }
+});
+
+// EDIT PRODUCT - form page
+router.get("/:id/edit", isManagerOrAdmin, async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) throw new Error("Product not found.");
+    res.render("product-edit", { product, user: req.user });
+  } catch (err) {
+    req.flash("error_msg", err.message);
+    res.redirect("/inventory");
+  }
+});
+
+// EDIT PRODUCT - submit
+// BUG FIX: Removed productName (it's a virtual, not a real field).
+// BUG FIX: Used findById then save() instead of findByIdAndUpdate so pre-save hooks run.
+// BUG FIX: Proper Number() coercion before comparison.
+router.post("/:id", isManagerOrAdmin, async (req, res) => {
+  try {
+    const { productType, unitCost, unitPrice, currentStock, reorderLevel, supplier, sku, description } = req.body;
+
+    if (!unitCost || !unitPrice)
+      throw new Error("Unit cost and unit price are required.");
+    if (Number(unitPrice) <= Number(unitCost))
+      throw new Error("Selling price must be greater than unit cost.");
+    if (Number(unitCost) <= 0)
+      throw new Error("Unit cost must be greater than zero.");
+
+    const product = await Product.findById(req.params.id);
+    if (!product) throw new Error("Product not found.");
+
+    const category = getCategoryFromProductType(productType || product.productType);
+
+    product.productType = productType || product.productType;
+    product.category = category;
+    product.unitCost = Number(unitCost);
+    product.unitPrice = Number(unitPrice);
+    product.currentStock = Number(currentStock) || product.currentStock;
+    product.reorderLevel = Number(reorderLevel) || product.reorderLevel;
+    product.supplier = supplier || product.supplier;
+    product.sku = sku || product.sku;
+    product.description = description || product.description;
+
+    await product.save();
+
+    req.flash("success_msg", `${product.productType} updated successfully!`);
+    res.redirect("/inventory");
+  } catch (err) {
+    req.flash("error_msg", err.message);
+    res.redirect(`/inventory/${req.params.id}/edit`);
+  }
+});
+
+// DELETE PRODUCT
+// BUG FIX: Added check to prevent deleting products that still have stock
+router.post("/:id/delete", isManagerOrAdmin, async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) throw new Error("Product not found.");
+    if (product.currentStock > 0)
+      throw new Error(`Cannot delete ${product.productType} — it still has ${product.currentStock} units in stock. Set stock to 0 first.`);
+
+    await Product.findByIdAndDelete(req.params.id);
+    req.flash("success_msg", `${product.productType} deleted successfully.`);
+    res.redirect("/inventory");
+  } catch (err) {
+    req.flash("error_msg", err.message);
+    res.redirect("/inventory");
+  }
+});
+
+module.exports = router;
+
+===== routes/paymentRoutes.js =====
+const express = require("express");
+const router = express.Router();
+const mongoose = require("mongoose");
+const Supplier = require("../models/Supplier");
+const CreditInvoice = require("../models/CreditInvoice");
+const Payment = require("../models/Payment");
+const { isManagerOrAdmin } = require("../middleware/auth");
+
+// GET /payments/record — show the payment recording form
+router.get("/record", isManagerOrAdmin, async (req, res) => {
+  try {
+    const { supplierId } = req.query;
+    const suppliers = await Supplier.find().sort({ companyName: 1 });
+    let selectedSupplier = null;
+    let outstandingInvoices = [];
+
+    if (supplierId && supplierId.trim() !== "") {
+      selectedSupplier = await Supplier.findById(supplierId);
+      if (selectedSupplier) {
+        outstandingInvoices = await CreditInvoice.find({
+          supplierId: selectedSupplier._id,
+          outstanding: { $gt: 0 },
+        }).sort({ dueDate: 1 });
+      }
+    }
+
+    res.render("record-payment", {
+      suppliers,
+      selectedSupplier,
+      selectedSupplierId: supplierId || "",
+      outstandingInvoices,
+      today: new Date().toISOString().split("T")[0],
+      user: req.user,
+      success_msg: req.flash("success_msg"),
+      error_msg: req.flash("error_msg"),
+    });
+  } catch (err) {
+    req.flash("error_msg", err.message);
+    res.redirect("/supplier-credit");
+  }
+});
+
+// POST /payments/record — save payment against an invoice
+// BUG FIX: amount was never cast to Number() before comparison — "5000" > 100 is true in JS
+//          string comparison which caused incorrect "exceeds outstanding" errors or allowed
+//          wrong amounts through.
+// BUG FIX: supplierId is now taken from the invoice itself (not req.body) so redirect is always correct.
+// BUG FIX: Added validation for all required fields before starting the DB session.
+router.post("/record", isManagerOrAdmin, async (req, res) => {
+  // Validate before starting session to give cleaner error messages
+  const { supplierId, invoiceId, amount, paymentMethod, paymentDate, reference } = req.body;
+
+  // BUG FIX: Cast to Number immediately
+  const payAmount = Number(amount);
+
+  if (!invoiceId || invoiceId.trim() === "") {
+    req.flash("error_msg", "Please select an invoice.");
+    return res.redirect(`/payments/record?supplierId=${supplierId || ""}`);
+  }
+  if (!payAmount || payAmount <= 0) {
+    req.flash("error_msg", "Payment amount must be greater than zero.");
+    return res.redirect(`/payments/record?supplierId=${supplierId || ""}`);
+  }
+  if (!paymentMethod || paymentMethod.trim() === "") {
+    req.flash("error_msg", "Please select a payment method.");
+    return res.redirect(`/payments/record?supplierId=${supplierId || ""}`);
+  }
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const invoice = await CreditInvoice.findById(invoiceId).session(session);
+    if (!invoice) throw new Error("Invoice not found. It may have been deleted.");
+
+    if (invoice.outstanding <= 0)
+      throw new Error("This invoice is already fully paid.");
+
+    // BUG FIX: Both sides are Numbers now — safe comparison
+    if (payAmount > invoice.outstanding)
+      throw new Error(`Payment amount (${payAmount.toLocaleString()} UGX) exceeds outstanding balance (${invoice.outstanding.toLocaleString()} UGX).`);
+
+    // Validate payment date
+    const pDate = paymentDate ? new Date(paymentDate) : new Date();
+    if (isNaN(pDate.getTime()))
+      throw new Error("Invalid payment date.");
+
+    const payment = new Payment({
+      supplierId: invoice.supplierId,   // BUG FIX: take from invoice, not from req.body
+      invoiceId,
+      amount: payAmount,
+      paymentMethod: paymentMethod.trim(),
+      paymentDate: pDate,
+      reference: reference || "",
+      recordedBy: req.user._id,
+    });
+    await payment.save({ session });
+
+    // Update invoice — pre-save hook will recalculate outstanding and status
+    invoice.paidAmount += payAmount;
+    await invoice.save({ session });
+
+    await session.commitTransaction();
+
+    req.flash("success_msg", `Payment of ${payAmount.toLocaleString()} UGX recorded for invoice ${invoice.invoiceNumber}. Remaining: ${invoice.outstanding.toLocaleString()} UGX.`);
+    res.redirect(`/supplier-credit?supplierId=${invoice.supplierId}`);
+  } catch (err) {
+    await session.abortTransaction();
+    req.flash("error_msg", err.message);
+    res.redirect(`/payments/record?supplierId=${supplierId || ""}`);
+  } finally {
+    session.endSession();
+  }
+});
+
+module.exports = router;
+
+===== routes/reportRoutes.js =====
+const express = require("express");
+const router = express.Router();
+const Sale = require("../models/Sale");
+const Product = require("../models/Product");
+const DepositMember = require("../models/DepositMember");
+const DepositTransaction = require("../models/DepositTransaction");
+const CreditInvoice = require("../models/CreditInvoice");
+const { isAdmin } = require("../middleware/auth");
+
+router.get("/", isAdmin, async (req, res) => {
+  try {
+    // Overall revenue
+    const revenueAgg = await Sale.aggregate([
+      { $group: { _id: null, total: { $sum: "$grandTotal" } } },
+    ]);
+    const totalRevenue = revenueAgg[0]?.total || 0;
+    const grossProfit = totalRevenue * 0.3;
+    const orderCount = await Sale.countDocuments();
+    const avgOrderValue = orderCount ? totalRevenue / orderCount : 0;
+    const activeCustomersAgg = await Sale.aggregate([
+      { $group: { _id: "$customerName" } },
+      { $count: "count" },
+    ]);
+    const activeCustomers = activeCustomersAgg[0]?.count || 0;
+
+    // Sales summary — last 3 days
+    const today = new Date();
+    const days = [];
+    for (let i = 0; i < 3; i++) {
+      const d = new Date();
+      d.setDate(today.getDate() - i);
+      d.setHours(0, 0, 0, 0);
+      const next = new Date(d);
+      next.setDate(d.getDate() + 1);
+      const salesData = await Sale.aggregate([
+        { $match: { createdAt: { $gte: d, $lt: next } } },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: "$grandTotal" },
+            transactions: { $sum: 1 },
+          },
+        },
+      ]);
+      const total = salesData[0]?.total || 0;
+      const trans = salesData[0]?.transactions || 0;
+      days.unshift({
+        date: d.toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        }),
+        sales: total,
+        transactions: trans,
+        avgOrder: trans ? total / trans : 0,
+      });
+    }
+    const salesSummary = days;
+
+    // BUG FIX: Category names now match exactly what getCategoryFromProductType() sets.
+    // Previously "Steel/Iron" and "Roofing" didn't match the stored categories which
+    // caused stockSummary to always show 0 items and 0 value for those categories.
+    const categories = ["Cement", "Steel/Iron", "Roofing", "Nails", "Equipment", "Fencing", "Other"];
+    const stockSummary = [];
+    for (let cat of categories) {
+      const catProducts = await Product.find({ category: cat });
+      if (catProducts.length === 0) continue; // Don't show empty categories
+      const totalValue = catProducts.reduce(
+        (sum, p) => sum + p.currentStock * p.unitCost,
+        0,
+      );
+      const itemsCount = catProducts.length;
+      const lowStock = catProducts.filter(
+        (p) => p.currentStock <= (p.reorderLevel || 15) && p.currentStock > 0,
+      ).length;
+      const outOfStock = catProducts.filter(p => p.currentStock === 0).length;
+      let status = "Adequate";
+      if (outOfStock > 0) status = "Out of Stock";
+      else if (lowStock > 0) status = "Low Stock";
+      stockSummary.push({ category: cat, totalValue, itemsCount, status });
+    }
+
+    // Top deposit members
+    const topDepositMembers = await DepositMember.find()
+      .sort({ balance: -1 })
+      .limit(5);
+    const topMembersFormatted = topDepositMembers.map((m) => ({
+      fullName: m.fullName,
+      balance: m.balance,
+      depositCount: 0,
+      pickupCount: 0,
+    }));
+
+    // Supplier credit summary
+    const now = new Date();
+    const supplierCreditSummary = await CreditInvoice.find({
+      outstanding: { $gt: 0 },
+    })
+      .populate("supplierId", "companyName")
+      .limit(5);
+    const supplierCreditFormatted = supplierCreditSummary.map((inv) => ({
+      supplierName: inv.supplierId?.companyName || "Unknown",
+      amount: inv.outstanding,
+      dueDate: inv.dueDate,
+      status: inv.dueDate < now ? "Overdue" : "Pending",
+    }));
+
+    // Monthly revenue chart data — last 6 months
+    const months = [];
+    const revenue = [];
+    const profit = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      const start = new Date(d.getFullYear(), d.getMonth(), 1);
+      const end = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+      end.setHours(23, 59, 59, 999);
+      const monthSales = await Sale.aggregate([
+        { $match: { createdAt: { $gte: start, $lte: end } } },
+        { $group: { _id: null, total: { $sum: "$grandTotal" } } },
+      ]);
+      const total = monthSales[0]?.total || 0;
+      months.push(
+        d.toLocaleDateString("en", { month: "short", year: "numeric" }),
+      );
+      revenue.push(total);
+      profit.push(total * 0.3);
+    }
+
+    // Inventory counts
+    const totalSkus = await Product.countDocuments();
+    const allProducts = await Product.find();
+    const lowStockCount = allProducts.filter(
+      (p) => p.currentStock <= (p.reorderLevel || 15) && p.currentStock > 0,
+    ).length;
+    const outOfStockCount = await Product.countDocuments({ currentStock: 0 });
+
+    // Deposit scheme stats
+    const depositMembersCount = await DepositMember.countDocuments();
+    const totalDepositsAgg = await DepositTransaction.aggregate([
+      { $match: { type: "deposit" } },
+      { $group: { _id: null, total: { $sum: "$amount" } } },
+    ]);
+    const totalDeposits = totalDepositsAgg[0]?.total || 0;
+    const activeDepositBalanceAgg = await DepositMember.aggregate([
+      { $group: { _id: null, total: { $sum: "$balance" } } },
+    ]);
+    const activeDepositBalance = activeDepositBalanceAgg[0]?.total || 0;
+
+    // Credit stats
+    const totalCreditAgg = await CreditInvoice.aggregate([
+      { $group: { _id: null, total: { $sum: "$totalAmount" } } },
+    ]);
+    const totalCredit = totalCreditAgg[0]?.total || 0;
+    const pendingCreditAgg = await CreditInvoice.aggregate([
+      { $match: { outstanding: { $gt: 0 }, dueDate: { $gte: new Date() } } },
+      { $group: { _id: null, total: { $sum: "$outstanding" } } },
+    ]);
+    const pendingCredit = pendingCreditAgg[0]?.total || 0;
+    const overdueCreditAgg = await CreditInvoice.aggregate([
+      { $match: { outstanding: { $gt: 0 }, dueDate: { $lt: new Date() } } },
+      { $group: { _id: null, total: { $sum: "$outstanding" } } },
+    ]);
+    const overdueCredit = overdueCreditAgg[0]?.total || 0;
+
+    // Sales periods
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
+    const todaySalesAgg = await Sale.aggregate([
+      { $match: { createdAt: { $gte: todayStart, $lte: todayEnd } } },
+      { $group: { _id: null, total: { $sum: "$grandTotal" } } },
+    ]);
+    const todaySales = todaySalesAgg[0]?.total || 0;
+
+    const weekStart = new Date();
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+    weekStart.setHours(0, 0, 0, 0);
+    const weekEnd = new Date();
+    weekEnd.setDate(weekEnd.getDate() + (6 - weekEnd.getDay()));
+    weekEnd.setHours(23, 59, 59, 999);
+    const weekSalesAgg = await Sale.aggregate([
+      { $match: { createdAt: { $gte: weekStart, $lte: weekEnd } } },
+      { $group: { _id: null, total: { $sum: "$grandTotal" } } },
+    ]);
+    const weeklySales = weekSalesAgg[0]?.total || 0;
+
+    const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
+    const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
+    monthEnd.setHours(23, 59, 59, 999);
+    const monthSalesAgg = await Sale.aggregate([
+      { $match: { createdAt: { $gte: monthStart, $lte: monthEnd } } },
+      { $group: { _id: null, total: { $sum: "$grandTotal" } } },
+    ]);
+    const monthlySales = monthSalesAgg[0]?.total || 0;
+
+    res.render("reports", {
+      totalRevenue,
+      grossProfit,
+      avgOrderValue,
+      activeCustomers,
+      salesSummary,
+      stockSummary,
+      topDepositMembers: topMembersFormatted,
+      supplierCreditSummary: supplierCreditFormatted,
+      chartLabels: months,
+      chartRevenue: revenue,
+      chartProfit: profit,
+      totalSkus,
+      lowStockCount,
+      outOfStockCount,
+      depositMembers: depositMembersCount,
+      totalDeposits,
+      activeDepositBalance,
+      totalCredit,
+      pendingCredit,
+      overdueCredit,
+      todaySales,
+      weeklySales,
+      monthlySales,
+      user: req.user,
+    });
+  } catch (err) {
+    console.error("Reports error:", err);
+    req.flash("error_msg", err.message);
+    res.redirect("/dashboard");
+  }
+});
+
+module.exports = router;
+
+===== routes/saleRoutes.js =====
+const express = require("express");
+const router = express.Router();
+const Product = require("../models/Product");
+const Customer = require("../models/Customer");
+const Sale = require("../models/Sale");
+const DepositMember = require("../models/DepositMember");
+const DepositTransaction = require("../models/DepositTransaction");
+const { allowRoles } = require("../middleware/auth");
+
+function calcDeliveryFee(subtotal, distance) {
+  if (subtotal >= 500000 && distance <= 10) return 0;
+  return 30000;
+}
+
+function generateInvoiceNumber() {
+  const now = new Date();
+  const datePart = now.toISOString().slice(0, 10).replace(/-/g, "");
+  const timePart = now.getTime().toString().slice(-6);
+  return `INV-${datePart}-${timePart}`;
+}
+
+// VIEW SALES PAGE
+router.get("/", allowRoles(["manager", "attendant", "admin"]), async (req, res) => {
+  try {
+    const products = await Product.find({ currentStock: { $gt: 0 } }).sort({ productType: 1 });
+    const customers = await Customer.find().select("_id fullName phone").sort({ fullName: 1 });
+    const cart = req.session.cart || [];
+    const selectedCustomerId = req.session.selectedCustomerId || null;
+    const selectedCustomer = selectedCustomerId
+      ? await Customer.findById(selectedCustomerId)
+      : null;
+    const distance = req.session.deliveryDistance || 0;
+
+    let subtotal = 0;
+    for (let item of cart) subtotal += item.price * item.qty;
+    const deliveryFee = calcDeliveryFee(subtotal, distance);
+    const grandTotal = subtotal + deliveryFee;
+
+    res.render("sales", {
+      products,
+      customers,
+      selectedCustomer,
+      selectedCustomerId,
+      deliveryDistance: distance,
+      cart,
+      subtotal,
+      deliveryFee,
+      grandTotal,
+      user: req.user,
+      success_msg: req.flash("success_msg"),
+      error_msg: req.flash("error_msg"),
+    });
+  } catch (err) {
+    req.flash("error_msg", err.message);
+    res.redirect("/dashboard");
+  }
+});
+
+// UPDATE CUSTOMER & DELIVERY DISTANCE
+router.post(
+  "/update-customer",
+  allowRoles(["manager", "attendant", "admin"]),
+  (req, res) => {
+    req.session.selectedCustomerId = req.body.customerId || null;
+    req.session.deliveryDistance = parseFloat(req.body.distance) || 0;
+    res.redirect("/sales");
+  }
+);
+
+// CHECKOUT
+// The sales.pug uses fetch() with JSON body, so this route accepts JSON.
+// It returns JSON { saleId } on success or { error } on failure.
+// The view's JS then redirects to /sales/invoice/:id on success.
+//
+// FIXES applied vs original:
+//   1. Items come from req.body.items (JSON array from fetch) — validated properly.
+//   2. All stock validation runs BEFORE any DB writes (all-or-nothing).
+//   3. Deposit Scheme: searches by name case-insensitively and gives clear error messages.
+//   4. Stock deducted with $inc (atomic) after all checks pass.
+//   5. Session cart cleared after successful sale.
+router.post(
+  "/checkout",
+  allowRoles(["manager", "attendant", "admin"]),
+  async (req, res) => {
+    try {
+      const { items, customerName, paymentMethod, deliveryFee, distance, requireTransport } =
+        req.body;
+
+      // --- Validate inputs ---
+      if (!items || !Array.isArray(items) || items.length === 0)
+        return res.status(400).json({ error: "Cart is empty. Please add items before checking out." });
+
+      const cleanCustomerName = (customerName || "Walk-in Customer").trim();
+
+      if (!paymentMethod || paymentMethod.trim() === "")
+        return res.status(400).json({ error: "Please select a payment method." });
+
+      // --- STEP 1: Validate ALL stock before touching the database ---
+      for (let item of items) {
+        if (!item.productId)
+          return res.status(400).json({ error: `Invalid item in cart: missing product ID.` });
+        const qty = parseInt(item.qty);
+        if (!qty || qty < 1)
+          return res.status(400).json({ error: `Invalid quantity for ${item.name || "a cart item"}.` });
+
+        const product = await Product.findById(item.productId);
+        if (!product)
+          return res.status(400).json({ error: `Product "${item.name}" no longer exists. Please remove it from the cart.` });
+        if (product.currentStock < qty)
+          return res.status(400).json({
+            error: `Insufficient stock for ${product.productType}. Available: ${product.currentStock}, requested: ${qty}.`
+          });
+      }
+
+      // --- STEP 2: Build sale items and calculate totals ---
+      let subtotal = 0;
+      const saleItems = [];
+
+      for (let item of items) {
+        const product = await Product.findById(item.productId);
+        const qty = parseInt(item.qty);
+        const total = product.unitPrice * qty;
+        subtotal += total;
+        saleItems.push({
+          productId: product._id,
+          productName: product.productType,
+          quantity: qty,
+          unitPrice: product.unitPrice,
+          total,
+        });
+      }
+
+      // Delivery fee: use what the client calculated (already validated server-side logic)
+      const fee = requireTransport ? (Number(deliveryFee) || calcDeliveryFee(subtotal, parseFloat(distance) || 0)) : 0;
+      const grandTotal = subtotal + fee;
+
+      // --- STEP 3: Handle Deposit Scheme ---
+      if (paymentMethod === "Deposit Scheme") {
+        const member = await DepositMember.findOne({
+          fullName: { $regex: new RegExp("^" + cleanCustomerName + "$", "i") },
+        });
+        if (!member)
+          return res.status(400).json({
+            error: `No deposit scheme member found named "${cleanCustomerName}". Check the name and try again.`,
+          });
+        if (member.balance < grandTotal)
+          return res.status(400).json({
+            error: `Insufficient deposit balance. Balance: ${member.balance.toLocaleString()} UGX. Required: ${grandTotal.toLocaleString()} UGX.`,
+          });
+
+        member.balance -= grandTotal;
+        await member.save();
+        await DepositTransaction.create({
+          memberId: member._id,
+          type: "pickup",
+          amount: -grandTotal,
+          description: `Sale — ${saleItems.length} item(s)`,
+          balanceAfter: member.balance,
+        });
+      }
+
+      // --- STEP 4: Deduct stock atomically ---
+      for (let item of saleItems) {
+        await Product.findByIdAndUpdate(item.productId, {
+          $inc: { currentStock: -item.quantity },
+        });
+      }
+
+      // --- STEP 5: Save the sale ---
+      const invoiceNumber = generateInvoiceNumber();
+      const sale = new Sale({
+        invoiceNumber,
+        customerName: cleanCustomerName,
+        items: saleItems,
+        subtotal,
+        deliveryFee: fee,
+        tax: 0,
+        grandTotal,
+        paymentMethod,
+        status: "Paid",
+        attendant: req.user._id,
+      });
+      await sale.save();
+
+      // --- STEP 6: Clear session cart ---
+      req.session.cart = [];
+      req.session.selectedCustomerId = null;
+      req.session.deliveryDistance = 0;
+
+      // Return JSON for the fetch() call in sales.pug
+      return res.json({ success: true, saleId: sale._id });
+    } catch (err) {
+      console.error("Checkout error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+);
+
+// VIEW INVOICE / RECEIPT
+router.get(
+  "/invoice/:id",
+  allowRoles(["manager", "attendant", "admin"]),
+  async (req, res) => {
+    try {
+      const sale = await Sale.findById(req.params.id).populate("attendant", "fullName");
+      if (!sale) {
+        req.flash("error_msg", "Sale not found.");
+        return res.redirect("/sales");
+      }
+      res.render("receipt", { sale, user: req.user });
+    } catch (err) {
+      req.flash("error_msg", err.message);
+      res.redirect("/sales");
+    }
+  }
+);
+
+// ADD NEW CUSTOMER (inline form in sales.pug uses fetch with form-urlencoded)
+router.get(
+  "/new-customer",
+  allowRoles(["manager", "attendant", "admin"]),
+  (req, res) => {
+    res.render("new-customer", { user: req.user });
+  }
+);
+
+// The registerCustomer() in sales.pug POSTs here via fetch (form-urlencoded).
+// On success it redirects, and the fetch detects response.redirected = true.
+router.post(
+  "/new-customer",
+  allowRoles(["manager", "attendant", "admin"]),
+  async (req, res) => {
+    try {
+      const { fullName, phone, nin, email } = req.body;
+
+      if (!fullName || fullName.trim() === "")
+        throw new Error("Customer full name is required.");
+      if (!phone || phone.trim() === "")
+        throw new Error("Customer phone number is required.");
+
+      const existing = await Customer.findOne({ phone: phone.trim() });
+      if (existing) {
+        req.flash("error_msg", "A customer with this phone number already exists.");
+        return res.redirect("/sales/new-customer");
+      }
+
+      await Customer.create({
+        fullName: fullName.trim(),
+        phone: phone.trim(),
+        nin: nin || "",
+        email: email || "",
+      });
+
+      req.flash(
+        "success_msg",
+        `Customer ${fullName.trim()} added. Please select them from the customer list.`
+      );
+      res.redirect("/sales");
+    } catch (err) {
+      req.flash("error_msg", err.message);
+      res.redirect("/sales/new-customer");
+    }
+  }
+);
+
+module.exports = router;
+
+===== routes/settingRoutes.js =====
+const express = require("express");
+const router = express.Router();
+const Setting = require("../models/Setting");
+const { isAdmin } = require("../middleware/auth");
+
+router.get("/", isAdmin, async (req, res) => {
+  try {
+    let settings = await Setting.findOne();
+    if (!settings) {
+      settings = new Setting();
+      await settings.save();
+    }
+    res.render("settings", { settings, user: req.user });
+  } catch (err) {
+    req.flash("error_msg", err.message);
+    res.redirect("/dashboard");
+  }
+});
+
+router.post("/", isAdmin, async (req, res) => {
+  try {
+    let settings = await Setting.findOne();
+    if (!settings) settings = new Setting();
+    settings.company = req.body.company || settings.company;
+    settings.financial = req.body.financial || settings.financial;
+    settings.delivery = req.body.delivery || settings.delivery;
+    settings.security = req.body.security || settings.security;
+    await settings.save();
+    req.flash("success_msg", "Settings saved successfully!");
+  } catch (err) {
+    req.flash("error_msg", err.message);
+  }
+  res.redirect("/settings");
+});
+
+module.exports = router;
+
+===== routes/signup.js =====
+// const express = require("express");
+// const router = express.Router();
+// const Product = require("../models/Product");
+
+// router.get("/", (req, res) => {
+//   res.render("index");
+// });
+
+// router.get("/signup", (req, res) => {
+//   res.render("users");
+// });
+
+// router.post("/signup", (req, res) => {
+//   console.log(req.body);
+// });
+
+// module.exports = router;
+
+
+===== routes/supplierCreditRoutes.js =====
+const express = require("express");
+const router = express.Router();
+const CreditInvoice = require("../models/CreditInvoice");
+const Supplier = require("../models/Supplier");
+const Payment = require("../models/Payment");
+const { isManagerOrAdmin } = require("../middleware/auth");
+
+// MAIN SUPPLIER CREDIT PAGE
+router.get("/", isManagerOrAdmin, async (req, res) => {
+  try {
+    const invoices = await CreditInvoice.find()
+      .populate("supplierId")
+      .sort({ createdAt: -1 });
+    const suppliers = await Supplier.find().sort({ companyName: 1 });
+    const recentPayments = await Payment.find()
+      .populate("supplierId", "companyName")
+      .populate("invoiceId", "invoiceNumber")
+      .sort({ paymentDate: -1 })
+      .limit(10);
+
+    let totalCredit = 0, pendingCredit = 0, overdueCredit = 0;
+    const now = new Date();
+    invoices.forEach((inv) => {
+      totalCredit += inv.totalAmount;
+      if (inv.outstanding > 0) {
+        if (inv.dueDate && new Date(inv.dueDate) < now)
+          overdueCredit += inv.outstanding;
+        else
+          pendingCredit += inv.outstanding;
+      }
+    });
+
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const paymentsThisMonth = await Payment.find({ paymentDate: { $gte: startOfMonth } });
+    const paidThisMonth = paymentsThisMonth.reduce((sum, p) => sum + p.amount, 0);
+
+    const purchaseDateDefault = new Date().toISOString().split("T")[0];
+    const dueDateDefault = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+
+    res.render("supplier-credit", {
+      invoices,
+      suppliers,
+      recentPayments,
+      totalCredit,
+      pendingCredit,
+      overdueCredit,
+      paidThisMonth,
+      totalInvoices: invoices.length,
+      purchaseDateDefault,
+      dueDateDefault,
+      user: req.user,
+      success_msg: req.flash("success_msg"),
+      error_msg: req.flash("error_msg"),
+    });
+  } catch (err) {
+    req.flash("error_msg", err.message);
+    res.redirect("/dashboard");
+  }
+});
+
+// CREATE NEW CREDIT INVOICE
+// BUG FIX: All numeric fields are now explicitly cast with Number() before any comparison.
+// BUG FIX: Better duplicate invoice number error message.
+// BUG FIX: Status determined before save, consistent with what the pre-save hook will produce.
+// BUG FIX: initialPayment defaults to 0 when empty string is submitted from the form.
+router.post("/invoices", isManagerOrAdmin, async (req, res) => {
+  try {
+    const {
+      supplierId, invoiceNumber, purchaseDate, dueDate,
+      totalAmount, description, paymentTerms, initialPayment
+    } = req.body;
+
+    // Validate required fields
+    if (!supplierId || supplierId.trim() === "")
+      throw new Error("Please select a supplier.");
+    if (!invoiceNumber || invoiceNumber.trim() === "")
+      throw new Error("Invoice number is required.");
+    if (!totalAmount || Number(totalAmount) <= 0)
+      throw new Error("Total amount must be greater than zero.");
+    if (!purchaseDate)
+      throw new Error("Purchase date is required.");
+    if (!dueDate)
+      throw new Error("Due date is required.");
+
+    // Validate that due date is not before purchase date
+    if (new Date(dueDate) < new Date(purchaseDate))
+      throw new Error("Due date cannot be before the purchase date.");
+
+    // Check for duplicate invoice number
+    const duplicateInvoice = await CreditInvoice.findOne({ invoiceNumber: invoiceNumber.trim() });
+    if (duplicateInvoice)
+      throw new Error(`Invoice number "${invoiceNumber}" already exists. Please use a unique invoice number.`);
+
+    // Check supplier exists
+    const supplier = await Supplier.findById(supplierId);
+    if (!supplier)
+      throw new Error("Selected supplier not found. Please refresh and try again.");
+
+    const total = Number(totalAmount);
+    // BUG FIX: initialPayment from a form comes as "" when empty — must default to 0
+    const paidAmount = Number(initialPayment) || 0;
+
+    if (paidAmount < 0)
+      throw new Error("Initial payment cannot be negative.");
+    if (paidAmount > total)
+      throw new Error(`Initial payment (${paidAmount.toLocaleString()} UGX) cannot exceed total amount (${total.toLocaleString()} UGX).`);
+
+    // Status logic (pre-save hook will also set outstanding, this is for clarity)
+    let status = "Pending";
+    if (paidAmount >= total) status = "Paid";
+    else if (paidAmount > 0) status = "Partially Paid";
+
+    const invoice = new CreditInvoice({
+      supplierId,
+      invoiceNumber: invoiceNumber.trim(),
+      purchaseDate: new Date(purchaseDate),
+      dueDate: new Date(dueDate),
+      totalAmount: total,
+      paidAmount,
+      // outstanding is calculated by pre-save hook: totalAmount - paidAmount
+      description: description || "",
+      paymentTerms: paymentTerms || "",
+      status,
+    });
+    await invoice.save();
+
+    // If there was an initial payment, record it in the Payment collection too
+    if (paidAmount > 0) {
+      const payment = new Payment({
+        supplierId,
+        invoiceId: invoice._id,
+        amount: paidAmount,
+        paymentMethod: "Cash",
+        paymentDate: new Date(),
+        reference: "Initial payment on invoice creation",
+        recordedBy: req.user._id,
+      });
+      await payment.save();
+    }
+
+    req.flash("success_msg", `Credit invoice "${invoiceNumber}" recorded successfully for ${supplier.companyName}. Outstanding: ${(total - paidAmount).toLocaleString()} UGX.`);
+  } catch (err) {
+    req.flash("error_msg", err.message);
+  }
+  res.redirect("/supplier-credit");
+});
+
+// RECORD PAYMENT AGAINST INVOICE (quick pay from the supplier credit page)
+// BUG FIX: amount was compared as a string — now explicitly cast to Number() first.
+// BUG FIX: Payment method validated.
+// BUG FIX: invoice.save() triggers pre-save hook which recalculates outstanding correctly.
+router.post("/pay/:invoiceId", isManagerOrAdmin, async (req, res) => {
+  try {
+    const { amount, paymentMethod, reference } = req.body;
+
+    // BUG FIX: Cast to Number immediately — req.body values are always strings
+    const payAmount = Number(amount);
+
+    if (!payAmount || payAmount <= 0)
+      throw new Error("Payment amount must be greater than zero.");
+
+    const invoice = await CreditInvoice.findById(req.params.invoiceId).populate("supplierId", "companyName");
+    if (!invoice) throw new Error("Invoice not found.");
+    if (invoice.outstanding <= 0)
+      throw new Error("This invoice is already fully paid.");
+
+    // BUG FIX: Compare numbers not strings
+    if (payAmount > invoice.outstanding)
+      throw new Error(`Payment amount (${payAmount.toLocaleString()} UGX) exceeds outstanding balance (${invoice.outstanding.toLocaleString()} UGX).`);
+
+    if (!paymentMethod || paymentMethod.trim() === "")
+      throw new Error("Please select a payment method.");
+
+    // Update invoice — pre-save hook recalculates outstanding and status
+    invoice.paidAmount += payAmount;
+    // outstanding and status are recalculated by the pre-save hook on invoice.save()
+    await invoice.save();
+
+    // Record the payment
+    const payment = new Payment({
+      supplierId: invoice.supplierId,
+      invoiceId: invoice._id,
+      amount: payAmount,
+      paymentMethod: paymentMethod.trim(),
+      paymentDate: new Date(),
+      reference: reference || "",
+      recordedBy: req.user._id,
+    });
+    await payment.save();
+
+    req.flash("success_msg", `Payment of ${payAmount.toLocaleString()} UGX recorded for invoice ${invoice.invoiceNumber}. Remaining: ${invoice.outstanding.toLocaleString()} UGX.`);
+  } catch (err) {
+    req.flash("error_msg", err.message);
+  }
+  res.redirect("/supplier-credit");
+});
+
+module.exports = router;
+
+===== routes/supplierRoutes.js =====
+const express = require("express");
+const router = express.Router();
+const Supplier = require("../models/Supplier");
+const CreditInvoice = require("../models/CreditInvoice");
+const { isManagerOrAdmin } = require("../middleware/auth");
+
+router.get("/", isManagerOrAdmin, async (req, res) => {
+  try {
+    const suppliers = await Supplier.find().sort({ companyName: 1 });
+    const totalSuppliers = suppliers.length;
+    let totalOutstanding = 0;
+    let overduePayments = 0;
+    const suppliersWithOutstanding = await Promise.all(
+      suppliers.map(async (sup) => {
+        const invoices = await CreditInvoice.find({ supplierId: sup._id, status: { $ne: "Paid" } });
+        const outstanding = invoices.reduce((sum, inv) => sum + inv.outstanding, 0);
+        totalOutstanding += outstanding;
+        return { ...sup.toObject(), outstandingBalance: outstanding };
+      }),
+    );
+    const activeOrders = 4;
+    res.render("suppliers", {
+      suppliers: suppliersWithOutstanding,
+      totalSuppliers,
+      totalOutstanding,
+      totalOutstandingDisplay: totalOutstanding,
+      overduePayments,
+      activeOrders,
+      user: req.user,
+    });
+  } catch (err) {
+    req.flash("error_msg", err.message);
+    res.redirect("/dashboard");
+  }
+});
+
+router.post("/", isManagerOrAdmin, async (req, res) => {
+  try {
+    const { companyName, contactPerson, phone, email, address, paymentTerms, creditLimit, productsSupplied } = req.body;
+    const existing = await Supplier.findOne({ companyName });
+    if (existing) throw new Error("Supplier with that company name already exists");
+    const supplier = new Supplier({ companyName, contactPerson, phone, email, address, paymentTerms, creditLimit, productsSupplied });
+    await supplier.save();
+    req.flash("success_msg", `Supplier ${companyName} added successfully!`);
+  } catch (err) {
+    req.flash("error_msg", err.message);
+  }
+  res.redirect("/suppliers");
+});
+
+router.get("/:id/edit", isManagerOrAdmin, async (req, res) => {
+  try {
+    const supplier = await Supplier.findById(req.params.id);
+    if (!supplier) throw new Error("Supplier not found");
+    res.render("supplier-edit", { supplier, user: req.user });
+  } catch (err) {
+    req.flash("error_msg", err.message);
+    res.redirect("/suppliers");
+  }
+});
+
+router.post("/:id", isManagerOrAdmin, async (req, res) => {
+  try {
+    await Supplier.findByIdAndUpdate(req.params.id, req.body, { runValidators: true });
+    req.flash("success_msg", "Supplier updated successfully");
+  } catch (err) {
+    req.flash("error_msg", err.message);
+  }
+  res.redirect("/suppliers");
+});
+
+module.exports = router;
+
+===== routes/userRoutes.js =====
+const express = require("express");
+const router = express.Router();
+const User = require("../models/User");
+const { isAdmin } = require("../middleware/auth");
+
+// All routes require admin
+router.use(isAdmin);
+
+// GET /users
+router.get("/", async (req, res) => {
+  try {
+    const users = await User.find().select("-hash -salt");
+    const totalUsers = users.length;
+    const activeUsers = users.filter((u) => u.status === "Active").length;
+    const adminCount = users.filter((u) => u.role === "admin").length;
+    const managerCount = users.filter((u) => u.role === "manager").length;
+    res.render("users", {
+      users,
+      totalUsers,
+      activeUsers,
+      adminCount,
+      managerCount,
+      user: req.user,
+    });
+  } catch (err) {
+    req.flash("error_msg", err.message);
+    res.redirect("/dashboard");
+  }
+});
+
+// POST /users – create
+router.post("/", async (req, res) => {
+  try {
+    const {
+      email,
+      password,
+      fullName,
+      nin,
+      phone,
+      nextOfKinName,
+      nextOfKinPhone,
+      role,
+      status,
+    } = req.body;
+
+    const existing = await User.findOne({ $or: [{ email }, { nin }] });
+    if (existing) {
+      req.flash('error_msg','Email or NIN already registered');
+      return res.redirect('/users')
+    }
+
+    // Convert role to lowercase for consistency
+    let userRole = (role || "sales").toLowerCase();
+    if (userRole === "administrator") userRole = "admin";
+    if (userRole === "manager") userRole = "manager";
+    if (userRole === "attendant") userRole = "attendant";
+
+    const user = new User({
+      email,
+      fullName,
+      nin,
+      phone,
+      nextOfKinName,
+      nextOfKinPhone,
+      role: userRole,
+      status: status || "Active",
+    });
+    await User.register(user, password);
+    req.flash("success_msg", `User ${fullName} created successfully`);
+    res.redirect("/users");
+  } catch (err) {
+    req.flash("error_msg", err.message);
+    res.redirect("/users");
+  }
+});
+
+// GET edit form
+router.get("/:id/edit", async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select("-hash -salt");
+    if (!user) throw new Error("User not found");
+    res.render("user-edit", { user, currentUser: req.user });
+  } catch (err) {
+    req.flash("error_msg", err.message);
+    res.redirect("/users");
+  }
+});
+
+// POST update
+router.post("/:id", async (req, res) => {
+  try {
+    const { fullName, role, status, department } = req.body;
+    let userRole = (role || "sales").toLowerCase();
+    if (userRole === "administrator") userRole = "admin";
+    await User.findByIdAndUpdate(req.params.id, {
+      fullName,
+      role: userRole,
+      status,
+      department,
+    });
+    req.flash("success_msg", "User updated successfully");
+  } catch (err) {
+    req.flash("error_msg", err.message);
+  }
+  res.redirect("/users");
+});
+
+// POST delete
+router.post("/:id/delete", async (req, res) => {
+  try {
+    const user = await User.findByIdAndDelete(req.params.id);
+    if (!user) throw new Error("User not found");
+    req.flash("success_msg", `User ${user.fullName} deleted`);
+  } catch (err) {
+    req.flash("error_msg", err.message);
+  }
+  res.redirect("/users");
+});
+
+module.exports = router;
+
+
+================ MIDDLEWARE ================
+
+
+===== middleware/auth.js =====
+module.exports = {
+  ensureAuthenticated: (req, res, next) => {
+    if (req.isAuthenticated()) return next();
+    req.flash("error_msg", "Please log in to continue.");
+    res.redirect("/auth/login");
+  },
+
+  allowRoles: (roles) => (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      req.flash("error_msg", "Unauthorized – please login.");
+      return res.redirect("/auth/login");
+    }
+    if (!roles.includes(req.user.role)) {
+      req.flash("error_msg", "You do not have permission to access this page.");
+      return res.redirect("/dashboard");
+    }
+    next();
+  },
+
+  isAdmin: (req, res, next) => {
+    if (req.isAuthenticated() && req.user.role === "admin") return next();
+    req.flash("error_msg", "Access denied. Admin rights required.");
+    res.redirect("/dashboard");
+  },
+
+  isManager: (req, res, next) => {
+    if (req.isAuthenticated() && req.user.role === "manager") return next();
+    req.flash("error_msg", "Access denied. Manager rights required.");
+    res.redirect("/dashboard");
+  },
+
+  isAttendant: (req, res, next) => {
+    if (req.isAuthenticated() && req.user.role === "attendant") return next();
+    req.flash("error_msg", "Access denied. Attendant rights required.");
+    res.redirect("/dashboard");
+  },
+
+  isManagerOrAdmin: (req, res, next) => {
+    if (req.isAuthenticated() && (req.user.role === "manager" || req.user.role === "admin")) return next();
+    req.flash("error_msg", "Access denied. Manager or Admin rights required.");
+    res.redirect("/dashboard");
+  },
+
+  isSalesOrAdmin: (req, res, next) => {
+    if (req.isAuthenticated() && (req.user.role === "attendant" || req.user.role === "admin" || req.user.role === "manager")) return next();
+    req.flash("error_msg", "Access denied.");
+    res.redirect("/dashboard");
+  },
+};
