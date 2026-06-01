@@ -5,19 +5,24 @@ const userSchema = new mongoose.Schema({
   fullName: { 
     type: String, 
     required: true },
-  email: { 
-    type: String, 
-    required: true, 
-    unique: true 
-  },
+  email: {
+  type: String,
+  trim: true,
+  lowercase: true,
+  match: [
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+    "Please enter a valid email address"
+  ]
+},  
   nin: { 
     type: String, 
     required: true, 
-    unique: true 
+    match: [/^[A-Za-z]{2}\d{14}$/, "NIN must have 2 letters followed by 14 digits"]
   },
   phone: { 
     type: String, 
-    required: true 
+    required: true,
+    match: [/^0\d{9}$/, "Phone number must be 10 digits and start with 0"] 
   },
   nextOfKinName: { 
     type: String, 
@@ -29,7 +34,7 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ["admin", "manager", "attendant"],   // changed
+    enum: ["admin", "manager", "attendant"],
     default: "admin",
   },
  

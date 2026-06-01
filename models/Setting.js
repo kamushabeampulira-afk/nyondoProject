@@ -2,9 +2,19 @@ const mongoose = require("mongoose");
 
 const settingSchema = new mongoose.Schema({
   company: {
-    name: { type: String, default: "NYONDO General Hardware LTD" },
+    name: { 
+      type: String, 
+      default: "NYONDO General Hardware LTD" },
     phone: String,
-    email: String,
+    email: {
+  type: String,
+  trim: true,
+  lowercase: true,
+  match: [
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+    "Please enter a valid email address"
+  ]
+},
     address: String,
     tin: String,
   },

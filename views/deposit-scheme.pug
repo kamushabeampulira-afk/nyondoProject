@@ -57,7 +57,7 @@ block content
               select.form-select(name="memberId" required onchange="loadGoals(this)")
                 option(value="") -- Select Member --
                 each member in members
-                  option(value=member._id) #{member.fullName} (#{member.phone})
+                  option(value=member._id.toString()) #{member.fullName} (#{member.phone})
             .mb-3
               label.form-label Select Savings Goal
               select.form-select(name="goalId" required id="goalSelect")
@@ -104,24 +104,22 @@ block content
         .p-3
           form(method="POST" action="/deposit-scheme/pickup")
             .mb-3
-              label.form-label Select Member
-              select.form-select(name="memberId" required onchange="loadPickupGoals(this)")
-                option(value="") -- Select Member --
-                each member in members
-                  option(value=member._id) #{member.fullName} (#{member.phone})
-            .mb-3
               label.form-label Select Completed Goal
-              select.form-select(name="goalId" required id="pickupGoalSelect")
-                option(value="") -- Select member first --
-            .mb-3#pickupInfo(style="display:none;")
+              select.form-select(name="memberId" required id="pickupSelect")
+                option(value="") -- Select completed goal --
+                each member in members
+                  each goal in member.goals
+                    if goal.status === 'Goal Reached'
+                      option(value=member._id.toString() data-goal=goal._id.toString()) #{member.fullName} — #{goal.productName} x#{goal.quantity}
+            input(type="hidden" name="goalId" id="pickupGoalId")
+            .mb-3
               .section-card.p-3(style="background: rgba(0,51,0,0.04);")
-                p.mb-1
+                p.mb-0.small.text-muted
                   i.fa-solid.fa-circle-check.text-success.me-2
-                  | Goal is fully funded and ready for pickup
-                p.mb-0.small.text-muted Stock will be automatically reduced on pickup
+                  | Only fully funded goals appear above. Stock was reserved at goal creation.
             button.btn-primary.w-100(type="submit")
               i.fa-solid.fa-box-open.me-2
-              | Release Goods & Reduce Stock
+              | Release Goods & Print Receipt
 
     .col-12
       .section-card
@@ -218,10 +216,10 @@ block content
   -
     var membersJson = JSON.stringify(members.map(function(m) {
       return {
-        _id: m._id,
+        _id: m._id.toString(),
         goals: m.goals.map(function(g) {
           return {
-            _id: g._id,
+            _id: g._id.toString(),
             productName: g.productName,
             quantity: g.quantity,
             targetAmount: g.targetAmount,
@@ -234,9 +232,12 @@ block content
       };
     }))
 
-  script.
-    const membersData = !{membersJson};
+  script#members-data(type="application/json") !{membersJson}
 
+  script.
+    const membersData = JSON.parse(document.getElementById('members-data').textContent);
+
+    // Deposit form: load goals for selected member
     function loadGoals(select) {
       const memberId = select.value;
       const goalSelect = document.getElementById('goalSelect');
@@ -246,8 +247,12 @@ block content
       if (!memberId) return;
       const member = membersData.find(m => m._id === memberId);
       if (!member) return;
-      const savingGoals = member.goals.filter(g => g.status === 'Saving' || g.status === 'Goal Reached');
-      savingGoals.forEach(g => {
+      const active = member.goals.filter(g => g.status === 'Saving' || g.status === 'Goal Reached');
+      if (active.length === 0) {
+        goalSelect.innerHTML = '<option value="">-- No active goals --</option>';
+        return;
+      }
+      active.forEach(g => {
         const opt = document.createElement('option');
         opt.value = g._id;
         opt.textContent = `${g.productName} x${g.quantity} — ${g.savedAmount.toLocaleString()} / ${g.targetAmount.toLocaleString()} UGX`;
@@ -262,3 +267,33 @@ block content
         document.getElementById('goalProduct').textContent = `${g.productName} x${g.quantity}`;
         document.getElementById('goalTarget').textContent = g.targetAmount.toLocaleString() + ' UGX';
         document.getElementById('goalSaved').textContent = g.savedAmount.toLocaleString() + ' UGX';
+        document.getElementById('goalRemaining').textContent = (g.targetAmount - g.savedAmount).toLocaleString() + ' UGX';
+        const pct = Math.min(Math.round((g.savedAmount / g.targetAmount) * 100), 100);
+        document.getElementById('goalProgress').style.width = pct + '%';
+        document.getElementById('goalReachedBadge').style.display = g.status === 'Goal Reached' ? 'block' : 'none';
+      };
+    }
+
+    // Pickup form: set hidden goalId when option selected
+    document.getElementById('pickupSelect').addEventListener('change', function() {
+      const selected = this.options[this.selectedIndex];
+      document.getElementById('pickupGoalId').value = selected.getAttribute('data-goal') || '';
+    });
+
+    // Add goal form: calculate target
+    function updateGoalTarget() {
+      const select = document.querySelector('select[name="productId"]');
+      const selected = select.options[select.selectedIndex];
+      const price = parseFloat(selected?.getAttribute('data-price')) || 0;
+      const qty = parseInt(document.querySelector('input[name="quantity"]').value) || 1;
+      const distance = parseFloat(document.querySelector('input[name="distance"]').value) || 5;
+      const needsDelivery = document.getElementById('newGoalDelivery').checked;
+      const productTotal = price * qty;
+      let delivery = 0;
+      if (needsDelivery) {
+        delivery = (productTotal >= 500000 && distance <= 10) ? 0 : 30000;
+      }
+      const total = productTotal + delivery;
+      document.getElementById('newGoalTotal').value = total.toLocaleString() + ' UGX';
+    }
+    updateGoalTarget();

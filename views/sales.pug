@@ -13,6 +13,11 @@ block content
       | Sales Counter
     p.text-muted Select customer, add items, then complete the sale
 
+  if success_msg && success_msg.length
+    .alert.alert-success= success_msg
+  if error_msg && error_msg.length
+    .alert.alert-danger= error_msg
+
   // Customer & Delivery
   .section-card.mb-4
     .section-head
@@ -24,7 +29,7 @@ block content
         .col-md-5
           label.form-label Select Customer
           select#customerSelect.form-select
-            option(value="") Walk-in Customer
+            option(value="" data-name="Walk-in Customer") Walk-in Customer
             each cust in customers
               option(value=cust._id data-name=cust.fullName) #{cust.fullName} (#{cust.phone})
           .mt-2
@@ -33,22 +38,23 @@ block content
               | New Customer
           #newCustomerForm(style='display:none; margin-top:0.75rem;')
             .section-card.p-3
+              #newCustError.alert.alert-danger(style='display:none;')
               .row.g-2
                 .col-6
-                  input.form-control.form-control-sm(type='text' id='newCustName' placeholder='Full Name')
+                  input.form-control.form-control-sm(type='text' id='newCustName' placeholder='Full Name *')
                 .col-6
-                  input.form-control.form-control-sm(type='tel' id='newCustPhone' placeholder='Phone')
+                  input.form-control.form-control-sm(type='tel' id='newCustPhone' placeholder='Phone *')
                 .col-6
-                  input.form-control.form-control-sm(type='text' id='newCustNin' placeholder='NIN')
+                  input.form-control.form-control-sm(type='text' id='newCustNin' placeholder='NIN (optional)')
                 .col-6
-                  input.form-control.form-control-sm(type='email' id='newCustEmail' placeholder='Email')
+                  input.form-control.form-control-sm(type='email' id='newCustEmail' placeholder='Email (optional)')
                 .col-12
                   button.btn-primary.btn-sm(type='button' onclick='registerCustomer()')
                     i.fa-solid.fa-save.me-1
                     | Register & Use
         .col-md-4
           label.form-label Distance from Nansana (km)
-          input#distance.form-control(type='number' value='5' step='1')
+          input#distance.form-control(type='number' value='5' min='0' step='1')
           .form-check.mt-2
             input#requireTransport.form-check-input(type='checkbox' checked)
             label.form-check-label(for='requireTransport') Require transport
@@ -74,7 +80,7 @@ block content
           select#productSelect.form-select
             option(value='') -- Select Product --
             each prod in products
-              option(value=prod._id data-price=prod.unitPrice data-stock=prod.currentStock data-name=prod.productName) #{prod.productName} - #{prod.unitPrice.toLocaleString()} UGX (Stock: #{prod.currentStock})
+              option(value=prod._id data-price=prod.unitPrice data-stock=prod.currentStock data-name=prod.productType) #{prod.productType} - #{prod.unitPrice.toLocaleString()} UGX (Stock: #{prod.currentStock})
         .col-md-3
           label.form-label Quantity
           input#productQty.form-control(type='number' value='1' min='1')
@@ -119,13 +125,18 @@ block content
   // Checkout
   .section-card
     .p-3.text-center
-      button.btn-primary.btn-lg.px-5.py-2(type='button' onclick='checkout()')
+      #checkoutError.alert.alert-danger(style='display:none; margin-bottom:1rem;')
+      button#checkoutBtn.btn-primary.btn-lg.px-5.py-2(type='button' onclick='checkout()')
         i.fa-solid.fa-check-circle.me-2
         | Complete Sale
 
   script.
     let cart = !{JSON.stringify(cart || [])};
-    let products = !{JSON.stringify(products)};
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+    }
 
     function renderCart() {
       const tbody = document.getElementById('cartBody');
@@ -147,7 +158,7 @@ block content
             <td><input type="number" class="quantity-input form-control" value="${item.qty}" min="1" onchange="updateQty(${idx}, this.value)"></td>
             <td>${item.price.toLocaleString()}</td>
             <td class="fw-bold">${total.toLocaleString()}</td>
-            <td><i class="fa-regular fa-trash-can remove-item" onclick="removeItem(${idx})"></i></td>
+            <td><i class="fa-regular fa-trash-can remove-item" style="cursor:pointer;" onclick="removeItem(${idx})"></i></td>
           </tr>
         `;
       });
@@ -158,15 +169,27 @@ block content
     function addToCart() {
       const select = document.getElementById('productSelect');
       const productId = select.value;
-      if (!productId) return alert('Select a product');
+      if (!productId) { alert('Please select a product first.'); return; }
       const selected = select.options[select.selectedIndex];
       const name = selected.getAttribute('data-name');
       const price = parseFloat(selected.getAttribute('data-price'));
+      const stock = parseInt(selected.getAttribute('data-stock'));
       const qty = parseInt(document.getElementById('productQty').value);
-      if (qty < 1) { alert('Please enter a valid quantity'); return; }
+      if (!qty || qty < 1) { alert('Please enter a valid quantity (minimum 1).'); return; }
+
+      // Check against available stock including what's already in the cart
       const existing = cart.find(i => i.productId === productId);
-      if (existing) existing.qty += qty;
-      else cart.push({ productId, name, price, qty });
+      const cartQty = existing ? existing.qty : 0;
+      if (cartQty + qty > stock) {
+        alert(`Not enough stock. Available: ${stock}, already in cart: ${cartQty}, requested: ${qty}.`);
+        return;
+      }
+
+      if (existing) {
+        existing.qty += qty;
+      } else {
+        cart.push({ productId, name, price, qty });
+      }
       renderCart();
       document.getElementById('productQty').value = 1;
     }
@@ -214,59 +237,100 @@ block content
     });
 
     async function checkout() {
-      if (!cart.length) return alert('Cart is empty');
+      if (!cart.length) { alert('Cart is empty. Please add items before checking out.'); return; }
+
       const customerSelect = document.getElementById('customerSelect');
-      const customerName = customerSelect.options[customerSelect.selectedIndex]?.getAttribute('data-name') || 'Walk-in Customer';
+      const selectedOption = customerSelect.options[customerSelect.selectedIndex];
+      const customerName = selectedOption ? (selectedOption.getAttribute('data-name') || 'Walk-in Customer') : 'Walk-in Customer';
       const paymentMethod = document.getElementById('paymentMethod').value;
       const distance = parseFloat(document.getElementById('distance').value) || 0;
       const requireTransport = document.getElementById('requireTransport').checked;
-      const fee = parseFloat(document.getElementById('deliveryFee').innerHTML.replace(/[^0-9]/g, '')) || 0;
       const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-      const total = subtotal + fee;
-      if (!confirm(`Confirm sale:\nCustomer: ${customerName}\nItems: ${cart.length}\nTotal: ${total.toLocaleString()} UGX`)) return;
-      const response = await fetch('/sales/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: cart, customerName, paymentMethod, deliveryFee: fee, distance, requireTransport })
-      });
-      const data = await response.json();
-      if (data.error) alert(data.error);
-      else {
-        cart = [];
-        renderCart();
-        window.location.href = `/sales/invoice/${data.saleId}`;
+      const fee = requireTransport ? ((subtotal >= 500000 && distance <= 10) ? 0 : 30000) : 0;
+      const grandTotal = subtotal + fee;
+
+      if (!confirm(`Confirm sale:\nCustomer: ${customerName}\nItems: ${cart.length}\nDelivery: ${fee.toLocaleString()} UGX\nTotal: ${grandTotal.toLocaleString()} UGX\n\nProceed?`)) return;
+
+      // Disable button and show loading state
+      const btn = document.getElementById('checkoutBtn');
+      const errorDiv = document.getElementById('checkoutError');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Processing...';
+      errorDiv.style.display = 'none';
+
+      try {
+        const response = await fetch('/sales/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items: cart, customerName, paymentMethod, deliveryFee: fee, distance, requireTransport })
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+          // Show error inline on the page instead of alert
+          errorDiv.textContent = data.error;
+          errorDiv.style.display = 'block';
+          errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-check-circle me-2"></i> Complete Sale';
+        } else {
+          // Success — redirect to receipt
+          cart = [];
+          renderCart();
+          window.location.href = `/sales/invoice/${data.saleId}`;
+        }
+      } catch (err) {
+        errorDiv.textContent = 'Network error. Please check your connection and try again.';
+        errorDiv.style.display = 'block';
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-check-circle me-2"></i> Complete Sale';
       }
     }
 
     function showNewCustomerForm() {
-      document.getElementById('newCustomerForm').style.display = 'block';
+      const form = document.getElementById('newCustomerForm');
+      form.style.display = form.style.display === 'none' ? 'block' : 'none';
     }
 
     async function registerCustomer() {
       const name = document.getElementById('newCustName').value.trim();
       const phone = document.getElementById('newCustPhone').value.trim();
-      if (!name || !phone) return alert('Name and phone are required');
+      const errorDiv = document.getElementById('newCustError');
+      errorDiv.style.display = 'none';
+
+      if (!name || !phone) {
+        errorDiv.textContent = 'Full name and phone number are required.';
+        errorDiv.style.display = 'block';
+        return;
+      }
+
       const formData = new URLSearchParams();
       formData.append('fullName', name);
       formData.append('phone', phone);
       formData.append('nin', document.getElementById('newCustNin').value);
       formData.append('email', document.getElementById('newCustEmail').value);
-      const response = await fetch('/sales/new-customer', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: formData
-      });
-      if (response.redirected) {
-        alert('Customer registered');
-        location.reload();
-      } else {
-        alert('Error registering customer');
-      }
-    }
 
-    function escapeHtml(str) {
-      if (!str) return '';
-      return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
+      try {
+        const response = await fetch('/sales/new-customer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: formData
+        });
+
+        // Route redirects on success — fetch follows the redirect
+        // If we ended up at /sales, the customer was added
+        if (response.redirected && response.url.includes('/sales') && !response.url.includes('new-customer')) {
+          alert(`Customer "${name}" registered successfully! The page will reload so you can select them.`);
+          location.reload();
+        } else {
+          // Something went wrong — reload to show flash message
+          location.reload();
+        }
+      } catch (err) {
+        errorDiv.textContent = 'Network error. Please try again.';
+        errorDiv.style.display = 'block';
+      }
     }
 
     renderCart();

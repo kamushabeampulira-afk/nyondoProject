@@ -23,7 +23,7 @@ body {
   overflow-x: hidden;
 }
 
-/* ========= SIDEBAR ========= */
+/* SIDEBAR */
 .sidebar {
   position: fixed;
   top: 0;
@@ -67,7 +67,7 @@ body {
   letter-spacing: 0.05em;
 }
 
-/* ========= SIDEBAR NAV ========= */
+/* SIDEBAR NAV */
 .sidebar-nav {
   flex: 1;
   padding: 1rem 0;
@@ -107,7 +107,7 @@ body {
   flex-shrink: 0;
 }
 
-/* ========= SIDEBAR FOOTER ========= */
+/* SIDEBAR FOOTER */
 .sidebar-footer {
   padding: 1rem 1.5rem;
   border-top: 1px solid rgba(255,255,255,0.1);
@@ -149,7 +149,7 @@ body {
   text-transform: capitalize;
 }
 
-/* ========= MAIN WRAP ========= */
+/* MAIN WRAP */
 .main-wrap {
   margin-left: 240px;
   min-height: 100vh;
@@ -157,7 +157,7 @@ body {
   flex-direction: column;
 }
 
-/* ========= TOPBAR ========= */
+/* TOPBAR */
 .topbar {
   background: white;
   padding: 0.75rem 1.5rem;
@@ -223,13 +223,13 @@ body {
   flex-shrink: 0;
 }
 
-/* ========= PAGE CONTENT ========= */
+/*PAGE CONTENT*/
 .page-content {
   padding: 1.5rem;
   flex: 1;
 }
 
-/* ========= PAGE HEADING ========= */
+/* PAGE HEADING */
 .page-heading-center {
   text-align: center;
   margin-bottom: 1.5rem;
@@ -250,7 +250,7 @@ body {
   margin-top: 0.25rem;
 }
 
-/* ========= SECTION CARD ========= */
+/* SECTION CARD */
 .section-card, .form-card {
   background: var(--card-bg);
   border-radius: 1rem;
@@ -281,7 +281,7 @@ body {
   margin: 0;
 }
 
-/* ========= METRIC CARDS ========= */
+/* METRIC CARDS */
 .metric-card {
   background: var(--card-bg);
   border-radius: 1rem;
@@ -290,6 +290,16 @@ body {
   text-align: center;
   padding: 1.25rem 1rem;
   transition: transform 0.2s, box-shadow 0.2s;
+
+  min-height: 210px;
+  width: 100%;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.row.g-4.mb-4 > .col {
+  display: flex;
 }
 
 .metric-card:hover {
@@ -459,7 +469,7 @@ body {
   font-size: 0.8rem;
 }
 
-/* ========= FORMS ========= */
+/* FORMS */
 .form-label {
   font-weight: 600;
   font-size: 0.875rem;
@@ -485,7 +495,7 @@ body {
   outline: none;
 }
 
-/* ========= ALERTS ========= */
+/* ALERTS */
 .alert {
   padding: 0.75rem 1rem;
   border-radius: 0.5rem;
@@ -510,13 +520,13 @@ body {
   color: #b91c1c;
 }
 
-/* ========= AMOUNT / NUMBER ========= */
+/* AMOUNT / NUMBER */
 .amount {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
-/* ========= SIDEBAR OVERLAY (mobile) ========= */
+/* SIDEBAR OVERLAY (mobile) */
 .sidebar-overlay {
   display: none;
   position: fixed;
@@ -526,7 +536,7 @@ body {
   z-index: 1029;
 }
 
-/* ========= RESPONSIVE ========= */
+/* RESPONSIVE */
 @media (max-width: 768px) {
   .sidebar {
     transform: translateX(-100%);

@@ -8,13 +8,22 @@ const customerSchema = new mongoose.Schema({
   phone: { 
     type: String, 
     required: true, 
-    unique: true 
+    match: [/^0\d{9}$/, "Phone number must be 10 digits and start with 0"] 
   },
   nin: { 
-    type: String 
+    type: String, 
+    match: [/^[A-Za-z]{2}\d{14}$/, "NIN must have 2 letters followed by 14 digits"]
   },
   email: {
     type: String,
+    trim: true,
+    lowercase: true,
+    validate: {
+      validator: function(v) {
+        return !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+      },
+      message: "Please enter a valid email address"
+    },
   },
   address: { 
      type: String,

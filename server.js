@@ -46,7 +46,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// ========= MOUNT ROUTES (all other routes) =========
+// MOUNT ROUTES (all other routes)
 app.use("/auth", require("./routes/authRoutes"));
 app.use("/customers", require("./routes/customerRoutes"));
 app.use("/suppliers", require("./routes/supplierRoutes"));
@@ -83,4 +83,4 @@ app.use((err, req, res, next) => {
   res.status(500).render("error", { message: err.message, user: req.user });
 });
 
-app.listen(PORT, () => console.log(`✅ Running on http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`😊 We're live on http://localhost:${PORT}`));

@@ -51,11 +51,12 @@ const depositMemberSchema = new mongoose.Schema({
   nin: { 
     type: String, 
     required: true, 
-    unique: true 
+    match: [/^[A-Za-z]{2}\d{14}$/, "NIN must have 2 letters followed by 14 digits"]
   },
   phone: { 
     type: String, 
-    required: true 
+    required: true,
+    match: [/^0\d{9}$/, "Phone number must be 10 digits and start with 0"] 
   },
   address: String,
   employer: String,

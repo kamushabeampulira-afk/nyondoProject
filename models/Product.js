@@ -64,7 +64,6 @@ const productSchema = new mongoose.Schema({
   },
 });
 
-// Virtual or derived productName (optional)
 productSchema.virtual('productName').get(function() {
   return this.productType;
 });

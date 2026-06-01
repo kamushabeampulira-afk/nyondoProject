@@ -13,33 +13,49 @@ block content
       |  Record Supplier Payment
     p.text-muted Record payments against outstanding invoices
 
+  if success_msg && success_msg.length
+    .alert.alert-success= success_msg
+  if error_msg && error_msg.length
+    .alert.alert-danger= error_msg
+
   .form-card.payment-form-card
-    form(method="POST" action="/payments/record")
+
+    // Step 1: Supplier selector — this is a GET form so it just reloads the page
+    // with the selected supplier's invoices. Kept separate from the payment form
+    // so changing supplier never accidentally submits a payment.
+    form(method="GET" action="/payments/record")
       .mb-3
         label.form-label Select Supplier
-        select.form-select(name='supplierId' required onchange='this.form.submit()')
+        select.form-select(name='supplierId' onchange='this.form.submit()')
           option(value='') -- Choose Supplier --
           each sup in suppliers
             option(value=sup._id selected=(selectedSupplierId && selectedSupplierId.toString() === sup._id.toString()))= sup.companyName
 
-      if selectedSupplier && outstandingInvoices && outstandingInvoices.length
+    // Step 2: Payment form — only shown when a supplier with outstanding invoices is selected
+    if selectedSupplier && outstandingInvoices && outstandingInvoices.length
+      hr.my-4
+
+      form(method="POST" action="/payments/record")
+        // Pass supplierId through so the route knows where to redirect on error
+        input(type="hidden" name="supplierId" value=selectedSupplier._id)
+
         .mb-3
-          label.form-label Select Invoice
+          label.form-label Select Invoice *
           select.form-select(name='invoiceId' required)
             option(value='') -- Select Invoice --
             each inv in outstandingInvoices
-              option(value=inv._id) #{inv.invoiceNumber} - #{inv.outstanding.toLocaleString()} UGX outstanding (Due #{inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : '—'})
+              option(value=inv._id) #{inv.invoiceNumber} – #{inv.outstanding.toLocaleString()} UGX outstanding (Due: #{inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : '—'})
 
         .mb-3
           label.form-label Payment Amount (UGX) *
-          input.form-control(type='number' name='amount' min='1' step='1000' required)
+          input.form-control(type='number' name='amount' min='1' step='1000' required placeholder='Enter amount to pay')
 
         .mb-3
-          label.form-label Payment Method
+          label.form-label Payment Method *
           select.form-select(name='paymentMethod' required)
-            option Cash
-            option Bank Transfer
-            option Mobile Money
+            option(value='Cash') Cash
+            option(value='Bank Transfer') Bank Transfer
+            option(value='Mobile Money') Mobile Money
 
         .mb-3
           label.form-label Payment Date
@@ -47,11 +63,18 @@ block content
 
         .mb-3
           label.form-label Reference / Notes
-          input.form-control(type='text' name='reference' placeholder='Optional reference')
+          input.form-control(type='text' name='reference' placeholder='Optional reference or receipt number')
 
         button.btn-primary.w-100(type='submit')
-          i.fa-solid.fa-check-circle
+          i.fa-solid.fa-check-circle.me-2
           | Record Payment
 
-      else if selectedSupplier && (!outstandingInvoices || outstandingInvoices.length === 0)
-        .alert.alert-info No outstanding invoices for this supplier.
+    else if selectedSupplier && (!outstandingInvoices || outstandingInvoices.length === 0)
+      .alert.alert-info.mt-3
+        i.fa-solid.fa-circle-info.me-2
+        | No outstanding invoices for #{selectedSupplier.companyName}. All invoices are fully paid.
+
+    else if !selectedSupplier
+      .alert.alert-secondary.mt-3
+        i.fa-solid.fa-arrow-up.me-2
+        | Select a supplier above to see their outstanding invoices.

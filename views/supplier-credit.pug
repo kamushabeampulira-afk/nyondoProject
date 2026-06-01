@@ -1,8 +1,5 @@
 extends layout
 
-block head
-  link(rel="stylesheet" href="/css/supplier-credit.css")
-
 block title
   | Supplier Credit – NYONDO Hardware
 
@@ -12,6 +9,11 @@ block content
       i.fa-solid.fa-credit-card
       |  Supplier Credit Management
     p.text-muted Track invoices, payments, and outstanding balances
+
+  if success_msg && success_msg.length
+    .alert.alert-success= success_msg
+  if error_msg && error_msg.length
+    .alert.alert-danger= error_msg
 
   .row.g-4.mb-4
     .col-md-3.col-sm-6
@@ -35,7 +37,6 @@ block content
         h6.text-muted Paid This Month
         h3.text-success= (paidThisMonth || 0).toLocaleString() + ' UGX'
 
-  // New Credit Purchase Form (always visible)
   .form-card.mb-4
     h4.mb-3
       i.fa-solid.fa-plus-circle.me-2(style="color: var(--gold);")
@@ -43,46 +44,45 @@ block content
     form(method="POST" action="/supplier-credit/invoices")
       .row.g-3
         .col-md-6
-          label.form-label Supplier Name *
-          select.form-select(name='supplierId' required)
-            option(value='') Select Supplier
+          label.form-label Supplier *
+          select.form-select(name="supplierId" required)
+            option(value="") -- Select Supplier --
             each sup in suppliers
               option(value=sup._id)= sup.companyName
         .col-md-6
           label.form-label Invoice Number *
-          input.form-control(type='text' name='invoiceNumber' required)
+          input.form-control(type="text" name="invoiceNumber" required placeholder="e.g. INV-001")
         .col-md-4
-          label.form-label Purchase Date
-          input.form-control(type='date' name='purchaseDate' value=purchaseDateDefault required)
+          label.form-label Purchase Date *
+          input.form-control(type="date" name="purchaseDate" value=purchaseDateDefault required)
         .col-md-4
-          label.form-label Due Date
-          input.form-control(type='date' name='dueDate' value=dueDateDefault required)
+          label.form-label Due Date *
+          input.form-control(type="date" name="dueDate" value=dueDateDefault required)
         .col-md-4
           label.form-label Total Amount (UGX) *
-          input.form-control(type='number' name='totalAmount' min='0' step='1000' required)
+          input.form-control(type="number" name="totalAmount" min="0" step="1000" required)
         .col-12
           label.form-label Description
-          textarea.form-control(rows='2' name='description')
+          textarea.form-control(rows="2" name="description" placeholder="What was purchased?")
         .col-md-6
           label.form-label Payment Terms
-          select.form-select(name='paymentTerms')
+          select.form-select(name="paymentTerms")
             option Net 30
             option Net 15
             option Net 7
             option Due on receipt
         .col-md-6
           label.form-label Initial Payment (UGX)
-          input.form-control(type='number' name='initialPayment' min='0' step='1000')
+          input.form-control(type="number" name="initialPayment" min="0" step="1000" value="0")
       .mt-4
-        button.btn-primary(type='submit')
-          i.fa-solid.fa-save
-          |  Save Credit Purchase
+        button.btn-primary(type="submit")
+          i.fa-solid.fa-save.me-2
+          | Save Credit Purchase
 
-  // Outstanding Invoices Table
   .section-card.mb-4
     .section-head
       h2
-        i.fa-solid.fa-clock-rotate-left.me-2(style="color: var(--gold);")
+        i.fa-solid.fa-file-invoice.me-2(style="color: var(--gold);")
         | Outstanding Invoices
     .table-responsive
       table.data-table
@@ -90,11 +90,12 @@ block content
           tr
             th Invoice #
             th Supplier
-            th Amount (UGX)
+            th Total (UGX)
+            th Paid (UGX)
+            th Outstanding (UGX)
             th Due Date
-            th Days Left
             th Status
-            th Actions
+            th Pay
         tbody
           if invoices && invoices.length
             each inv in invoices
@@ -102,41 +103,37 @@ block content
               - const daysRemaining = inv.dueDate ? Math.ceil((new Date(inv.dueDate) - new Date()) / (1000*3600*24)) : null
               tr
                 td= inv.invoiceNumber
-                td= inv.supplierId.companyName
-                td.amount= inv.totalAmount.toLocaleString()
-                td= inv.dueDate ? inv.dueDate.toLocaleDateString() : '—'
+                td= inv.supplierId ? inv.supplierId.companyName : '—'
+                td= inv.totalAmount.toLocaleString()
+                td= inv.paidAmount.toLocaleString()
+                td(class=inv.outstanding > 0 ? 'text-warning fw-bold' : 'text-success')= inv.outstanding.toLocaleString()
+                td= inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : '—'
                 td
                   if inv.status === 'Paid'
-                    span.text-muted Paid
-                  else if isOverdue
-                    span.text-danger Overdue by #{Math.abs(daysRemaining)} days
-                  else
-                    span.text-success= daysRemaining + ' days'
-                td
-                  if inv.status === 'Pending'
-                    span.status-pill.sp-pending Pending
-                  else if inv.status === 'Partially Paid'
-                    span.status-pill.sp-scheme Partially Paid
-                  else if inv.status === 'Paid'
-                    span.status-pill.sp-paid Paid
+                    span.status-pill.sp-paid Paid ✓
                   else if isOverdue
                     span.status-pill.sp-credit Overdue
+                  else if inv.status === 'Partially Paid'
+                    span.status-pill.sp-scheme Partial
                   else
                     span.status-pill.sp-pending Pending
                 td
                   if inv.outstanding > 0
-                    a.btn-outline.btn-sm(href=`/payments/record?supplierId=${inv.supplierId._id}`)
-                      i.fa-solid.fa-money-bill
-                      | Pay
-                    a.btn-outline.btn-sm.ms-1(href=`/payments/record?supplierId=${inv.supplierId._id}`)
-                      i.fa-solid.fa-arrow-right
+                    form(method="POST" action=`/supplier-credit/pay/${inv._id}`)
+                      .d-flex.gap-1
+                        input.form-control.form-control-sm(type="number" name="amount" placeholder="Amount" min="1" step="1000" style="width:130px;" required)
+                        select.form-select.form-select-sm(name="paymentMethod" style="width:110px;")
+                          option Cash
+                          option Bank Transfer
+                          option Mobile Money
+                        button.btn-primary.btn-sm(type="submit")
+                          i.fa-solid.fa-check
                   else
-                    span.text-muted No action
+                    span.text-muted —
           else
             tr
-              td(colspan='7').text-center No invoices found.
+              td(colspan="8").text-center No invoices found.
 
-  // Recent Payments
   .section-card
     .section-head
       h2
@@ -149,19 +146,19 @@ block content
             th Date
             th Supplier
             th Invoice #
-            th Amount Paid
+            th Amount Paid (UGX)
             th Method
             th Reference
         tbody
           if recentPayments && recentPayments.length
             each pmt in recentPayments
               tr
-                td= pmt.paymentDate ? pmt.paymentDate.toLocaleDateString() : '—'
+                td= pmt.paymentDate ? new Date(pmt.paymentDate).toLocaleDateString() : '—'
                 td= pmt.supplierId ? pmt.supplierId.companyName : '—'
                 td= pmt.invoiceId ? pmt.invoiceId.invoiceNumber : '—'
-                td.amount= pmt.amount.toLocaleString()
+                td.text-success= pmt.amount.toLocaleString()
                 td= pmt.paymentMethod || '—'
                 td= pmt.reference || '—'
           else
             tr
-              td(colspan='6').text-center No recent payments.
+              td(colspan="6").text-center No recent payments.

@@ -70,6 +70,7 @@ router.get('/register', isManagerOrAdmin, async (req, res) => {
   res.render('deposit-register', { products, user: req.user });
 });
 
+// REGISTER POST
 router.post('/register', isManagerOrAdmin, async (req, res) => {
   try {
     const { fullName, nin, phone, address, employer, productId, quantity, distance, requiresDelivery } = req.body;
@@ -80,6 +81,8 @@ router.post('/register', isManagerOrAdmin, async (req, res) => {
     if (!product) throw new Error('Product not found');
 
     const qty = parseInt(quantity) || 1;
+    if (product.currentStock < qty) throw new Error(`Only ${product.currentStock} units in stock`);
+
     const targetAmount = product.unitPrice * qty;
     const needsDelivery = requiresDelivery === 'on' || requiresDelivery === true;
     const dist = parseFloat(distance) || 5;
@@ -104,7 +107,12 @@ router.post('/register', isManagerOrAdmin, async (req, res) => {
     });
 
     await member.save();
-    req.flash('success_msg', `Member ${member.fullName} registered successfully!`);
+
+    // Deduct stock immediately on goal registration
+    product.currentStock -= qty;
+    await product.save();
+
+    req.flash('success_msg', `Member ${member.fullName} registered successfully! ${qty} x ${product.productName} reserved from stock.`);
     res.redirect('/deposit-scheme/members');
   } catch (err) {
     req.flash('error_msg', err.message);
@@ -112,7 +120,52 @@ router.post('/register', isManagerOrAdmin, async (req, res) => {
   }
 });
 
-// DEPOSIT (POST) 
+// ADD NEW GOAL TO EXISTING MEMBER
+router.post('/add-goal', isManagerOrAdmin, async (req, res) => {
+  try {
+    const { memberId, productId, quantity, distance, requiresDelivery } = req.body;
+    const member = await DepositMember.findById(memberId);
+    if (!member) throw new Error('Member not found');
+
+    const product = await Product.findById(productId);
+    if (!product) throw new Error('Product not found');
+
+    const qty = parseInt(quantity) || 1;
+    if (product.currentStock < qty) throw new Error(`Only ${product.currentStock} units in stock`);
+
+    const targetAmount = product.unitPrice * qty;
+    const needsDelivery = requiresDelivery === 'on' || requiresDelivery === true;
+    const dist = parseFloat(distance) || 5;
+    const deliveryFee = needsDelivery ? calcDeliveryFee(targetAmount, dist) : 0;
+    const totalTarget = targetAmount + deliveryFee;
+
+    member.goals.push({
+      productId: product._id,
+      productName: product.productName,
+      quantity: qty,
+      unitPrice: product.unitPrice,
+      targetAmount: totalTarget,
+      savedAmount: 0,
+      requiresDelivery: needsDelivery,
+      deliveryFee,
+      status: 'Saving'
+    });
+
+    await member.save();
+
+    // Deduct stock immediately on goal creation
+    product.currentStock -= qty;
+    await product.save();
+
+    req.flash('success_msg', `New goal added for ${member.fullName} — ${qty} x ${product.productName} reserved from stock.`);
+    res.redirect('/deposit-scheme');
+  } catch (err) {
+    req.flash('error_msg', err.message);
+    res.redirect('/deposit-scheme');
+  }
+});
+
+// DEPOSIT (POST)
 router.post('/deposit', isManagerOrAdmin, async (req, res) => {
   try {
     const { memberId, goalId, amount, paymentMethod } = req.body;
@@ -172,52 +225,14 @@ router.post('/deposit', isManagerOrAdmin, async (req, res) => {
   }
 });
 
-// RECEIPT PAGE
+// DEPOSIT RECEIPT PAGE
 router.get('/receipt/:id', isManagerOrAdmin, async (req, res) => {
   try {
     const receipt = await DepositReceipt.findById(req.params.id)
       .populate('memberId')
       .populate('recordedBy', 'fullName');
     if (!receipt) throw new Error('Receipt not found');
-    res.render('deposit-receipt-new', { receipt, user: req.user });
-  } catch (err) {
-    req.flash('error_msg', err.message);
-    res.redirect('/deposit-scheme');
-  }
-});
-
-// ADD NEW GOAL TO EXISTING MEMBER
-router.post('/add-goal', isManagerOrAdmin, async (req, res) => {
-  try {
-    const { memberId, productId, quantity, distance, requiresDelivery } = req.body;
-    const member = await DepositMember.findById(memberId);
-    if (!member) throw new Error('Member not found');
-
-    const product = await Product.findById(productId);
-    if (!product) throw new Error('Product not found');
-
-    const qty = parseInt(quantity) || 1;
-    const targetAmount = product.unitPrice * qty;
-    const needsDelivery = requiresDelivery === 'on' || requiresDelivery === true;
-    const dist = parseFloat(distance) || 5;
-    const deliveryFee = needsDelivery ? calcDeliveryFee(targetAmount, dist) : 0;
-    const totalTarget = targetAmount + deliveryFee;
-
-    member.goals.push({
-      productId: product._id,
-      productName: product.productName,
-      quantity: qty,
-      unitPrice: product.unitPrice,
-      targetAmount: totalTarget,
-      savedAmount: 0,
-      requiresDelivery: needsDelivery,
-      deliveryFee,
-      status: 'Saving'
-    });
-
-    await member.save();
-    req.flash('success_msg', `New goal added for ${member.fullName} — ${qty} x ${product.productName}`);
-    res.redirect('/deposit-scheme');
+    res.render('deposit-receipt', { receipt, user: req.user });
   } catch (err) {
     req.flash('error_msg', err.message);
     res.redirect('/deposit-scheme');
@@ -235,13 +250,7 @@ router.post('/pickup', isManagerOrAdmin, async (req, res) => {
     if (!goal) throw new Error('Goal not found');
     if (goal.status !== 'Goal Reached') throw new Error('Goal not yet fully funded');
 
-    const product = await Product.findById(goal.productId);
-    if (!product) throw new Error('Product not found');
-    if (product.currentStock < goal.quantity) throw new Error(`Only ${product.currentStock} units in stock`);
-
-    product.currentStock -= goal.quantity;
-    await product.save();
-
+    // Stock already deducted at goal creation, just mark as picked up
     member.balance -= goal.targetAmount;
     goal.status = 'Picked Up';
     await member.save();
@@ -261,10 +270,44 @@ router.post('/pickup', isManagerOrAdmin, async (req, res) => {
     await transaction.save();
 
     req.flash('success_msg', `Pickup successful! ${goal.quantity} x ${goal.productName} released.`);
-    res.redirect('/deposit-scheme');
+    res.redirect(`/deposit-scheme/pickup-receipt/${member._id}/${goal._id}`);
   } catch (err) {
     req.flash('error_msg', err.message);
     res.redirect('/deposit-scheme');
+  }
+});
+
+// PICKUP RECEIPT PAGE
+router.get('/pickup-receipt/:memberId/:goalId', isManagerOrAdmin, async (req, res) => {
+  try {
+    const member = await DepositMember.findById(req.params.memberId);
+    if (!member) throw new Error('Member not found');
+    const goal = member.goals.id(req.params.goalId);
+    if (!goal) throw new Error('Goal not found');
+    res.render('deposit-pickup-receipt', { member, goal, user: req.user });
+  } catch (err) {
+    req.flash('error_msg', err.message);
+    res.redirect('/deposit-scheme');
+  }
+});
+
+// API: fetch live goals for a member (used by deposit form)
+router.get('/api/member-goals/:memberId', isManagerOrAdmin, async (req, res) => {
+  try {
+    const member = await DepositMember.findById(req.params.memberId);
+    if (!member) return res.json([]);
+    res.json(member.goals.map(g => ({
+      _id: g._id.toString(),
+      productName: g.productName,
+      quantity: g.quantity,
+      targetAmount: g.targetAmount,
+      savedAmount: g.savedAmount,
+      status: g.status,
+      deliveryFee: g.deliveryFee,
+      requiresDelivery: g.requiresDelivery
+    })));
+  } catch (err) {
+    res.json([]);
   }
 });
 
@@ -282,7 +325,7 @@ router.get('/transactions', isManagerOrAdmin, async (req, res) => {
   }
 });
 
-// MEMBER STATEMENT 
+// MEMBER STATEMENT
 router.get('/member-statement', isManagerOrAdmin, async (req, res) => {
   try {
     const { memberId, range } = req.query;

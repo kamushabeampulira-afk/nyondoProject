@@ -1,10 +1,10 @@
 const mongoose = require("mongoose");
 
 const creditInvoiceSchema = new mongoose.Schema({
-  invoiceNumber: { 
-    type: String, 
-    unique: true, 
-    required: true 
+  invoiceNumber: {
+    type: String,
+    unique: true,
+    required: true
   },
   supplierId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -29,9 +29,7 @@ const creditInvoiceSchema = new mongoose.Schema({
   },
   outstanding: {
     type: Number,
-    default: function () {
-      return this.totalAmount - this.paidAmount;
-    },
+    default: 0,
   },
   description: String,
   paymentTerms: String,
@@ -43,11 +41,18 @@ const creditInvoiceSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-creditInvoiceSchema.pre("save", function (next) {
+creditInvoiceSchema.pre("save", async function () {
+  this.totalAmount = Number(this.totalAmount) || 0;
+  this.paidAmount  = Number(this.paidAmount)  || 0;
   this.outstanding = this.totalAmount - this.paidAmount;
-  next();
+
+  if (this.outstanding <= 0) {
+    this.status = "Paid";
+  } else if (this.paidAmount > 0) {
+    this.status = "Partially Paid";
+  }
+  // Note: "Overdue" is set by date logic in the routes/views, not here
 });
 
-module.exports =
-  mongoose.models.CreditInvoice ||
-  mongoose.model("CreditInvoice", creditInvoiceSchema);
+module.exports = mongoose.models.CreditInvoice
+  || mongoose.model("CreditInvoice", creditInvoiceSchema);

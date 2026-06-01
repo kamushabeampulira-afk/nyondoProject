@@ -12,7 +12,8 @@ const supplierSchema = new mongoose.Schema({
   },
   phone: { 
     type: String, 
-    required: true 
+    required: true,
+    match: [/^0\d{9}$/, "Phone number must be 10 digits and start with 0"] 
   },
   email: String,
   address: String,

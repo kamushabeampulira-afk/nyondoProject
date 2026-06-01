@@ -10,10 +10,10 @@ const DepositTransaction = require('../models/DepositTransaction');
 
 router.get('/', ensureAuthenticated, async (req, res) => {
   try {
-    const todayStart = new Date(); todayStart.setHours(0,0,0,0);
-    const todayEnd = new Date(); todayEnd.setHours(23,59,59,999);
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
 
-    // KPIs
+    // KPIs — available to all roles
     const todaySalesAgg = await Sale.aggregate([
       { $match: { createdAt: { $gte: todayStart, $lte: todayEnd } } },
       { $group: { _id: null, total: { $sum: '$grandTotal' } } }
@@ -29,16 +29,21 @@ router.get('/', ensureAuthenticated, async (req, res) => {
     const creditBalance = creditAgg[0]?.total || 0;
 
     const depositMembers = await DepositMember.countDocuments();
-    const lowStockCount = products.filter(p => p.currentStock < 15 && p.currentStock > 0).length;
-    const transactionsToday = await Sale.countDocuments({ createdAt: { $gte: todayStart, $lte: todayEnd } });
+
+    // BUG FIX: reorderLevel is per-product, not hardcoded to 15
+    const lowStockCount = products.filter(p => p.currentStock < (p.reorderLevel || 15) && p.currentStock > 0).length;
+
+    const transactionsToday = await Sale.countDocuments({
+      createdAt: { $gte: todayStart, $lte: todayEnd }
+    });
     const pendingInvoices = await CreditInvoice.countDocuments({ outstanding: { $gt: 0 } });
 
-    // Daily sales for last 7 days (table, not chart)
+    // Daily sales for last 7 days
     const dailySales = [];
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      d.setHours(0,0,0,0);
+      d.setHours(0, 0, 0, 0);
       const nextDay = new Date(d);
       nextDay.setDate(d.getDate() + 1);
       const salesData = await Sale.aggregate([
@@ -51,28 +56,38 @@ router.get('/', ensureAuthenticated, async (req, res) => {
       });
     }
 
-    // Sales attendant specific data
     let productsInStock = [];
     let recentSalesAttendant = [];
-    if (req.user.role === 'sales' || req.user.role === 'attendant') {
+    if (req.user.role === 'attendant') {
       productsInStock = await Product.find({ currentStock: { $gt: 0 } })
-        .select('productName currentStock unitPrice')
+        .select('productType currentStock unitPrice')
+        .sort({ productType: 1 })
         .limit(20);
       recentSalesAttendant = await Sale.find({ attendant: req.user._id })
         .sort({ createdAt: -1 })
         .limit(5);
     }
 
-    // Admin/manager recent data
+    // Admin/manager data
     let recentSales = [];
     let recentStock = [];
     let recentDeposits = [];
+
     if (req.user.role === 'admin' || req.user.role === 'manager') {
-      recentSales = await Sale.find().sort({ createdAt: -1 }).limit(5).populate('attendant', 'fullName');
-      recentStock = await StockTransaction.find().sort({ createdAt: -1 }).limit(5);
+      recentSales = await Sale.find()
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .populate('attendant', 'fullName');
+      recentStock = await StockTransaction.find()
+        .sort({ createdAt: -1 })
+        .limit(5);
     }
+
     if (req.user.role === 'admin') {
-      recentDeposits = await DepositTransaction.find().sort({ createdAt: -1 }).limit(5).populate('memberId', 'fullName');
+      recentDeposits = await DepositTransaction.find()
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .populate('memberId', 'fullName');
     }
 
     res.render('dashboard', {
@@ -89,12 +104,27 @@ router.get('/', ensureAuthenticated, async (req, res) => {
       recentSalesAttendant,
       recentSales,
       recentStock,
-      recentDeposits
+      recentDeposits,
     });
   } catch (err) {
-    console.error(err);
-    req.flash('error_msg', 'Failed to load dashboard data');
-    res.redirect('/dashboard');
+    console.error('Dashboard error:', err);
+    req.flash('error_msg', 'Failed to load dashboard data: ' + err.message);
+    res.render('dashboard', {
+      user: req.user,
+      todaySales: 0,
+      stockValue: 0,
+      creditBalance: 0,
+      depositMembers: 0,
+      lowStockCount: 0,
+      transactionsToday: 0,
+      pendingInvoices: 0,
+      dailySales: [],
+      productsInStock: [],
+      recentSalesAttendant: [],
+      recentSales: [],
+      recentStock: [],
+      recentDeposits: [],
+    });
   }
 });
 

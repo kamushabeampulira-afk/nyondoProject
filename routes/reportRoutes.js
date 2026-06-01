@@ -9,6 +9,7 @@ const { isAdmin } = require("../middleware/auth");
 
 router.get("/", isAdmin, async (req, res) => {
   try {
+    // Overall revenue
     const revenueAgg = await Sale.aggregate([
       { $group: { _id: null, total: { $sum: "$grandTotal" } } },
     ]);
@@ -22,6 +23,7 @@ router.get("/", isAdmin, async (req, res) => {
     ]);
     const activeCustomers = activeCustomersAgg[0]?.count || 0;
 
+    // Sales summary — last 3 days
     const today = new Date();
     const days = [];
     for (let i = 0; i < 3; i++) {
@@ -55,22 +57,30 @@ router.get("/", isAdmin, async (req, res) => {
     }
     const salesSummary = days;
 
-    const categories = ["Cement", "Steel/Iron", "Roofing", "Other"];
+    // BUG FIX: Category names now match exactly what getCategoryFromProductType() sets.
+    // Previously "Steel/Iron" and "Roofing" didn't match the stored categories which
+    // caused stockSummary to always show 0 items and 0 value for those categories.
+    const categories = ["Cement", "Steel/Iron", "Roofing", "Nails", "Equipment", "Fencing", "Other"];
     const stockSummary = [];
     for (let cat of categories) {
-      const products = await Product.find({ category: cat });
-      const totalValue = products.reduce(
+      const catProducts = await Product.find({ category: cat });
+      if (catProducts.length === 0) continue; // Don't show empty categories
+      const totalValue = catProducts.reduce(
         (sum, p) => sum + p.currentStock * p.unitCost,
         0,
       );
-      const itemsCount = products.length;
-      const lowStock = products.filter(
-        (p) => p.currentStock <= (p.reorderLevel || 15),
+      const itemsCount = catProducts.length;
+      const lowStock = catProducts.filter(
+        (p) => p.currentStock <= (p.reorderLevel || 15) && p.currentStock > 0,
       ).length;
-      let status = lowStock > 0 ? "Low Stock" : "Adequate";
+      const outOfStock = catProducts.filter(p => p.currentStock === 0).length;
+      let status = "Adequate";
+      if (outOfStock > 0) status = "Out of Stock";
+      else if (lowStock > 0) status = "Low Stock";
       stockSummary.push({ category: cat, totalValue, itemsCount, status });
     }
 
+    // Top deposit members
     const topDepositMembers = await DepositMember.find()
       .sort({ balance: -1 })
       .limit(5);
@@ -81,6 +91,7 @@ router.get("/", isAdmin, async (req, res) => {
       pickupCount: 0,
     }));
 
+    // Supplier credit summary
     const now = new Date();
     const supplierCreditSummary = await CreditInvoice.find({
       outstanding: { $gt: 0 },
@@ -94,6 +105,7 @@ router.get("/", isAdmin, async (req, res) => {
       status: inv.dueDate < now ? "Overdue" : "Pending",
     }));
 
+    // Monthly revenue chart data — last 6 months
     const months = [];
     const revenue = [];
     const profit = [];
@@ -102,6 +114,7 @@ router.get("/", isAdmin, async (req, res) => {
       d.setMonth(d.getMonth() - i);
       const start = new Date(d.getFullYear(), d.getMonth(), 1);
       const end = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+      end.setHours(23, 59, 59, 999);
       const monthSales = await Sale.aggregate([
         { $match: { createdAt: { $gte: start, $lte: end } } },
         { $group: { _id: null, total: { $sum: "$grandTotal" } } },
@@ -114,11 +127,15 @@ router.get("/", isAdmin, async (req, res) => {
       profit.push(total * 0.3);
     }
 
+    // Inventory counts
     const totalSkus = await Product.countDocuments();
-    const lowStockCount = (await Product.find()).filter(
+    const allProducts = await Product.find();
+    const lowStockCount = allProducts.filter(
       (p) => p.currentStock <= (p.reorderLevel || 15) && p.currentStock > 0,
     ).length;
     const outOfStockCount = await Product.countDocuments({ currentStock: 0 });
+
+    // Deposit scheme stats
     const depositMembersCount = await DepositMember.countDocuments();
     const totalDepositsAgg = await DepositTransaction.aggregate([
       { $match: { type: "deposit" } },
@@ -129,6 +146,8 @@ router.get("/", isAdmin, async (req, res) => {
       { $group: { _id: null, total: { $sum: "$balance" } } },
     ]);
     const activeDepositBalance = activeDepositBalanceAgg[0]?.total || 0;
+
+    // Credit stats
     const totalCreditAgg = await CreditInvoice.aggregate([
       { $group: { _id: null, total: { $sum: "$totalAmount" } } },
     ]);
@@ -143,15 +162,16 @@ router.get("/", isAdmin, async (req, res) => {
       { $group: { _id: null, total: { $sum: "$outstanding" } } },
     ]);
     const overdueCredit = overdueCreditAgg[0]?.total || 0;
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const todayEnd = new Date();
-    todayEnd.setHours(23, 59, 59, 999);
+
+    // Sales periods
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
     const todaySalesAgg = await Sale.aggregate([
       { $match: { createdAt: { $gte: todayStart, $lte: todayEnd } } },
       { $group: { _id: null, total: { $sum: "$grandTotal" } } },
     ]);
     const todaySales = todaySalesAgg[0]?.total || 0;
+
     const weekStart = new Date();
     weekStart.setDate(weekStart.getDate() - weekStart.getDay());
     weekStart.setHours(0, 0, 0, 0);
@@ -163,11 +183,9 @@ router.get("/", isAdmin, async (req, res) => {
       { $group: { _id: null, total: { $sum: "$grandTotal" } } },
     ]);
     const weeklySales = weekSalesAgg[0]?.total || 0;
-    const monthStart = new Date();
-    monthStart.setDate(1);
-    monthStart.setHours(0, 0, 0, 0);
-    const monthEnd = new Date();
-    monthEnd.setMonth(monthEnd.getMonth() + 1, 0);
+
+    const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
+    const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
     monthEnd.setHours(23, 59, 59, 999);
     const monthSalesAgg = await Sale.aggregate([
       { $match: { createdAt: { $gte: monthStart, $lte: monthEnd } } },
@@ -202,7 +220,7 @@ router.get("/", isAdmin, async (req, res) => {
       user: req.user,
     });
   } catch (err) {
-    console.error(err);
+    console.error("Reports error:", err);
     req.flash("error_msg", err.message);
     res.redirect("/dashboard");
   }

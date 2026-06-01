@@ -23,41 +23,41 @@ block content
 
   // ========= KPI CARDS =========
   .row.g-4.mb-4
-    .col-md-3.col-sm-6
+    .col
       .section-card.metric-card.p-3.text-center
         i.fa-solid.fa-sack-dollar.fa-2x.mb-2(style="color: var(--gold);")
         h6.text-muted Today's Sales
         h3= (todaySales || 0).toLocaleString() + ' UGX'
     if user.role === 'admin' || user.role === 'manager'
-      .col-md-3.col-sm-6
+      .col
         .section-card.metric-card.p-3.text-center
           i.fa-solid.fa-warehouse.fa-2x.mb-2(style="color: var(--gold);")
           h6.text-muted Stock Value
           h3= (stockValue || 0).toLocaleString() + ' UGX'
     if user.role === 'admin'
-      .col-md-3.col-sm-6
+      .col
         .section-card.metric-card.p-3.text-center
           i.fa-solid.fa-hand-holding-dollar.fa-2x.mb-2(style="color: var(--gold);")
           h6.text-muted Credit Balance
           h3= (creditBalance || 0).toLocaleString() + ' UGX'
-      .col-md-3.col-sm-6
+      .col
         .section-card.metric-card.p-3.text-center
           i.fa-solid.fa-piggy-bank.fa-2x.mb-2(style="color: var(--gold);")
           h6.text-muted Deposit Members
           h3= (depositMembers || 0)
     if user.role === 'manager'
-      .col-md-3.col-sm-6
+      .col
         .section-card.metric-card.p-3.text-center
           i.fa-solid.fa-triangle-exclamation.fa-2x.mb-2(style="color: var(--gold);")
           h6.text-muted Low Stock Items
           h3.text-warning= lowStockCount || 0
     if user.role === 'attendant'
-      .col-md-3.col-sm-6
+      .col
         .section-card.metric-card.p-3.text-center
           i.fa-solid.fa-receipt.fa-2x.mb-2(style="color: var(--gold);")
           h6.text-muted Transactions Today
           h3= transactionsToday || 0
-      .col-md-3.col-sm-6
+      .col
         .section-card.metric-card.p-3.text-center
           i.fa-solid.fa-clock.fa-2x.mb-2(style="color: var(--gold);")
           h6.text-muted Pending Invoices
