@@ -29,11 +29,14 @@ block content
           label.form-label Unit Price (UGX) *
           input.form-control(type='number' name='unitPrice' step='500' required)
         .col-md-6
-          label.form-label Supplier Name *
-          input.form-control(type='text' name='supplierName' required)
+          label.form-label Supplier *
+          select.form-select(name='supplierName' required)
+            option(value='') Select supplier
+            each sup in suppliers
+              option(value=sup.companyName) #{sup.companyName}
         .col-md-6
           label.form-label Supplier Phone
-          input.form-control(type='tel' name='supplierPhone')
+          input.form-control(type='tel' name='supplierPhone' readonly)
         .col-md-6
           label.form-label Factory Name
           input.form-control(type='text' name='factoryName')
@@ -55,6 +58,17 @@ block content
         a.btn-outline(href="/inventory") Cancel
 
   script.
+    // Auto-fill supplier phone when supplier is selected
+    const supplierPhones = {};
+    !{JSON.stringify(suppliers.map(s => ({ name: s.companyName, phone: s.phone || '' })))}
+      .forEach(function(s) { supplierPhones[s.name] = s.phone; });
+
+    document.querySelector('select[name="supplierName"]').addEventListener('change', function() {
+      const phone = supplierPhones[this.value] || '';
+      document.querySelector('input[name="supplierPhone"]').value = phone;
+    });
+
+    // Show/hide balance due field based on payment status
     function togglePaymentFields() {
       const status = document.querySelector('select[name="paymentStatus"]').value;
       const balanceField = document.getElementById('balanceDueField');
@@ -72,6 +86,7 @@ block content
       return qty * cost;
     }
 
+    // Recalculate balance due when amount paid changes
     document.querySelector('input[name="amountPaid"]').addEventListener('input', function() {
       const total = calculateTotalCost();
       const paid = parseFloat(this.value) || 0;
@@ -79,8 +94,9 @@ block content
       if (balanceInput) balanceInput.value = Math.max(total - paid, 0);
     });
 
-    document.querySelectorAll('input[name="quantityAdded"], input[name="unitCost"]').forEach(field => {
-      field.addEventListener('input', () => {
+    // Recalculate balance due when qty or cost changes
+    document.querySelectorAll('input[name="quantityAdded"], input[name="unitCost"]').forEach(function(field) {
+      field.addEventListener('input', function() {
         const amountPaid = document.querySelector('input[name="amountPaid"]');
         if (amountPaid && amountPaid.value) amountPaid.dispatchEvent(new Event('input'));
       });

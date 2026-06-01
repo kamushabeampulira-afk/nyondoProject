@@ -30,7 +30,6 @@ router.get('/', ensureAuthenticated, async (req, res) => {
 
     const depositMembers = await DepositMember.countDocuments();
 
-    // BUG FIX: reorderLevel is per-product, not hardcoded to 15
     const lowStockCount = products.filter(p => p.currentStock < (p.reorderLevel || 15) && p.currentStock > 0).length;
 
     const transactionsToday = await Sale.countDocuments({

@@ -38,6 +38,11 @@ const creditInvoiceSchema = new mongoose.Schema({
     enum: ["Pending", "Partially Paid", "Paid", "Overdue"],
     default: "Pending",
   },
+  stockTransactionId: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "StockTransaction",
+  default: null,
+},
   createdAt: { type: Date, default: Date.now },
 });
 

@@ -41,16 +41,11 @@ router.get("/record", isManagerOrAdmin, async (req, res) => {
 });
 
 // POST /payments/record — save payment against an invoice
-// BUG FIX: amount was never cast to Number() before comparison — "5000" > 100 is true in JS
-//          string comparison which caused incorrect "exceeds outstanding" errors or allowed
-//          wrong amounts through.
-// BUG FIX: supplierId is now taken from the invoice itself (not req.body) so redirect is always correct.
-// BUG FIX: Added validation for all required fields before starting the DB session.
+
 router.post("/record", isManagerOrAdmin, async (req, res) => {
-  // Validate before starting session to give cleaner error messages
+
   const { supplierId, invoiceId, amount, paymentMethod, paymentDate, reference } = req.body;
 
-  // BUG FIX: Cast to Number immediately
   const payAmount = Number(amount);
 
   if (!invoiceId || invoiceId.trim() === "") {

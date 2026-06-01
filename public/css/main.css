@@ -334,7 +334,7 @@ body {
 }
 
 .data-table th {
-  background: #f8f9fa;
+  background: #f8faf8;
   color: var(--dark-green);
   font-weight: 600;
   font-size: 0.8rem;

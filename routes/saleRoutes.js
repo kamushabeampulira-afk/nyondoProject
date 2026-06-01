@@ -71,13 +71,6 @@ router.post(
 // The sales.pug uses fetch() with JSON body, so this route accepts JSON.
 // It returns JSON { saleId } on success or { error } on failure.
 // The view's JS then redirects to /sales/invoice/:id on success.
-//
-// FIXES applied vs original:
-//   1. Items come from req.body.items (JSON array from fetch) — validated properly.
-//   2. All stock validation runs BEFORE any DB writes (all-or-nothing).
-//   3. Deposit Scheme: searches by name case-insensitively and gives clear error messages.
-//   4. Stock deducted with $inc (atomic) after all checks pass.
-//   5. Session cart cleared after successful sale.
 router.post(
   "/checkout",
   allowRoles(["manager", "attendant", "admin"]),

@@ -2,10 +2,10 @@ const express = require("express");
 const router = express.Router();
 const Product = require("../models/Product");
 const StockTransaction = require("../models/StockTransaction");
+const CreditInvoice = require("../models/CreditInvoice");
+const Supplier = require("../models/Supplier");
 const { isManagerOrAdmin } = require("../middleware/auth");
 
-// BUG FIX: Category names now match exactly what the reports route expects
-// and what makes sense for the product types in the Product model
 function getCategoryFromProductType(productType) {
   if (productType.includes("Cement")) return "Cement";
   if (productType.includes("Iron Bar")) return "Steel/Iron";
@@ -47,19 +47,22 @@ router.get("/", isManagerOrAdmin, async (req, res) => {
 });
 
 // ADD NEW PRODUCT - form page
-router.get("/new", isManagerOrAdmin, (req, res) => {
-  res.render("inventory-new", { user: req.user });
+router.get("/new", isManagerOrAdmin, async (req, res) => {
+  try {
+    const suppliers = await Supplier.find().sort({ companyName: 1 });
+    res.render("inventory-new", { suppliers, user: req.user });
+  } catch (err) {
+    req.flash("error_msg", err.message);
+    res.redirect("/inventory");
+  }
 });
 
 // ADD NEW PRODUCT - submit
-// BUG FIX: Removed invalid productName field (it's a virtual). 
-// BUG FIX: paymentStatus is now forced to lowercase to match model enum ("cash"/"credit").
-// BUG FIX: Validation order corrected — checks happen before any DB writes.
 router.post("/", isManagerOrAdmin, async (req, res) => {
   try {
     const {
       productType, unitCost, unitPrice, currentStock,
-      reorderLevel, supplierName, supplierPhone, factoryName,
+      reorderLevel, supplierId, supplierPhone, factoryName,
       paymentStatus, amountPaid, sku, description
     } = req.body;
 
@@ -70,11 +73,16 @@ router.post("/", isManagerOrAdmin, async (req, res) => {
     if (Number(unitCost) <= 0)
       throw new Error("Unit cost must be greater than zero.");
 
+    //  Look up supplier by ID
+    const supplier = supplierId ? await Supplier.findById(supplierId) : null;
+    if (supplierId && !supplier)
+      throw new Error("Selected supplier not found. Please refresh and try again.");
+
     const category = getCategoryFromProductType(productType);
 
-    // Check if this product type already exists
     const existing = await Product.findOne({ productType });
-    if (existing) throw new Error(`${productType} already exists in inventory. Use "Add Stock" to increase quantity.`);
+    if (existing)
+      throw new Error(`${productType} already exists in inventory. Use "Add Stock" to increase quantity.`);
 
     const product = new Product({
       productType,
@@ -83,7 +91,7 @@ router.post("/", isManagerOrAdmin, async (req, res) => {
       unitPrice: Number(unitPrice),
       currentStock: Number(currentStock) || 0,
       reorderLevel: Number(reorderLevel) || 15,
-      supplier: supplierName || "",
+      supplier: supplier ? supplier.companyName : "",
       sku: sku || "",
       description: description || "",
       createdBy: req.user._id,
@@ -92,19 +100,26 @@ router.post("/", isManagerOrAdmin, async (req, res) => {
 
     // Only create a StockTransaction if initial stock > 0
     if (Number(currentStock) > 0) {
-      // BUG FIX: paymentStatus forced to lowercase to match enum
       const normalizedPaymentStatus = (paymentStatus || "cash").toLowerCase();
       if (!["cash", "credit"].includes(normalizedPaymentStatus))
         throw new Error("Invalid payment status. Must be cash or credit.");
 
-      const paid = Number(amountPaid) || 0;
+      const qty   = Number(currentStock);
+      const cost  = Number(unitCost);
+      const paid  = Number(amountPaid) || 0;
+      const total = qty * cost;
+
+      if (paid > total)
+        throw new Error(`Amount paid (${paid.toLocaleString()} UGX) cannot exceed total cost (${total.toLocaleString()} UGX).`);
+
       const transaction = new StockTransaction({
         productId: product._id,
         productName: product.productType,
-        quantityAdded: Number(currentStock),
-        unitCost: Number(unitCost),
+        quantityAdded: qty,
+        unitCost: cost,
         unitPrice: Number(unitPrice),
-        supplierName: supplierName || "Initial stock",
+        supplierId: supplier ? supplier._id : null,       // link to supplier
+        supplierName: supplier ? supplier.companyName : "Initial stock",
         supplierPhone: supplierPhone || "",
         factoryName: factoryName || "",
         paymentStatus: normalizedPaymentStatus,
@@ -112,6 +127,26 @@ router.post("/", isManagerOrAdmin, async (req, res) => {
         recordedBy: req.user._id,
       });
       await transaction.save();
+
+      // Auto-create CreditInvoice for credit purchases
+      if (normalizedPaymentStatus === "credit") {
+        if (!supplier)
+          throw new Error("A registered supplier is required for credit purchases.");
+
+        const invoiceNumber = `STK-${transaction._id.toString().slice(-8).toUpperCase()}`;
+        const invoice = new CreditInvoice({
+          supplierId: supplier._id,
+          invoiceNumber,
+          purchaseDate: new Date(),
+          dueDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
+          totalAmount: transaction.totalCost,
+          paidAmount: paid,
+          description: `Credit stock purchase — ${productType} x${qty} @ ${cost.toLocaleString()} UGX`,
+          paymentTerms: "Net 15",
+          stockTransactionId: transaction._id,
+        });
+        await invoice.save();
+      }
     }
 
     req.flash("success_msg", `${productType} added successfully!`);
@@ -126,7 +161,8 @@ router.post("/", isManagerOrAdmin, async (req, res) => {
 router.get("/add-stock", isManagerOrAdmin, async (req, res) => {
   try {
     const products = await Product.find().sort({ productType: 1 });
-    res.render("inventory-add-stock", { products, user: req.user });
+    const suppliers = await Supplier.find().sort({ companyName: 1 }); // pass suppliers
+    res.render("inventory-add-stock", { products, suppliers, user: req.user });
   } catch (err) {
     req.flash("error_msg", err.message);
     res.redirect("/inventory");
@@ -134,15 +170,12 @@ router.get("/add-stock", isManagerOrAdmin, async (req, res) => {
 });
 
 // ADD STOCK - submit
-// BUG FIX: paymentStatus forced to lowercase. 
-// BUG FIX: amountPaid validated against totalCost to prevent impossible values.
-// BUG FIX: unitPrice/unitCost comparison uses Number() to avoid string comparison bugs.
 router.post("/add-stock", isManagerOrAdmin, async (req, res) => {
   try {
     const {
       productId, quantityAdded, unitCost, unitPrice,
       supplierName, supplierPhone, factoryName,
-      paymentStatus, amountPaid
+      paymentStatus, amountPaid,
     } = req.body;
 
     if (!productId || !quantityAdded || Number(quantityAdded) <= 0)
@@ -154,23 +187,30 @@ router.post("/add-stock", isManagerOrAdmin, async (req, res) => {
     if (Number(unitPrice) <= Number(unitCost))
       throw new Error("Selling price must be greater than unit cost.");
     if (!supplierName || supplierName.trim() === "")
-      throw new Error("Supplier name is required.");
+      throw new Error("Please select a supplier.");
 
     const product = await Product.findById(productId);
     if (!product) throw new Error("Product not found.");
+
+    // Look up supplier by name (from the dropdown)
+    const supplier = await Supplier.findOne({ companyName: supplierName.trim() });
+    if (!supplier)
+      throw new Error(`Supplier "${supplierName}" not found. Please add them under Suppliers first.`);
 
     const normalizedPaymentStatus = (paymentStatus || "cash").toLowerCase();
     if (!["cash", "credit"].includes(normalizedPaymentStatus))
       throw new Error("Invalid payment status. Must be cash or credit.");
 
-    const qty = Number(quantityAdded);
-    const cost = Number(unitCost);
+    const qty   = Number(quantityAdded);
+    const cost  = Number(unitCost);
     const price = Number(unitPrice);
-    const paid = Number(amountPaid) || 0;
-    const totalCost = qty * cost;
+    const paid  = Number(amountPaid) || 0;
+    const total = qty * cost;
 
-    if (paid > totalCost)
-      throw new Error(`Amount paid (${paid.toLocaleString()}) cannot exceed total cost (${totalCost.toLocaleString()}).`);
+    if (paid > total)
+      throw new Error(`Amount paid (${paid.toLocaleString()} UGX) cannot exceed total cost (${total.toLocaleString()} UGX).`);
+    if (normalizedPaymentStatus === "credit" && paid >= total)
+      throw new Error("If fully paid, please set payment status to 'Cash'.");
 
     // Update product stock and prices
     product.currentStock += qty;
@@ -184,14 +224,32 @@ router.post("/add-stock", isManagerOrAdmin, async (req, res) => {
       quantityAdded: qty,
       unitCost: cost,
       unitPrice: price,
-      supplierName: supplierName.trim(),
-      supplierPhone: supplierPhone || "",
+      supplierId: supplier._id,           
+      supplierName: supplier.companyName,
+      supplierPhone: supplierPhone || supplier.phone || "",
       factoryName: factoryName || "",
       paymentStatus: normalizedPaymentStatus,
       amountPaid: paid,
       recordedBy: req.user._id,
     });
     await transaction.save();
+
+    // Auto-create CreditInvoice for credit purchases
+    if (normalizedPaymentStatus === "credit") {
+      const invoiceNumber = `STK-${transaction._id.toString().slice(-8).toUpperCase()}`;
+      const invoice = new CreditInvoice({
+        supplierId: supplier._id,
+        invoiceNumber,
+        purchaseDate: new Date(),
+        dueDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
+        totalAmount: transaction.totalCost,
+        paidAmount: paid,
+        description: `Credit stock purchase — ${product.productType} x${qty} @ ${cost.toLocaleString()} UGX`,
+        paymentTerms: "Net 15",
+        stockTransactionId: transaction._id,
+      });
+      await invoice.save();
+    }
 
     req.flash("success_msg", `${qty} units of ${product.productType} added successfully. New stock: ${product.currentStock}.`);
     res.redirect("/inventory");
@@ -207,7 +265,8 @@ router.get("/transactions", isManagerOrAdmin, async (req, res) => {
     const transactions = await StockTransaction.find()
       .sort({ createdAt: -1 })
       .limit(100)
-      .populate("recordedBy", "fullName");
+      .populate("recordedBy", "fullName")
+      .populate("supplierId", "companyName");
     res.render("inventory-transactions", { transactions, user: req.user });
   } catch (err) {
     req.flash("error_msg", err.message);
@@ -228,9 +287,6 @@ router.get("/:id/edit", isManagerOrAdmin, async (req, res) => {
 });
 
 // EDIT PRODUCT - submit
-// BUG FIX: Removed productName (it's a virtual, not a real field).
-// BUG FIX: Used findById then save() instead of findByIdAndUpdate so pre-save hooks run.
-// BUG FIX: Proper Number() coercion before comparison.
 router.post("/:id", isManagerOrAdmin, async (req, res) => {
   try {
     const { productType, unitCost, unitPrice, currentStock, reorderLevel, supplier, sku, description } = req.body;
@@ -247,15 +303,15 @@ router.post("/:id", isManagerOrAdmin, async (req, res) => {
 
     const category = getCategoryFromProductType(productType || product.productType);
 
-    product.productType = productType || product.productType;
-    product.category = category;
-    product.unitCost = Number(unitCost);
-    product.unitPrice = Number(unitPrice);
+    product.productType  = productType  || product.productType;
+    product.category     = category;
+    product.unitCost     = Number(unitCost);
+    product.unitPrice    = Number(unitPrice);
     product.currentStock = Number(currentStock) || product.currentStock;
     product.reorderLevel = Number(reorderLevel) || product.reorderLevel;
-    product.supplier = supplier || product.supplier;
-    product.sku = sku || product.sku;
-    product.description = description || product.description;
+    product.supplier     = supplier    || product.supplier;
+    product.sku          = sku         || product.sku;
+    product.description  = description || product.description;
 
     await product.save();
 
@@ -268,7 +324,6 @@ router.post("/:id", isManagerOrAdmin, async (req, res) => {
 });
 
 // DELETE PRODUCT
-// BUG FIX: Added check to prevent deleting products that still have stock
 router.post("/:id/delete", isManagerOrAdmin, async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);

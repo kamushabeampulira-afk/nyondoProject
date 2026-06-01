@@ -56,10 +56,6 @@ router.get("/", isAdmin, async (req, res) => {
       });
     }
     const salesSummary = days;
-
-    // BUG FIX: Category names now match exactly what getCategoryFromProductType() sets.
-    // Previously "Steel/Iron" and "Roofing" didn't match the stored categories which
-    // caused stockSummary to always show 0 items and 0 value for those categories.
     const categories = ["Cement", "Steel/Iron", "Roofing", "Nails", "Equipment", "Fencing", "Other"];
     const stockSummary = [];
     for (let cat of categories) {

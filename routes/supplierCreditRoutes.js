@@ -59,10 +59,6 @@ router.get("/", isManagerOrAdmin, async (req, res) => {
 });
 
 // CREATE NEW CREDIT INVOICE
-// BUG FIX: All numeric fields are now explicitly cast with Number() before any comparison.
-// BUG FIX: Better duplicate invoice number error message.
-// BUG FIX: Status determined before save, consistent with what the pre-save hook will produce.
-// BUG FIX: initialPayment defaults to 0 when empty string is submitted from the form.
 router.post("/invoices", isManagerOrAdmin, async (req, res) => {
   try {
     const {
@@ -146,14 +142,10 @@ router.post("/invoices", isManagerOrAdmin, async (req, res) => {
 });
 
 // RECORD PAYMENT AGAINST INVOICE (quick pay from the supplier credit page)
-// BUG FIX: amount was compared as a string — now explicitly cast to Number() first.
-// BUG FIX: Payment method validated.
-// BUG FIX: invoice.save() triggers pre-save hook which recalculates outstanding correctly.
 router.post("/pay/:invoiceId", isManagerOrAdmin, async (req, res) => {
   try {
     const { amount, paymentMethod, reference } = req.body;
 
-    // BUG FIX: Cast to Number immediately — req.body values are always strings
     const payAmount = Number(amount);
 
     if (!payAmount || payAmount <= 0)
@@ -164,7 +156,7 @@ router.post("/pay/:invoiceId", isManagerOrAdmin, async (req, res) => {
     if (invoice.outstanding <= 0)
       throw new Error("This invoice is already fully paid.");
 
-    // BUG FIX: Compare numbers not strings
+    
     if (payAmount > invoice.outstanding)
       throw new Error(`Payment amount (${payAmount.toLocaleString()} UGX) exceeds outstanding balance (${invoice.outstanding.toLocaleString()} UGX).`);
 

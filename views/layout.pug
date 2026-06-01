@@ -100,15 +100,19 @@ html(lang="en")
           a.nav-link-item(href="/inventory")
             span.nicon: i.fa-solid.fa-boxes-stacked
             | Inventory
+          .nav-sec-label Finance
+          a.nav-link-item(href="/supplier-credit")
+            span.nicon: i.fa-solid.fa-credit-card
+            | Supplier Credit  
         if user && (user.role === 'attendant' || user.role === 'admin')
           a.nav-link-item(href="/customers")
             span.nicon: i.fa-solid.fa-users
             | Customers
-        if user && user.role === 'admin'
-          .nav-sec-label Finance
-          a.nav-link-item(href="/supplier-credit")
-            span.nicon: i.fa-solid.fa-credit-card
-            | Supplier Credit
+        if user && user.role === 'admin' 
+          //- .nav-sec-label Finance
+          //- a.nav-link-item(href="/supplier-credit")
+          //-   span.nicon: i.fa-solid.fa-credit-card
+          //-   | Supplier Credit
           a.nav-link-item(href="/deposit-scheme")
             span.nicon: i.fa-solid.fa-piggy-bank
             | Deposit Scheme

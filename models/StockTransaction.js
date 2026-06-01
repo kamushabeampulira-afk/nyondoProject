@@ -24,9 +24,14 @@ const stockTransactionSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
-  supplierName: {
+  supplierId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Supplier",
+    default: null
+  },
+  supplierName: {   
     type: String,
-    required: true
+    default: ""
   },
   supplierPhone: String,
   factoryName: String,
@@ -55,10 +60,10 @@ const stockTransactionSchema = new mongoose.Schema({
 
 stockTransactionSchema.pre("save", async function () {
   this.quantityAdded = Number(this.quantityAdded) || 0;
-  this.unitCost     = Number(this.unitCost)      || 0;
-  this.amountPaid   = Number(this.amountPaid)    || 0;
-  this.totalCost    = this.quantityAdded * this.unitCost;
-  this.balanceDue   = this.totalCost - this.amountPaid;
+  this.unitCost      = Number(this.unitCost)      || 0;
+  this.amountPaid    = Number(this.amountPaid)    || 0;
+  this.totalCost     = this.quantityAdded * this.unitCost;
+  this.balanceDue    = this.totalCost - this.amountPaid;
 });
 
 module.exports = mongoose.models.StockTransaction
