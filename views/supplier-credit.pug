@@ -60,7 +60,7 @@ block content
           input.form-control(type="date" name="dueDate" value=dueDateDefault required)
         .col-md-4
           label.form-label Total Amount (UGX) *
-          input.form-control(type="number" name="totalAmount" min="0" step="1000" required)
+          input.form-control(type="number" name="totalAmount" min="0" step="1" required)
         .col-12
           label.form-label Description
           textarea.form-control(rows="2" name="description" placeholder="What was purchased?")
@@ -73,7 +73,7 @@ block content
             option Due on receipt
         .col-md-6
           label.form-label Initial Payment (UGX)
-          input.form-control(type="number" name="initialPayment" min="0" step="1000" value="0")
+          input.form-control(type="number" name="initialPayment" min="0" step="1" value="0")
       .mt-4
         button.btn-primary(type="submit")
           i.fa-solid.fa-save.me-2
@@ -121,7 +121,16 @@ block content
                   if inv.outstanding > 0
                     form(method="POST" action=`/supplier-credit/pay/${inv._id}`)
                       .d-flex.gap-1
-                        input.form-control.form-control-sm(type="number" name="amount" placeholder="Amount" min="1" step="1000" style="width:130px;" required)
+                        input.form-control.form-control-sm(
+                          type="number"
+                          name="amount"
+                          placeholder="Amount"
+                          min="1"
+                          max=inv.outstanding
+                          step="1"
+                          style="width:130px;"
+                          required
+                        )
                         select.form-select.form-select-sm(name="paymentMethod" style="width:110px;")
                           option Cash
                           option Bank Transfer
@@ -149,6 +158,7 @@ block content
             th Amount Paid (UGX)
             th Method
             th Reference
+            th Receipt
         tbody
           if recentPayments && recentPayments.length
             each pmt in recentPayments
@@ -159,6 +169,15 @@ block content
                 td.text-success= pmt.amount.toLocaleString()
                 td= pmt.paymentMethod || '—'
                 td= pmt.reference || '—'
+                td
+                  a(
+                    href=`/supplier-credit/receipt/${pmt._id}`
+                    class="btn-outline btn-sm"
+                    title="Download PDF Receipt"
+                    target="_blank"
+                  )
+                    i.fa-solid.fa-file-pdf.me-1
+                    | Receipt
           else
             tr
-              td(colspan="6").text-center No recent payments.
+              td(colspan="7").text-center No recent payments.

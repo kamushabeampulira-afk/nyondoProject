@@ -34,12 +34,9 @@ block content
             option(value='') Select supplier
             each sup in suppliers
               option(value=sup.companyName) #{sup.companyName}
-        .col-md-6
+        .col-md-3
           label.form-label Supplier Phone
           input.form-control(type='tel' name='supplierPhone' readonly)
-        .col-md-6
-          label.form-label Factory Name
-          input.form-control(type='text' name='factoryName')
         .col-md-6
           label.form-label Payment Status *
           select.form-select(name='paymentStatus' required onchange='togglePaymentFields()')
@@ -58,25 +55,29 @@ block content
         a.btn-outline(href="/inventory") Cancel
 
   script.
-    // Auto-fill supplier phone when supplier is selected
+    // Build supplier phone lookup map from server data
     const supplierPhones = {};
-    !{JSON.stringify(suppliers.map(s => ({ name: s.companyName, phone: s.phone || '' })))}
-      .forEach(function(s) { supplierPhones[s.name] = s.phone; });
+    const supplierList = !{JSON.stringify(suppliers.map(s => ({ name: s.companyName, phone: s.phone || '' })))};
+    supplierList.forEach(function(s) { supplierPhones[s.name] = s.phone; });
 
+    // Auto-fill supplier phone when supplier is selected
     document.querySelector('select[name="supplierName"]').addEventListener('change', function() {
       const phone = supplierPhones[this.value] || '';
       document.querySelector('input[name="supplierPhone"]').value = phone;
     });
 
-    // Show/hide balance due field based on payment status
+    // Show/hide amount paid and balance due fields based on payment status
     function togglePaymentFields() {
       const status = document.querySelector('select[name="paymentStatus"]').value;
       const balanceField = document.getElementById('balanceDueField');
+      const amountPaidField = document.getElementById('amountPaidField');
+
       if (status === 'credit') {
         balanceField.style.display = 'block';
+        amountPaidField.style.display = 'block';
       } else {
         balanceField.style.display = 'none';
-        document.querySelector('input[name="amountPaid"]').value = '';
+        document.querySelector('input[name="amountPaid"]').value = '0';
       }
     }
 
@@ -94,7 +95,7 @@ block content
       if (balanceInput) balanceInput.value = Math.max(total - paid, 0);
     });
 
-    // Recalculate balance due when qty or cost changes
+    // Recalculate balance due when quantity or unit cost changes
     document.querySelectorAll('input[name="quantityAdded"], input[name="unitCost"]').forEach(function(field) {
       field.addEventListener('input', function() {
         const amountPaid = document.querySelector('input[name="amountPaid"]');
@@ -102,4 +103,5 @@ block content
       });
     });
 
+    // Run on page load to set correct initial state
     togglePaymentFields();
