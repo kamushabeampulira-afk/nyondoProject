@@ -3,21 +3,82 @@ extends layout
 block content
   .container.mt-4
     h1 Edit Supplier
-    form(method="POST" action=`/suppliers/${supplier._id}`)
+    form#editSupplierForm(method="POST" action=`/suppliers/${supplier._id}` novalidate)
       .mb-3
-        label.form-label Company Name
-        input.form-control(type="text" name="companyName" value=supplier.companyName required)
+        label.form-label Company Name *
+        input.form-control(type="text" name="companyName" id="editCompanyName" value=supplier.companyName placeholder="e.g. Tororo Cement")
+        small.invalid-feedback Company name is required.
       .mb-3
         label.form-label Contact Person
-        input.form-control(type="text" name="contactPerson" value=supplier.contactPerson)
+        input.form-control(type="text" name="contactPerson" id="editContactPerson" value=supplier.contactPerson placeholder="Full name")
+        small.invalid-feedback Contact person name is required.
       .mb-3
-        label.form-label Phone
-        input.form-control(type="tel" name="phone" value=supplier.phone)
+        label.form-label Phone *
+        input.form-control(type="tel" name="phone" id="editSupplierPhone" value=supplier.phone placeholder="07XXXXXXXX")
+        small.invalid-feedback Enter a valid Ugandan phone number (07XXXXXXXX or +2567XXXXXXXX).
       .mb-3
         label.form-label Email
-        input.form-control(type="email" name="email" value=supplier.email)
+        input.form-control(type="email" name="email" id="editSupplierEmail" value=supplier.email placeholder="supplier@example.com")
+        small.invalid-feedback Please enter a valid email address.
       .mb-3
         label.form-label Address
         textarea.form-control(name="address")= supplier.address
       button.btn-primary(type="submit") Save
       a.btn-outline.ms-2(href="/suppliers") Cancel
+
+  style.
+    .form-control.is-invalid,
+    .form-select.is-invalid {
+      border-color: #dc3545 !important;
+      box-shadow: 0 0 0 0.2rem rgba(220,53,69,.15) !important;
+    }
+    .invalid-feedback {
+      display: none;
+      color: #dc3545;
+      font-size: 0.82rem;
+      margin-top: 0.25rem;
+    }
+    .form-control.is-invalid ~ .invalid-feedback,
+    .form-select.is-invalid ~ .invalid-feedback {
+      display: block;
+    }
+
+  script.
+    function setInvalid(el) { el.classList.add('is-invalid'); el.classList.remove('is-valid'); }
+    function setValid(el)   { el.classList.remove('is-invalid'); el.classList.add('is-valid'); }
+
+    const phoneRegex = /^(07|\+2567)\d{8}$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    document.getElementById('editCompanyName').addEventListener('input', function() {
+      this.value.trim() ? setValid(this) : setInvalid(this);
+    });
+    document.getElementById('editContactPerson').addEventListener('input', function() {
+      this.value.trim() ? setValid(this) : setInvalid(this);
+    });
+    document.getElementById('editSupplierPhone').addEventListener('input', function() {
+      phoneRegex.test(this.value.trim()) ? setValid(this) : setInvalid(this);
+    });
+    document.getElementById('editSupplierEmail').addEventListener('input', function() {
+      if (!this.value.trim()) { this.classList.remove('is-invalid', 'is-valid'); return; }
+      emailRegex.test(this.value.trim()) ? setValid(this) : setInvalid(this);
+    });
+
+    document.getElementById('editSupplierForm').addEventListener('submit', function(e) {
+      let valid = true;
+      const companyName   = document.getElementById('editCompanyName');
+      const contactPerson = document.getElementById('editContactPerson');
+      const phone         = document.getElementById('editSupplierPhone');
+      const email         = document.getElementById('editSupplierEmail');
+
+      if (!companyName.value.trim())                { setInvalid(companyName);   valid = false; } else { setValid(companyName); }
+      if (!contactPerson.value.trim())              { setInvalid(contactPerson); valid = false; } else { setValid(contactPerson); }
+      if (!phoneRegex.test(phone.value.trim()))     { setInvalid(phone);         valid = false; } else { setValid(phone); }
+      if (email.value.trim() && !emailRegex.test(email.value.trim())) { setInvalid(email); valid = false; }
+
+      if (!valid) {
+        e.preventDefault();
+        const first = this.querySelector('.is-invalid');
+        if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });

@@ -11,26 +11,29 @@ block content
     p.text-muted Enter the member's details and first savings goal
 
   .form-card
-    form(method="POST" action="/deposit-scheme/register")
+    form#registerForm(method="POST" action="/deposit-scheme/register" novalidate)
       h5.mb-3(style="color: var(--dark-green); border-left: 4px solid var(--gold); padding-left: 10px;")
         i.fa-solid.fa-user.me-2
         | Personal Details
       .row.g-3.mb-4
         .col-md-6
           label.form-label Full Name *
-          input.form-control(type="text" name="fullName" required)
+          input.form-control(type="text" name="fullName" id="fullName" placeholder="Enter full name")
+          small.invalid-feedback Full name is required.
         .col-md-6
           label.form-label NIN Number *
-          input.form-control(type="text" name="nin" required)
+          input.form-control(type="text" name="nin" id="nin" placeholder="e.g. CM90001234ABCD")
+          small.invalid-feedback NIN number is required.
         .col-md-6
           label.form-label Phone Number *
-          input.form-control(type="tel" name="phone" pattern="^(07|\\+2567)\\d{8}$" required)
+          input.form-control(type="tel" name="phone" id="phone" placeholder="07XXXXXXXX or +2567XXXXXXXX")
+          small.invalid-feedback Enter a valid Ugandan phone number (07XXXXXXXX or +2567XXXXXXXX).
         .col-md-6
           label.form-label Address / Location
-          input.form-control(type="text" name="address")
+          input.form-control(type="text" name="address" placeholder="e.g. Nansana, Wakiso")
         .col-md-12
           label.form-label Employer / Workplace
-          input.form-control(type="text" name="employer")
+          input.form-control(type="text" name="employer" placeholder="e.g. Uganda Telecom")
 
       h5.mb-3.mt-2(style="color: var(--dark-green); border-left: 4px solid var(--gold); padding-left: 10px;")
         i.fa-solid.fa-bullseye.me-2
@@ -38,13 +41,15 @@ block content
       .row.g-3
         .col-md-6
           label.form-label Product *
-          select.form-select(name="productId" required onchange="updateTarget(this)")
+          select.form-select(name="productId" id="productId" onchange="updateTarget(this)")
             option(value="") -- Select Product --
             each prod in products
               option(value=prod._id data-price=prod.unitPrice) #{prod.productName} — #{prod.unitPrice.toLocaleString()} UGX each
+          small.invalid-feedback Please select a product.
         .col-md-6
           label.form-label Quantity *
-          input.form-control(type="number" name="quantity" min="1" value="1" required oninput="updateTarget()")
+          input.form-control(type="number" name="quantity" id="quantity" min="1" value="1" oninput="updateTarget()")
+          small.invalid-feedback Quantity must be at least 1.
         .col-md-6
           label.form-label Distance from Nansana (km)
           input.form-control(type="number" name="distance" min="0" value="5" oninput="updateTarget()")
@@ -64,12 +69,30 @@ block content
           input.form-control(type="text" id="totalDisplay" readonly style="background: rgba(0,51,0,0.06); font-weight:800; font-size:1.1rem; color: var(--dark-green);")
 
       .d-flex.gap-3.mt-4
-        button.btn-primary(type="submit")
+        button.btn-primary(type="submit" id="registerSubmitBtn")
           i.fa-solid.fa-save.me-2
           | Register Member
         a.btn-outline(href="/deposit-scheme") Cancel
 
+  style.
+    .form-control.is-invalid,
+    .form-select.is-invalid {
+      border-color: #dc3545 !important;
+      box-shadow: 0 0 0 0.2rem rgba(220,53,69,.15) !important;
+    }
+    .invalid-feedback {
+      display: none;
+      color: #dc3545;
+      font-size: 0.82rem;
+      margin-top: 0.25rem;
+    }
+    .form-control.is-invalid ~ .invalid-feedback,
+    .form-select.is-invalid ~ .invalid-feedback {
+      display: block;
+    }
+
   script.
+    // ── Target calculator ──────────────────────────────────────────────────────
     function updateTarget() {
       const select = document.querySelector('select[name="productId"]');
       const selected = select.options[select.selectedIndex];
@@ -88,3 +111,59 @@ block content
       document.getElementById('totalDisplay').value = total.toLocaleString() + ' UGX';
     }
     updateTarget();
+
+    // ── Validation helpers ─────────────────────────────────────────────────────
+    function setInvalid(el) {
+      el.classList.add('is-invalid');
+      el.classList.remove('is-valid');
+    }
+    function setValid(el) {
+      el.classList.remove('is-invalid');
+      el.classList.add('is-valid');
+    }
+    function clearState(el) {
+      el.classList.remove('is-invalid', 'is-valid');
+    }
+
+    // ── Live validation (red border clears as user fixes the field) ────────────
+    document.getElementById('fullName').addEventListener('input', function() {
+      this.value.trim() ? setValid(this) : setInvalid(this);
+    });
+    document.getElementById('nin').addEventListener('input', function() {
+      this.value.trim() ? setValid(this) : setInvalid(this);
+    });
+    document.getElementById('phone').addEventListener('input', function() {
+      const phoneRegex = /^(07|\+2567)\d{8}$/;
+      phoneRegex.test(this.value.trim()) ? setValid(this) : setInvalid(this);
+    });
+    document.getElementById('productId').addEventListener('change', function() {
+      this.value ? setValid(this) : setInvalid(this);
+    });
+    document.getElementById('quantity').addEventListener('input', function() {
+      parseInt(this.value) >= 1 ? setValid(this) : setInvalid(this);
+    });
+
+    // ── Submit validation ──────────────────────────────────────────────────────
+    document.getElementById('registerForm').addEventListener('submit', function(e) {
+      let valid = true;
+
+      const fullName = document.getElementById('fullName');
+      const nin = document.getElementById('nin');
+      const phone = document.getElementById('phone');
+      const productId = document.getElementById('productId');
+      const quantity = document.getElementById('quantity');
+      const phoneRegex = /^(07|\+2567)\d{8}$/;
+
+      if (!fullName.value.trim()) { setInvalid(fullName); valid = false; } else { setValid(fullName); }
+      if (!nin.value.trim())      { setInvalid(nin);      valid = false; } else { setValid(nin); }
+      if (!phoneRegex.test(phone.value.trim())) { setInvalid(phone); valid = false; } else { setValid(phone); }
+      if (!productId.value)       { setInvalid(productId); valid = false; } else { setValid(productId); }
+      if (!quantity.value || parseInt(quantity.value) < 1) { setInvalid(quantity); valid = false; } else { setValid(quantity); }
+
+      if (!valid) {
+        e.preventDefault();
+        // Scroll to first invalid field
+        const first = this.querySelector('.is-invalid');
+        if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });

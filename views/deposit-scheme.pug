@@ -51,17 +51,19 @@ block content
             i.fa-solid.fa-arrow-up.me-2(style="color: var(--gold);")
             | Make Deposit
         .p-3
-          form(method="POST" action="/deposit-scheme/deposit")
+          form#depositForm(method="POST" action="/deposit-scheme/deposit" novalidate)
             .mb-3
               label.form-label Select Member
-              select.form-select(name="memberId" required onchange="loadGoals(this)")
+              select.form-select(name="memberId" id="depositMemberId" onchange="loadGoals(this)")
                 option(value="") -- Select Member --
                 each member in members
                   option(value=member._id.toString()) #{member.fullName} (#{member.phone})
+              small.invalid-feedback Please select a member.
             .mb-3
               label.form-label Select Savings Goal
-              select.form-select(name="goalId" required id="goalSelect")
+              select.form-select(name="goalId" id="goalSelect")
                 option(value="") -- Select member first --
+              small.invalid-feedback Please select a savings goal.
             .mb-3#goalInfo(style="display:none;")
               .section-card.p-3(style="background: rgba(0,51,0,0.04);")
                 .d-flex.justify-content-between.mb-2
@@ -84,7 +86,8 @@ block content
                     | Goal Reached ✓
             .mb-3
               label.form-label Amount (UGX)
-              input.form-control(type="number" name="amount" min="1000" step="1000" required)
+              input.form-control(type="number" name="amount" id="depositAmount" min="1000" step="1000" placeholder="Minimum 1,000 UGX")
+              small.invalid-feedback Please enter a valid amount (minimum 1,000 UGX).
             .mb-3
               label.form-label Payment Method
               select.form-select(name="paymentMethod")
@@ -102,15 +105,16 @@ block content
             i.fa-solid.fa-arrow-down.me-2(style="color: var(--gold);")
             | Pick Up Goods
         .p-3
-          form(method="POST" action="/deposit-scheme/pickup")
+          form#pickupForm(method="POST" action="/deposit-scheme/pickup" novalidate)
             .mb-3
               label.form-label Select Completed Goal
-              select.form-select(name="memberId" required id="pickupSelect")
+              select.form-select(name="memberId" id="pickupSelect")
                 option(value="") -- Select completed goal --
                 each member in members
                   each goal in member.goals
                     if goal.status === 'Goal Reached'
                       option(value=member._id.toString() data-goal=goal._id.toString()) #{member.fullName} — #{goal.productName} x#{goal.quantity}
+              small.invalid-feedback Please select a completed goal.
             input(type="hidden" name="goalId" id="pickupGoalId")
             .mb-3
               .section-card.p-3(style="background: rgba(0,51,0,0.04);")
@@ -128,23 +132,26 @@ block content
             i.fa-solid.fa-plus-circle.me-2(style="color: var(--gold);")
             | Add New Savings Goal to Existing Member
         .p-3
-          form(method="POST" action="/deposit-scheme/add-goal")
+          form#addGoalForm(method="POST" action="/deposit-scheme/add-goal" novalidate)
             .row.g-3
               .col-md-3
                 label.form-label Member *
-                select.form-select(name="memberId" required)
+                select.form-select(name="memberId" id="goalMemberId")
                   option(value="") -- Select Member --
                   each member in members
                     option(value=member._id) #{member.fullName}
+                small.invalid-feedback Please select a member.
               .col-md-3
                 label.form-label Product *
-                select.form-select(name="productId" required onchange="updateGoalTarget(this)")
+                select.form-select(name="productId" id="goalProductId" onchange="updateGoalTarget(this)")
                   option(value="") -- Select Product --
                   each prod in products
                     option(value=prod._id data-price=prod.unitPrice) #{prod.productName} — #{prod.unitPrice.toLocaleString()} UGX
+                small.invalid-feedback Please select a product.
               .col-md-2
                 label.form-label Quantity *
-                input.form-control(type="number" name="quantity" min="1" value="1" required oninput="updateGoalTarget()")
+                input.form-control(type="number" name="quantity" id="goalQty" min="1" value="1" oninput="updateGoalTarget()")
+                small.invalid-feedback Quantity must be at least 1.
               .col-md-2
                 label.form-label Distance (km)
                 input.form-control(type="number" name="distance" min="0" value="5" oninput="updateGoalTarget()")
@@ -234,10 +241,31 @@ block content
 
   script#members-data(type="application/json") !{membersJson}
 
+  style.
+    .form-control.is-invalid,
+    .form-select.is-invalid {
+      border-color: #dc3545 !important;
+      box-shadow: 0 0 0 0.2rem rgba(220,53,69,.15) !important;
+    }
+    .invalid-feedback {
+      display: none;
+      color: #dc3545;
+      font-size: 0.82rem;
+      margin-top: 0.25rem;
+    }
+    .form-control.is-invalid ~ .invalid-feedback,
+    .form-select.is-invalid ~ .invalid-feedback {
+      display: block;
+    }
+
   script.
     const membersData = JSON.parse(document.getElementById('members-data').textContent);
 
-    // Deposit form: load goals for selected member
+    // ── Validation helpers ─────────────────────────────────────────────────────
+    function setInvalid(el) { el.classList.add('is-invalid'); el.classList.remove('is-valid'); }
+    function setValid(el)   { el.classList.remove('is-invalid'); el.classList.add('is-valid'); }
+
+    // ── Deposit form: load goals for selected member ───────────────────────────
     function loadGoals(select) {
       const memberId = select.value;
       const goalSelect = document.getElementById('goalSelect');
@@ -271,21 +299,24 @@ block content
         const pct = Math.min(Math.round((g.savedAmount / g.targetAmount) * 100), 100);
         document.getElementById('goalProgress').style.width = pct + '%';
         document.getElementById('goalReachedBadge').style.display = g.status === 'Goal Reached' ? 'block' : 'none';
+        setValid(this);
       };
+      setValid(select);
     }
 
-    // Pickup form: set hidden goalId when option selected
+    // ── Pickup form: set hidden goalId ─────────────────────────────────────────
     document.getElementById('pickupSelect').addEventListener('change', function() {
       const selected = this.options[this.selectedIndex];
       document.getElementById('pickupGoalId').value = selected.getAttribute('data-goal') || '';
+      this.value ? setValid(this) : setInvalid(this);
     });
 
-    // Add goal form: calculate target
+    // ── Add goal form: calculate target ───────────────────────────────────────
     function updateGoalTarget() {
       const select = document.querySelector('select[name="productId"]');
       const selected = select.options[select.selectedIndex];
       const price = parseFloat(selected?.getAttribute('data-price')) || 0;
-      const qty = parseInt(document.querySelector('input[name="quantity"]').value) || 1;
+      const qty = parseInt(document.getElementById('goalQty').value) || 1;
       const distance = parseFloat(document.querySelector('input[name="distance"]').value) || 5;
       const needsDelivery = document.getElementById('newGoalDelivery').checked;
       const productTotal = price * qty;
@@ -297,3 +328,68 @@ block content
       document.getElementById('newGoalTotal').value = total.toLocaleString() + ' UGX';
     }
     updateGoalTarget();
+
+    // ── Live validation ────────────────────────────────────────────────────────
+    document.getElementById('depositMemberId').addEventListener('change', function() {
+      this.value ? setValid(this) : setInvalid(this);
+    });
+    document.getElementById('depositAmount').addEventListener('input', function() {
+      parseFloat(this.value) >= 1000 ? setValid(this) : setInvalid(this);
+    });
+    document.getElementById('goalMemberId').addEventListener('change', function() {
+      this.value ? setValid(this) : setInvalid(this);
+    });
+    document.getElementById('goalProductId').addEventListener('change', function() {
+      this.value ? setValid(this) : setInvalid(this);
+    });
+    document.getElementById('goalQty').addEventListener('input', function() {
+      parseInt(this.value) >= 1 ? setValid(this) : setInvalid(this);
+    });
+
+    // ── Deposit form submit ────────────────────────────────────────────────────
+    document.getElementById('depositForm').addEventListener('submit', function(e) {
+      let valid = true;
+      const memberId = document.getElementById('depositMemberId');
+      const goalSel  = document.getElementById('goalSelect');
+      const amount   = document.getElementById('depositAmount');
+
+      if (!memberId.value)                                        { setInvalid(memberId); valid = false; } else { setValid(memberId); }
+      if (!goalSel.value)                                         { setInvalid(goalSel);  valid = false; } else { setValid(goalSel); }
+      if (!amount.value || parseFloat(amount.value) < 1000)      { setInvalid(amount);   valid = false; } else { setValid(amount); }
+
+      if (!valid) {
+        e.preventDefault();
+        const first = this.querySelector('.is-invalid');
+        if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
+
+    // ── Pickup form submit ─────────────────────────────────────────────────────
+    document.getElementById('pickupForm').addEventListener('submit', function(e) {
+      const pickupSel = document.getElementById('pickupSelect');
+      if (!pickupSel.value) {
+        setInvalid(pickupSel);
+        e.preventDefault();
+        pickupSel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        setValid(pickupSel);
+      }
+    });
+
+    // ── Add goal form submit ───────────────────────────────────────────────────
+    document.getElementById('addGoalForm').addEventListener('submit', function(e) {
+      let valid = true;
+      const goalMember  = document.getElementById('goalMemberId');
+      const goalProduct = document.getElementById('goalProductId');
+      const goalQty     = document.getElementById('goalQty');
+
+      if (!goalMember.value)                              { setInvalid(goalMember);  valid = false; } else { setValid(goalMember); }
+      if (!goalProduct.value)                             { setInvalid(goalProduct); valid = false; } else { setValid(goalProduct); }
+      if (!goalQty.value || parseInt(goalQty.value) < 1) { setInvalid(goalQty);     valid = false; } else { setValid(goalQty); }
+
+      if (!valid) {
+        e.preventDefault();
+        const first = this.querySelector('.is-invalid');
+        if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });

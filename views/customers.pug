@@ -26,23 +26,26 @@ block content
     h4.mb-3
       i.fa-solid.fa-user-plus.me-2(style="color: var(--gold);")
       | Register New Customer
-    form(method="POST" action="/customers")
+    form#addCustomerForm(method="POST" action="/customers" novalidate)
       .row.g-3
         .col-md-6
           label.form-label Full Name *
-          input.form-control(type='text' name='fullName' required)
+          input.form-control(type='text' name='fullName' id='custFullName' placeholder='Enter full name')
+          small.invalid-feedback Full name is required.
         .col-md-6
           label.form-label Phone Number *
-          input.form-control(type='tel' name='phone' pattern='^(07|\\+2567)\\d{8}$' required)
+          input.form-control(type='tel' name='phone' id='custPhone' placeholder='07XXXXXXXX or +2567XXXXXXXX')
+          small.invalid-feedback Enter a valid Ugandan phone number (07XXXXXXXX or +2567XXXXXXXX).
         .col-md-6
           label.form-label NIN (Optional)
-          input.form-control(type='text' name='nin')
+          input.form-control(type='text' name='nin' placeholder='e.g. CM90001234ABCD')
         .col-md-6
           label.form-label Email (Optional)
-          input.form-control(type='email' name='email')
+          input.form-control(type='email' name='email' id='custEmail' placeholder='customer@example.com')
+          small.invalid-feedback Please enter a valid email address.
         .col-12
           label.form-label Address
-          textarea.form-control(rows='2' name='address')
+          textarea.form-control(rows='2' name='address' placeholder='Physical address')
         .col-md-6
           label.form-label Customer Type
           select.form-select(name='customerType')
@@ -52,7 +55,8 @@ block content
             option Deposit Scheme
         .col-md-6
           label.form-label Credit Limit (UGX)
-          input.form-control(type='number' name='creditLimit' placeholder='0' min='0')
+          input.form-control(type='number' name='creditLimit' id='custCreditLimit' placeholder='0' min='0')
+          small.invalid-feedback Credit limit must be 0 or more.
       .mt-4
         button.btn-primary(type='submit')
           i.fa-solid.fa-save
@@ -93,3 +97,65 @@ block content
           else
             tr
               td(colspan='6').text-center No customers found.
+
+  style.
+    .form-control.is-invalid,
+    .form-select.is-invalid {
+      border-color: #dc3545 !important;
+      box-shadow: 0 0 0 0.2rem rgba(220,53,69,.15) !important;
+    }
+    .invalid-feedback {
+      display: none;
+      color: #dc3545;
+      font-size: 0.82rem;
+      margin-top: 0.25rem;
+    }
+    .form-control.is-invalid ~ .invalid-feedback,
+    .form-select.is-invalid ~ .invalid-feedback {
+      display: block;
+    }
+
+  script.
+    function setInvalid(el) { el.classList.add('is-invalid'); el.classList.remove('is-valid'); }
+    function setValid(el)   { el.classList.remove('is-invalid'); el.classList.add('is-valid'); }
+
+    const phoneRegex = /^(07|\+2567)\d{8}$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    // Live validation
+    document.getElementById('custFullName').addEventListener('input', function() {
+      this.value.trim() ? setValid(this) : setInvalid(this);
+    });
+
+    document.getElementById('custPhone').addEventListener('input', function() {
+      phoneRegex.test(this.value.trim()) ? setValid(this) : setInvalid(this);
+    });
+
+    document.getElementById('custEmail').addEventListener('input', function() {
+      if (!this.value.trim()) { this.classList.remove('is-invalid', 'is-valid'); return; }
+      emailRegex.test(this.value.trim()) ? setValid(this) : setInvalid(this);
+    });
+
+    document.getElementById('custCreditLimit').addEventListener('input', function() {
+      this.value === '' || parseFloat(this.value) >= 0 ? setValid(this) : setInvalid(this);
+    });
+
+    // Submit validation
+    document.getElementById('addCustomerForm').addEventListener('submit', function(e) {
+      let valid = true;
+      const fullName    = document.getElementById('custFullName');
+      const phone       = document.getElementById('custPhone');
+      const email       = document.getElementById('custEmail');
+      const creditLimit = document.getElementById('custCreditLimit');
+
+      if (!fullName.value.trim()) { setInvalid(fullName); valid = false; } else { setValid(fullName); }
+      if (!phoneRegex.test(phone.value.trim())) { setInvalid(phone); valid = false; } else { setValid(phone); }
+      if (email.value.trim() && !emailRegex.test(email.value.trim())) { setInvalid(email); valid = false; }
+      if (creditLimit.value !== '' && parseFloat(creditLimit.value) < 0) { setInvalid(creditLimit); valid = false; } else { setValid(creditLimit); }
+
+      if (!valid) {
+        e.preventDefault();
+        const first = this.querySelector('.is-invalid');
+        if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });

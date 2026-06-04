@@ -11,40 +11,45 @@ block content
     p.text-muted Increase inventory and record the purchase details
 
   .form-card
-    form(method="POST" action="/inventory/add-stock")
+    form#addStockForm(method="POST" action="/inventory/add-stock" novalidate)
       .row.g-3
         .col-md-6
           label.form-label Product *
-          select.form-select(name='productId' required)
+          select.form-select(name='productId' id='stockProductId')
             option(value='') Select product
             each prod in products
               option(value=prod._id) #{prod.productName} (current stock: #{prod.currentStock})
+          small.invalid-feedback Please select a product.
         .col-md-3
           label.form-label Quantity Added *
-          input.form-control(type='number' name='quantityAdded' min='1' required)
+          input.form-control(type='number' name='quantityAdded' id='quantityAdded' min='1' placeholder='e.g. 50')
+          small.invalid-feedback Quantity must be at least 1.
         .col-md-3
           label.form-label Unit Cost (UGX) *
-          input.form-control(type='number' name='unitCost' step='500' required)
+          input.form-control(type='number' name='unitCost' id='stockUnitCost' step='500' placeholder='e.g. 35000')
+          small.invalid-feedback Unit cost is required.
         .col-md-3
           label.form-label Unit Price (UGX) *
-          input.form-control(type='number' name='unitPrice' step='500' required)
+          input.form-control(type='number' name='unitPrice' id='stockUnitPrice' step='500' placeholder='e.g. 40000')
+          small.invalid-feedback Unit price is required.
         .col-md-6
           label.form-label Supplier *
-          select.form-select(name='supplierName' required)
+          select.form-select(name='supplierName' id='stockSupplier')
             option(value='') Select supplier
             each sup in suppliers
               option(value=sup.companyName) #{sup.companyName}
+          small.invalid-feedback Please select a supplier.
         .col-md-3
           label.form-label Supplier Phone
           input.form-control(type='tel' name='supplierPhone' readonly)
         .col-md-6
           label.form-label Payment Status *
-          select.form-select(name='paymentStatus' required onchange='togglePaymentFields()')
+          select.form-select(name='paymentStatus' id='stockPaymentStatus' onchange='togglePaymentFields()')
             option(value='cash') Cash
             option(value='credit') Credit
         .col-md-6(id='amountPaidField')
           label.form-label Amount Paid (UGX)
-          input.form-control(type='number' name='amountPaid' step='1000' value='0')
+          input.form-control(type='number' name='amountPaid' id='stockAmountPaid' step='1000' value='0')
         .col-md-6(id='balanceDueField' style='display:none')
           label.form-label Balance Due (UGX)
           input.form-control(type='number' name='balanceDue' readonly class='bg-light')
@@ -54,24 +59,40 @@ block content
           |  Add Stock & Record Purchase
         a.btn-outline(href="/inventory") Cancel
 
+  style.
+    .form-control.is-invalid,
+    .form-select.is-invalid {
+      border-color: #dc3545 !important;
+      box-shadow: 0 0 0 0.2rem rgba(220,53,69,.15) !important;
+    }
+    .invalid-feedback {
+      display: none;
+      color: #dc3545;
+      font-size: 0.82rem;
+      margin-top: 0.25rem;
+    }
+    .form-control.is-invalid ~ .invalid-feedback,
+    .form-select.is-invalid ~ .invalid-feedback {
+      display: block;
+    }
+
   script.
-    // Build supplier phone lookup map from server data
+    // ── Supplier phone lookup ──────────────────────────────────────────────────
     const supplierPhones = {};
     const supplierList = !{JSON.stringify(suppliers.map(s => ({ name: s.companyName, phone: s.phone || '' })))};
     supplierList.forEach(function(s) { supplierPhones[s.name] = s.phone; });
 
-    // Auto-fill supplier phone when supplier is selected
     document.querySelector('select[name="supplierName"]').addEventListener('change', function() {
       const phone = supplierPhones[this.value] || '';
       document.querySelector('input[name="supplierPhone"]').value = phone;
+      this.value ? setValid(this) : setInvalid(this);
     });
 
-    // Show/hide amount paid and balance due fields based on payment status
+    // ── Payment fields toggle ──────────────────────────────────────────────────
     function togglePaymentFields() {
       const status = document.querySelector('select[name="paymentStatus"]').value;
-      const balanceField = document.getElementById('balanceDueField');
+      const balanceField    = document.getElementById('balanceDueField');
       const amountPaidField = document.getElementById('amountPaidField');
-
       if (status === 'credit') {
         balanceField.style.display = 'block';
         amountPaidField.style.display = 'block';
@@ -82,20 +103,18 @@ block content
     }
 
     function calculateTotalCost() {
-      const qty = parseFloat(document.querySelector('input[name="quantityAdded"]').value) || 0;
+      const qty  = parseFloat(document.querySelector('input[name="quantityAdded"]').value) || 0;
       const cost = parseFloat(document.querySelector('input[name="unitCost"]').value) || 0;
       return qty * cost;
     }
 
-    // Recalculate balance due when amount paid changes
     document.querySelector('input[name="amountPaid"]').addEventListener('input', function() {
-      const total = calculateTotalCost();
-      const paid = parseFloat(this.value) || 0;
+      const total   = calculateTotalCost();
+      const paid    = parseFloat(this.value) || 0;
       const balanceInput = document.querySelector('input[name="balanceDue"]');
       if (balanceInput) balanceInput.value = Math.max(total - paid, 0);
     });
 
-    // Recalculate balance due when quantity or unit cost changes
     document.querySelectorAll('input[name="quantityAdded"], input[name="unitCost"]').forEach(function(field) {
       field.addEventListener('input', function() {
         const amountPaid = document.querySelector('input[name="amountPaid"]');
@@ -103,5 +122,45 @@ block content
       });
     });
 
-    // Run on page load to set correct initial state
     togglePaymentFields();
+
+    // ── Validation helpers ─────────────────────────────────────────────────────
+    function setInvalid(el) { el.classList.add('is-invalid'); el.classList.remove('is-valid'); }
+    function setValid(el)   { el.classList.remove('is-invalid'); el.classList.add('is-valid'); }
+
+    // ── Live validation ────────────────────────────────────────────────────────
+    document.getElementById('stockProductId').addEventListener('change', function() {
+      this.value ? setValid(this) : setInvalid(this);
+    });
+    document.getElementById('quantityAdded').addEventListener('input', function() {
+      parseInt(this.value) >= 1 ? setValid(this) : setInvalid(this);
+    });
+    document.getElementById('stockUnitCost').addEventListener('input', function() {
+      parseFloat(this.value) > 0 ? setValid(this) : setInvalid(this);
+    });
+    document.getElementById('stockUnitPrice').addEventListener('input', function() {
+      parseFloat(this.value) > 0 ? setValid(this) : setInvalid(this);
+    });
+
+    // ── Submit validation ──────────────────────────────────────────────────────
+    document.getElementById('addStockForm').addEventListener('submit', function(e) {
+      let valid = true;
+
+      const productId   = document.getElementById('stockProductId');
+      const qty         = document.getElementById('quantityAdded');
+      const unitCost    = document.getElementById('stockUnitCost');
+      const unitPrice   = document.getElementById('stockUnitPrice');
+      const supplier    = document.getElementById('stockSupplier');
+
+      if (!productId.value)                          { setInvalid(productId);  valid = false; } else { setValid(productId); }
+      if (!qty.value || parseInt(qty.value) < 1)     { setInvalid(qty);        valid = false; } else { setValid(qty); }
+      if (!unitCost.value || parseFloat(unitCost.value) <= 0) { setInvalid(unitCost); valid = false; } else { setValid(unitCost); }
+      if (!unitPrice.value || parseFloat(unitPrice.value) <= 0) { setInvalid(unitPrice); valid = false; } else { setValid(unitPrice); }
+      if (!supplier.value)                           { setInvalid(supplier);   valid = false; } else { setValid(supplier); }
+
+      if (!valid) {
+        e.preventDefault();
+        const first = this.querySelector('.is-invalid');
+        if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });

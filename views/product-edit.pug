@@ -5,34 +5,91 @@ block title
 
 block content
   h1 Edit Product
-  form(method="POST" action=`/inventory/${product._id}`)
+  form#editProductForm(method="POST" action=`/inventory/${product._id}` novalidate)
     .mb-3
-      label Product Name
-      input.form-control(type="text" name="productName" value=product.productName required)
+      label Product Name *
+      input.form-control(type="text" name="productName" id="editProdName" value=product.productName placeholder="Product name")
+      small.invalid-feedback Product name is required.
     .mb-3
       label Category
-      input.form-control(type="text" name="category" value=product.category)
+      input.form-control(type="text" name="category" value=product.category placeholder="e.g. Cement")
     .mb-3
-      label Unit Cost (UGX)
-      input.form-control(type="number" name="unitCost" value=product.unitCost step="100" required)
+      label Unit Cost (UGX) *
+      input.form-control(type="number" name="unitCost" id="editUnitCost" value=product.unitCost step="100" placeholder="e.g. 35000")
+      small.invalid-feedback Unit cost must be greater than 0.
     .mb-3
-      label Unit Price (UGX)
-      input.form-control(type="number" name="unitPrice" value=product.unitPrice step="100" required)
+      label Unit Price (UGX) *
+      input.form-control(type="number" name="unitPrice" id="editUnitPrice" value=product.unitPrice step="100" placeholder="e.g. 40000")
+      small.invalid-feedback Unit price must be greater than 0.
     .mb-3
-      label Current Stock
-      input.form-control(type="number" name="currentStock" value=product.currentStock min="0")
+      label Current Stock *
+      input.form-control(type="number" name="currentStock" id="editStock" value=product.currentStock min="0" placeholder="0")
+      small.invalid-feedback Current stock must be 0 or more.
     .mb-3
       label Reorder Level
       input.form-control(type="number" name="reorderLevel" value=product.reorderLevel || 15)
     .mb-3
       label Supplier
-      input.form-control(type="text" name="supplier" value=product.supplier)
+      input.form-control(type="text" name="supplier" value=product.supplier placeholder="Supplier name")
     .mb-3
       label SKU
-      input.form-control(type="text" name="sku" value=product.sku)
+      input.form-control(type="text" name="sku" value=product.sku placeholder="e.g. CEM-001")
     .mb-3
       label Description
       textarea.form-control(name="description" rows="3")= product.description
     .d-flex.gap-2
       button.btn-primary(type="submit") Save Changes
       a.btn-outline(href="/inventory") Cancel
+
+  style.
+    .form-control.is-invalid,
+    .form-select.is-invalid {
+      border-color: #dc3545 !important;
+      box-shadow: 0 0 0 0.2rem rgba(220,53,69,.15) !important;
+    }
+    .invalid-feedback {
+      display: none;
+      color: #dc3545;
+      font-size: 0.82rem;
+      margin-top: 0.25rem;
+    }
+    .form-control.is-invalid ~ .invalid-feedback,
+    .form-select.is-invalid ~ .invalid-feedback {
+      display: block;
+    }
+
+  script.
+    function setInvalid(el) { el.classList.add('is-invalid'); el.classList.remove('is-valid'); }
+    function setValid(el)   { el.classList.remove('is-invalid'); el.classList.add('is-valid'); }
+
+    document.getElementById('editProdName').addEventListener('input', function() {
+      this.value.trim() ? setValid(this) : setInvalid(this);
+    });
+    document.getElementById('editUnitCost').addEventListener('input', function() {
+      parseFloat(this.value) > 0 ? setValid(this) : setInvalid(this);
+    });
+    document.getElementById('editUnitPrice').addEventListener('input', function() {
+      parseFloat(this.value) > 0 ? setValid(this) : setInvalid(this);
+    });
+    document.getElementById('editStock').addEventListener('input', function() {
+      this.value !== '' && parseFloat(this.value) >= 0 ? setValid(this) : setInvalid(this);
+    });
+
+    document.getElementById('editProductForm').addEventListener('submit', function(e) {
+      let valid = true;
+      const prodName  = document.getElementById('editProdName');
+      const unitCost  = document.getElementById('editUnitCost');
+      const unitPrice = document.getElementById('editUnitPrice');
+      const stock     = document.getElementById('editStock');
+
+      if (!prodName.value.trim())                                   { setInvalid(prodName);  valid = false; } else { setValid(prodName); }
+      if (!unitCost.value || parseFloat(unitCost.value) <= 0)       { setInvalid(unitCost);  valid = false; } else { setValid(unitCost); }
+      if (!unitPrice.value || parseFloat(unitPrice.value) <= 0)     { setInvalid(unitPrice); valid = false; } else { setValid(unitPrice); }
+      if (stock.value === '' || parseFloat(stock.value) < 0)        { setInvalid(stock);     valid = false; } else { setValid(stock); }
+
+      if (!valid) {
+        e.preventDefault();
+        const first = this.querySelector('.is-invalid');
+        if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });

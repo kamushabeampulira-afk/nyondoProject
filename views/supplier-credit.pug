@@ -41,26 +41,31 @@ block content
     h4.mb-3
       i.fa-solid.fa-plus-circle.me-2(style="color: var(--gold);")
       | New Credit Purchase
-    form(method="POST" action="/supplier-credit/invoices")
+    form#creditForm(method="POST" action="/supplier-credit/invoices" novalidate)
       .row.g-3
         .col-md-6
           label.form-label Supplier *
-          select.form-select(name="supplierId" required)
+          select.form-select(name="supplierId" id="creditSupplierId")
             option(value="") -- Select Supplier --
             each sup in suppliers
               option(value=sup._id)= sup.companyName
+          small.invalid-feedback Please select a supplier.
         .col-md-6
           label.form-label Invoice Number *
-          input.form-control(type="text" name="invoiceNumber" required placeholder="e.g. INV-001")
+          input.form-control(type="text" name="invoiceNumber" id="invoiceNumber" placeholder="e.g. INV-001")
+          small.invalid-feedback Invoice number is required.
         .col-md-4
           label.form-label Purchase Date *
-          input.form-control(type="date" name="purchaseDate" value=purchaseDateDefault required)
+          input.form-control(type="date" name="purchaseDate" id="purchaseDate" value=purchaseDateDefault)
+          small.invalid-feedback Purchase date is required.
         .col-md-4
           label.form-label Due Date *
-          input.form-control(type="date" name="dueDate" value=dueDateDefault required)
+          input.form-control(type="date" name="dueDate" id="dueDate" value=dueDateDefault)
+          small.invalid-feedback Due date is required and must be after the purchase date.
         .col-md-4
           label.form-label Total Amount (UGX) *
-          input.form-control(type="number" name="totalAmount" min="0" step="1" required)
+          input.form-control(type="number" name="totalAmount" id="totalAmount" min="0" step="1" placeholder="e.g. 500000")
+          small.invalid-feedback Total amount is required.
         .col-12
           label.form-label Description
           textarea.form-control(rows="2" name="description" placeholder="What was purchased?")
@@ -119,9 +124,9 @@ block content
                     span.status-pill.sp-pending Pending
                 td
                   if inv.outstanding > 0
-                    form(method="POST" action=`/supplier-credit/pay/${inv._id}`)
+                    form.inline-pay-form(method="POST" action=`/supplier-credit/pay/${inv._id}` novalidate)
                       .d-flex.gap-1
-                        input.form-control.form-control-sm(
+                        input.form-control.form-control-sm.pay-amount-input(
                           type="number"
                           name="amount"
                           placeholder="Amount"
@@ -129,7 +134,6 @@ block content
                           max=inv.outstanding
                           step="1"
                           style="width:130px;"
-                          required
                         )
                         select.form-select.form-select-sm(name="paymentMethod" style="width:110px;")
                           option Cash
@@ -181,3 +185,89 @@ block content
           else
             tr
               td(colspan="7").text-center No recent payments.
+
+  style.
+    .form-control.is-invalid,
+    .form-select.is-invalid {
+      border-color: #dc3545 !important;
+      box-shadow: 0 0 0 0.2rem rgba(220,53,69,.15) !important;
+    }
+    .invalid-feedback {
+      display: none;
+      color: #dc3545;
+      font-size: 0.82rem;
+      margin-top: 0.25rem;
+    }
+    .form-control.is-invalid ~ .invalid-feedback,
+    .form-select.is-invalid ~ .invalid-feedback {
+      display: block;
+    }
+
+  script.
+    // ── Validation helpers ─────────────────────────────────────────────────────
+    function setInvalid(el) { el.classList.add('is-invalid'); el.classList.remove('is-valid'); }
+    function setValid(el)   { el.classList.remove('is-invalid'); el.classList.add('is-valid'); }
+
+    // ── Live validation ────────────────────────────────────────────────────────
+    document.getElementById('creditSupplierId').addEventListener('change', function() {
+      this.value ? setValid(this) : setInvalid(this);
+    });
+    document.getElementById('invoiceNumber').addEventListener('input', function() {
+      this.value.trim() ? setValid(this) : setInvalid(this);
+    });
+    document.getElementById('purchaseDate').addEventListener('change', function() {
+      this.value ? setValid(this) : setInvalid(this);
+    });
+    document.getElementById('dueDate').addEventListener('change', function() {
+      const purchase = document.getElementById('purchaseDate').value;
+      if (this.value && (!purchase || this.value >= purchase)) { setValid(this); } else { setInvalid(this); }
+    });
+    document.getElementById('totalAmount').addEventListener('input', function() {
+      parseFloat(this.value) > 0 ? setValid(this) : setInvalid(this);
+    });
+
+    // ── Main credit form submit ────────────────────────────────────────────────
+    document.getElementById('creditForm').addEventListener('submit', function(e) {
+      let valid = true;
+
+      const supplierId    = document.getElementById('creditSupplierId');
+      const invoiceNumber = document.getElementById('invoiceNumber');
+      const purchaseDate  = document.getElementById('purchaseDate');
+      const dueDate       = document.getElementById('dueDate');
+      const totalAmount   = document.getElementById('totalAmount');
+
+      if (!supplierId.value)                                    { setInvalid(supplierId);    valid = false; } else { setValid(supplierId); }
+      if (!invoiceNumber.value.trim())                          { setInvalid(invoiceNumber); valid = false; } else { setValid(invoiceNumber); }
+      if (!purchaseDate.value)                                  { setInvalid(purchaseDate);  valid = false; } else { setValid(purchaseDate); }
+      if (!dueDate.value || (purchaseDate.value && dueDate.value < purchaseDate.value)) { setInvalid(dueDate); valid = false; } else { setValid(dueDate); }
+      if (!totalAmount.value || parseFloat(totalAmount.value) <= 0) { setInvalid(totalAmount); valid = false; } else { setValid(totalAmount); }
+
+      if (!valid) {
+        e.preventDefault();
+        const first = this.querySelector('.is-invalid');
+        if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
+
+    // ── Inline pay forms: validate amount before submit ────────────────────────
+    document.querySelectorAll('.inline-pay-form').forEach(function(form) {
+      form.addEventListener('submit', function(e) {
+        const amountInput = this.querySelector('.pay-amount-input');
+        const max = parseFloat(amountInput.getAttribute('max')) || Infinity;
+        const val = parseFloat(amountInput.value);
+        if (!amountInput.value || val < 1 || val > max) {
+          setInvalid(amountInput);
+          e.preventDefault();
+          amountInput.focus();
+        } else {
+          setValid(amountInput);
+        }
+      });
+      // Live clear on input
+      const inp = form.querySelector('.pay-amount-input');
+      inp.addEventListener('input', function() {
+        const max = parseFloat(this.getAttribute('max')) || Infinity;
+        const val = parseFloat(this.value);
+        (val >= 1 && val <= max) ? setValid(this) : setInvalid(this);
+      });
+    });

@@ -50,6 +50,8 @@ block head
       border: 1px solid #e2f0ec; border-radius: 0.75rem; font-size: 1rem; transition: 0.2s;
     }
     .input-icon input:focus { border-color: var(--gold); outline: none; box-shadow: 0 0 0 3px rgba(247,179,43,0.2); }
+    .input-icon input.is-invalid { border-color: #dc3545 !important; }
+    .input-icon input.is-invalid:focus { box-shadow: 0 0 0 3px rgba(220,53,69,.15) !important; }
     .btn-login {
       background: var(--dark-green, #003300); color: white; border: none;
       border-radius: 0.75rem; padding: 0.8rem; font-weight: 600;
@@ -61,6 +63,16 @@ block head
     }
     .flash-error { background: #fee2e2; border-left: 4px solid #ef4444; color: #b91c1c; }
     .flash-success { background: #ecfdf5; border-left: 4px solid #22c55e; color: #15803d; }
+    .invalid-feedback {
+      display: none;
+      color: #dc3545;
+      font-size: 0.82rem;
+      margin-top: 0.25rem;
+      padding-left: 2.5rem;
+    }
+    .input-icon input.is-invalid ~ .invalid-feedback {
+      display: block;
+    }
     .main-wrap, .page-content { height: 100%; margin: 0; padding: 0; }
 
 block title
@@ -90,17 +102,62 @@ block content
             .flash-box.flash-error
               i.fa-solid.fa-circle-xmark.me-2
               = msg
-        form(method="POST" action="/auth/login")
+        form#loginForm(method="POST" action="/auth/login" novalidate)
           .form-group
             label Email Address
             .input-icon
               i.fa-solid.fa-envelope
-              input(type="email" name="email" placeholder="admin@nyondo.com" required autocomplete="email")
+              input(type="email" name="email" id="loginEmail" placeholder="admin@nyondo.com" autocomplete="email")
+              small.invalid-feedback Please enter a valid email address.
           .form-group
             label Password
             .input-icon
               i.fa-solid.fa-lock
-              input(type="password" name="password" placeholder="••••••••" required autocomplete="current-password")
+              input(type="password" name="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password")
+              small.invalid-feedback Password is required.
           button.btn-login(type="submit")
             i.fa-solid.fa-arrow-right-to-bracket.me-2
             | Login
+
+  script.
+    function setInvalid(el) { el.classList.add('is-invalid'); el.classList.remove('is-valid'); }
+    function setValid(el)   { el.classList.remove('is-invalid'); el.classList.add('is-valid'); }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    // Live validation
+    document.getElementById('loginEmail').addEventListener('input', function() {
+      if (!this.value.trim()) { setInvalid(this); return; }
+      emailRegex.test(this.value.trim()) ? setValid(this) : setInvalid(this);
+    });
+
+    document.getElementById('loginPassword').addEventListener('input', function() {
+      this.value ? setValid(this) : setInvalid(this);
+    });
+
+    // Submit validation
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+      let valid = true;
+      const email    = document.getElementById('loginEmail');
+      const password = document.getElementById('loginPassword');
+
+      if (!email.value.trim() || !emailRegex.test(email.value.trim())) {
+        setInvalid(email);
+        valid = false;
+      } else {
+        setValid(email);
+      }
+
+      if (!password.value) {
+        setInvalid(password);
+        valid = false;
+      } else {
+        setValid(password);
+      }
+
+      if (!valid) {
+        e.preventDefault();
+        const first = this.querySelector('.is-invalid');
+        if (first) first.focus();
+      }
+    });

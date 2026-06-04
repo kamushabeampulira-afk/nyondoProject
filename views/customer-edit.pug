@@ -3,18 +3,73 @@ extends layout
 block content
   .container.mt-4
     h1 Edit Customer
-    form(method="POST" action=`/customers/${customer._id}`)
+    form#editCustomerForm(method="POST" action=`/customers/${customer._id}` novalidate)
       .mb-3
-        label.form-label Full Name
-        input.form-control(type="text" name="fullName" value=customer.fullName required)
+        label.form-label Full Name *
+        input.form-control(type="text" name="fullName" id="editCustName" value=customer.fullName placeholder="Enter full name")
+        small.invalid-feedback Full name is required.
       .mb-3
         label.form-label Email
-        input.form-control(type="email" name="email" value=customer.email)
+        input.form-control(type="email" name="email" id="editCustEmail" value=customer.email placeholder="customer@example.com")
+        small.invalid-feedback Please enter a valid email address.
       .mb-3
-        label.form-label Phone
-        input.form-control(type="tel" name="phone" value=customer.phone)
+        label.form-label Phone *
+        input.form-control(type="tel" name="phone" id="editCustPhone" value=customer.phone placeholder="07XXXXXXXX")
+        small.invalid-feedback Enter a valid Ugandan phone number (07XXXXXXXX or +2567XXXXXXXX).
       .mb-3
         label.form-label Address
         textarea.form-control(name="address")= customer.address
       button.btn-primary(type="submit") Save
       a.btn-outline.ms-2(href="/customers") Cancel
+
+  style.
+    .form-control.is-invalid,
+    .form-select.is-invalid {
+      border-color: #dc3545 !important;
+      box-shadow: 0 0 0 0.2rem rgba(220,53,69,.15) !important;
+    }
+    .invalid-feedback {
+      display: none;
+      color: #dc3545;
+      font-size: 0.82rem;
+      margin-top: 0.25rem;
+    }
+    .form-control.is-invalid ~ .invalid-feedback,
+    .form-select.is-invalid ~ .invalid-feedback {
+      display: block;
+    }
+
+  script.
+    function setInvalid(el) { el.classList.add('is-invalid'); el.classList.remove('is-valid'); }
+    function setValid(el)   { el.classList.remove('is-invalid'); el.classList.add('is-valid'); }
+
+    const phoneRegex = /^(07|\+2567)\d{8}$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    document.getElementById('editCustName').addEventListener('input', function() {
+      this.value.trim() ? setValid(this) : setInvalid(this);
+    });
+    document.getElementById('editCustPhone').addEventListener('input', function() {
+      phoneRegex.test(this.value.trim()) ? setValid(this) : setInvalid(this);
+    });
+    document.getElementById('editCustEmail').addEventListener('input', function() {
+      if (!this.value.trim()) { this.classList.remove('is-invalid', 'is-valid'); return; }
+      emailRegex.test(this.value.trim()) ? setValid(this) : setInvalid(this);
+    });
+
+    document.getElementById('editCustomerForm').addEventListener('submit', function(e) {
+      let valid = true;
+      const fullName = document.getElementById('editCustName');
+      const phone    = document.getElementById('editCustPhone');
+      const email    = document.getElementById('editCustEmail');
+
+      if (!fullName.value.trim())                { setInvalid(fullName); valid = false; } else { setValid(fullName); }
+      if (!phoneRegex.test(phone.value.trim()))  { setInvalid(phone);    valid = false; } else { setValid(phone); }
+      if (email.value.trim() && !emailRegex.test(email.value.trim())) { setInvalid(email); valid = false; }
+
+      if (!valid) {
+        e.preventDefault();
+        const first = this.querySelector('.is-invalid');
+        if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });

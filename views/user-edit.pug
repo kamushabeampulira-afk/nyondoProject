@@ -3,24 +3,75 @@ extends layout
 block content
   .container.mt-4
     h1 Edit User
-    form(method="POST" action=`/users/${user._id}`)
+    form#editUserForm(method="POST" action=`/users/${user._id}` novalidate)
       .mb-3
-        label.form-label Full Name
-        input.form-control(type="text" name="fullName" value=user.fullName required)
+        label.form-label Full Name *
+        input.form-control(type="text" name="fullName" id="editUserName" value=user.fullName placeholder="Full name")
+        small.invalid-feedback Full name is required.
       .mb-3
-        label.form-label Role
-        select.form-select(name="role")
+        label.form-label Role *
+        select.form-select(name="role" id="editUserRole")
           option(value="admin" selected=user.role === 'admin') Admin
           option(value="manager" selected=user.role === 'manager') Manager
           option(value="sales" selected=user.role === 'sales') Sales
           option(value="attendant" selected=user.role === 'attendant') Attendant
+        small.invalid-feedback Please select a role.
       .mb-3
-        label.form-label Status
-        select.form-select(name="status")
+        label.form-label Status *
+        select.form-select(name="status" id="editUserStatus")
           option(value="Active" selected=user.status === 'Active') Active
           option(value="Inactive" selected=user.status === 'Inactive') Inactive
+        small.invalid-feedback Please select a status.
       .mb-3
         label.form-label Department
-        input.form-control(type="text" name="department" value=user.department)
+        input.form-control(type="text" name="department" value=user.department placeholder="e.g. Sales")
       button.btn-primary(type="submit") Save
       a.btn-outline.ms-2(href="/users") Cancel
+
+  style.
+    .form-control.is-invalid,
+    .form-select.is-invalid {
+      border-color: #dc3545 !important;
+      box-shadow: 0 0 0 0.2rem rgba(220,53,69,.15) !important;
+    }
+    .invalid-feedback {
+      display: none;
+      color: #dc3545;
+      font-size: 0.82rem;
+      margin-top: 0.25rem;
+    }
+    .form-control.is-invalid ~ .invalid-feedback,
+    .form-select.is-invalid ~ .invalid-feedback {
+      display: block;
+    }
+
+  script.
+    function setInvalid(el) { el.classList.add('is-invalid'); el.classList.remove('is-valid'); }
+    function setValid(el)   { el.classList.remove('is-invalid'); el.classList.add('is-valid'); }
+
+    document.getElementById('editUserName').addEventListener('input', function() {
+      this.value.trim() ? setValid(this) : setInvalid(this);
+    });
+    document.getElementById('editUserRole').addEventListener('change', function() {
+      this.value ? setValid(this) : setInvalid(this);
+    });
+    document.getElementById('editUserStatus').addEventListener('change', function() {
+      this.value ? setValid(this) : setInvalid(this);
+    });
+
+    document.getElementById('editUserForm').addEventListener('submit', function(e) {
+      let valid = true;
+      const fullName = document.getElementById('editUserName');
+      const role     = document.getElementById('editUserRole');
+      const status   = document.getElementById('editUserStatus');
+
+      if (!fullName.value.trim()) { setInvalid(fullName); valid = false; } else { setValid(fullName); }
+      if (!role.value)            { setInvalid(role);     valid = false; } else { setValid(role); }
+      if (!status.value)          { setInvalid(status);   valid = false; } else { setValid(status); }
+
+      if (!valid) {
+        e.preventDefault();
+        const first = this.querySelector('.is-invalid');
+        if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
