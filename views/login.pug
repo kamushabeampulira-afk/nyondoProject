@@ -107,7 +107,7 @@ block content
             label Email Address
             .input-icon
               i.fa-solid.fa-envelope
-              input(type="email" name="email" id="loginEmail" placeholder="admin@nyondo.com" autocomplete="email")
+              input(type="email" name="email" id="loginEmail" placeholder="admin@nyondo.com" autocomplete="email" value=email || "")
               small.invalid-feedback Please enter a valid email address.
           .form-group
             label Password
@@ -120,44 +120,77 @@ block content
             | Login
 
   script.
-    function setInvalid(el) { el.classList.add('is-invalid'); el.classList.remove('is-valid'); }
-    function setValid(el)   { el.classList.remove('is-invalid'); el.classList.add('is-valid'); }
+    function setInvalid(el, message) { 
+      el.classList.add('is-invalid'); 
+      el.classList.remove('is-valid');
+      if (message) {
+        const feedback = el.parentElement.querySelector('.invalid-feedback');
+        if (feedback) feedback.textContent = message;
+      }
+    }
+    function setValid(el) { 
+      el.classList.remove('is-invalid'); 
+      el.classList.add('is-valid'); 
+    }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailInput = document.getElementById('loginEmail');
+    const passwordInput = document.getElementById('loginPassword');
+    const loginForm = document.getElementById('loginForm');
 
-    // Live validation
-    document.getElementById('loginEmail').addEventListener('input', function() {
-      if (!this.value.trim()) { setInvalid(this); return; }
-      emailRegex.test(this.value.trim()) ? setValid(this) : setInvalid(this);
+    // Live validation with specific messages
+    emailInput.addEventListener('input', function() {
+      if (!this.value.trim()) { 
+        setInvalid(this, 'Email address is required');
+        return;
+      }
+      if (!emailRegex.test(this.value.trim())) {
+        setInvalid(this, 'Please enter a valid email address');
+      } else {
+        setValid(this);
+      }
     });
 
-    document.getElementById('loginPassword').addEventListener('input', function() {
-      this.value ? setValid(this) : setInvalid(this);
+    passwordInput.addEventListener('input', function() {
+      if (!this.value) { 
+        setInvalid(this, 'Password is required');
+      } else if (this.value.length < 6) {
+        setInvalid(this, 'Password must be at least 6 characters');
+      } else {
+        setValid(this);
+      }
     });
 
-    // Submit validation
-    document.getElementById('loginForm').addEventListener('submit', function(e) {
+    // Submit validation - prevent submission if invalid
+    loginForm.addEventListener('submit', function(e) {
       let valid = true;
-      const email    = document.getElementById('loginEmail');
-      const password = document.getElementById('loginPassword');
 
-      if (!email.value.trim() || !emailRegex.test(email.value.trim())) {
-        setInvalid(email);
+      // Validate email
+      if (!emailInput.value.trim()) {
+        setInvalid(emailInput, 'Email address is required');
+        valid = false;
+      } else if (!emailRegex.test(emailInput.value.trim())) {
+        setInvalid(emailInput, 'Please enter a valid email address');
         valid = false;
       } else {
-        setValid(email);
+        setValid(emailInput);
       }
 
-      if (!password.value) {
-        setInvalid(password);
+      // Validate password
+      if (!passwordInput.value) {
+        setInvalid(passwordInput, 'Password is required');
+        valid = false;
+      } else if (passwordInput.value.length < 6) {
+        setInvalid(passwordInput, 'Password must be at least 6 characters');
         valid = false;
       } else {
-        setValid(password);
+        setValid(passwordInput);
       }
 
       if (!valid) {
         e.preventDefault();
-        const first = this.querySelector('.is-invalid');
+        const first = loginForm.querySelector('.is-invalid');
         if (first) first.focus();
       }
+      // If valid, form will submit normally
     });

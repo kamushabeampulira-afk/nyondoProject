@@ -1,3 +1,6 @@
+const dns = require('node:dns/promises');
+dns.setServers(['1.1.1.1', '8.8.8.8']);
+
 require("dotenv").config();
 const express = require("express");
 const session = require("express-session");
@@ -20,12 +23,21 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+app.set("trust proxy", 1);
+const sessionCookieSecure = process.env.SESSION_COOKIE_SECURE === "true";
+const sessionCookieSameSite = process.env.SESSION_COOKIE_SAMESITE || "lax";
+
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "Shussh",
     resave: false,
     saveUninitialized: false,
-    cookie: { maxAge: 1000 * 60 * 60 * 2 },
+    cookie: {
+      maxAge: 1000 * 60 * 60 * 2,
+      httpOnly: true,
+      secure: sessionCookieSecure,
+      sameSite: sessionCookieSameSite,
+    },
   }),
 );
 app.use(flash());
@@ -36,7 +48,6 @@ passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
 // Global user & flash
-app.use(flash());
 // ...
 app.use((req, res, next) => {
   res.locals.user = req.user || null;
