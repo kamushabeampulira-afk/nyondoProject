@@ -15,7 +15,42 @@ const User = require("./models/User");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-connectDB();
+const bootstrapAdmin = async () => {
+  try {
+    const existingUserCount = await User.countDocuments();
+    if (existingUserCount > 0) {
+      return;
+    }
+
+    const adminEmail = process.env.ADMIN_EMAIL || "admin@nyondo.com";
+    const adminPassword = process.env.ADMIN_PASSWORD || "Admin123!";
+
+    const adminUser = new User({
+      fullName: "System Admin",
+      email: adminEmail,
+      nin: "CM12345678901234",
+      phone: "0771234567",
+      nextOfKinName: "Guardian",
+      nextOfKinPhone: "0777654321",
+      role: "admin",
+      status: "Active",
+    });
+
+    await User.register(adminUser, adminPassword);
+    console.log(`Default admin created: ${adminEmail}`);
+  } catch (err) {
+    console.error("Admin bootstrap failed:", err.message);
+  }
+};
+
+const startServer = async () => {
+  await connectDB();
+  await bootstrapAdmin();
+
+  app.listen(PORT, () => console.log(`😊 We're live on http://localhost:${PORT}`));
+};
+
+startServer();
 
 app.set("view engine", "pug");
 app.set("views", path.join(__dirname, "views"));
@@ -94,4 +129,3 @@ app.use((err, req, res, next) => {
   res.status(500).render("error", { message: err.message, user: req.user });
 });
 
-app.listen(PORT, () => console.log(`😊 We're live on http://localhost:${PORT}`));

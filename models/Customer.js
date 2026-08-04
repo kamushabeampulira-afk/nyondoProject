@@ -10,9 +10,17 @@ const customerSchema = new mongoose.Schema({
     required: true, 
     match: [/^0\d{9}$/, "Phone number must be 10 digits and start with 0"] 
   },
-  nin: { 
-    type: String, 
-    match: [/^[A-Za-z]{2}\d{14}$/, "NIN must have 2 letters followed by 14 digits"]
+  nin: {
+    type: String,
+    trim: true,
+    validate: {
+      validator: function (value) {
+        if (!value) return true;
+        const normalized = value.replace(/\s+/g, '').toUpperCase();
+        return /^[A-Z]{2}\d{14}$/.test(normalized);
+      },
+      message: "NIN must be a valid NIRA-style number with 2 letters followed by 14 digits"
+    }
   },
   email: {
     type: String,

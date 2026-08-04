@@ -14,10 +14,18 @@ const userSchema = new mongoose.Schema({
     "Please enter a valid email address"
   ]
 },  
-  nin: { 
-    type: String, 
-    required: true, 
-    match: [/^[A-Za-z]{2}\d{14}$/, "NIN must have 2 letters followed by 14 digits"]
+  nin: {
+    type: String,
+    required: true,
+    trim: true,
+    validate: {
+      validator: function (value) {
+        if (!value) return false;
+        const normalized = value.replace(/\s+/g, '').toUpperCase();
+        return /^[A-Z]{2}\d{14}$/.test(normalized);
+      },
+      message: "NIN must be a valid NIRA-style number with 2 letters followed by 14 digits"
+    }
   },
   phone: { 
     type: String, 
